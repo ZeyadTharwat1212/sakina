@@ -53,9 +53,9 @@ async function exists(it: DlItem): Promise<boolean> {
   } catch { return false; }
 }
 /** Playable source for a downloaded item (file URI on native, blob URL on web) or null if not downloaded. */
-export async function localSource(recId: string, surah: number): Promise<string | null> {
+export async function localSource(recId: string, surah: number, force = false): Promise<string | null> {
   const it = state.items[dlKey(recId, surah)];
-  if (!it || it.status !== 'done') return null;
+  if (!it || (!force && it.status !== 'done')) return null;
   try {
     if (native) { const { uri } = await Filesystem.getUri({ path: localPath(it), directory: Directory.Data }); return Capacitor.convertFileSrc(uri); }
     const c = await caches.open(CACHE); const r = await c.match(it.url); if (!r) return null; return URL.createObjectURL(await r.blob());
@@ -145,6 +145,13 @@ async function runWeb(it: DlItem) {
   const have = chunks.reduce((a, c) => a + c.byteLength, 0);
   const headers: Record<string, string> = have ? { Range: `bytes=${have}-` } : {};
   const r = await fetch(it.url, { signal: ctrl.signal, headers, mode: 'cors' });
+  if (have && r.status === 416) { // server says the range is beyond the end → we already hold the whole file
+    controllers.delete(it.key);
+    const blob = new Blob(chunks as BlobPart[], { type: 'audio/mpeg' });
+    const c = await caches.open(CACHE);
+    await c.put(it.url, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg', 'Content-Length': String(blob.size) } }));
+    it.received = blob.size; it.total = blob.size; return;
+  }
   if (!r.ok && r.status !== 206) throw new Error(`HTTP ${r.status}`);
   if (have && r.status !== 206) { chunks.length = 0; it.received = 0; } // server ignored Range → start over
   const len = Number(r.headers.get('content-length') || 0);
@@ -174,7 +181,7 @@ async function runNative(it: DlItem) {
   } finally { await listener.remove(); }
 }
 async function probePlayable(it: DlItem): Promise<boolean> {
-  const src = await localSource(it.recId, it.surah);
+  const src = await localSource(it.recId, it.surah, true);
   if (!src) return false;
   return new Promise((res) => {
     const a = new Audio(); a.preload = 'metadata';

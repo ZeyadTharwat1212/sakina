@@ -77,7 +77,7 @@ export function Today() {
           <div>
             <h2>{lastRead ? t('continueReading') : t('startReading')}</h2>
             <p class="text-2">{lastRead && lastCh ? `${t('surah')} ${lastCh.name} · ${t('ayah')} ${num(lastRead.v)} · ${t('page')} ${num(lastRead.page)}` : (isAr() ? 'سورة الفاتحة' : 'Al-Fatihah')}</p>
-            {user.lastListen && <small class="muted">{t('listen')}: {num(user.lastListen.ch)}:{num(user.lastListen.v)}</small>}
+            {user.lastListen && chapters.data && <small class="muted">{t('listen')}: {chapters.data[user.lastListen.ch - 1].name}</small>}
           </div>
           <Icon name="quran" />
         </div>

@@ -11,6 +11,7 @@ import { AdhkarHome, DhikrSession, Tasbih } from './screens/Adhkar';
 import { LibraryHome, HadithBook, HadithChapterScreen, SearchScreen, SourcesScreen } from './screens/Library';
 import { SettingsScreen } from './screens/Settings';
 import { MiniPlayer } from './screens/Player';
+import { ReciterLibrary, ReciterPage, DownloadsManager } from './screens/Audio';
 
 export function App() {
   const route = useRoute();
@@ -31,6 +32,9 @@ export function App() {
     case 'quran':
       screen = p[1] === 'read' ? <QuranReader ch={Number(p[2]) || 1} v={Number(p[3]) || 1} />
         : p[1] === 'page' ? <QuranReader page={Number(p[2]) || 1} />
+        : p[1] === 'reciters' && p[2] ? <ReciterPage id={p[2]} playAfter={route.query.get('play') ? Number(route.query.get('play')) : undefined} />
+        : p[1] === 'reciters' ? <ReciterLibrary playSurahAfter={route.query.get('play') ? Number(route.query.get('play')) : undefined} />
+        : p[1] === 'downloads' ? <DownloadsManager />
         : <QuranIndex />;
       break;
     case 'prayer':

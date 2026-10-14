@@ -5,7 +5,7 @@ import { useStore, updateUser, updateSettings, type Bookmark } from '../lib/stor
 import { t, num, isAr } from '../lib/i18n';
 import { navigate } from '../lib/router';
 import { TopBar, Sheet, Icon, useAsync, Loading, Seg, shareText, copyText, Toggle } from '../components/ui';
-import { playSurah } from './Player';
+import { playFromReader } from './Audio';
 
 const toArabicIndic = (n: number) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[Number(d)]);
 
@@ -28,7 +28,10 @@ export function QuranIndex() {
   };
   return (
     <main class="screen">
-      <TopBar title={t('quran')} right={<button class="icon-btn" aria-label={t('search')} onClick={() => navigate('/library/search')}><Icon name="search" /></button>} />
+      <TopBar title={t('quran')} right={<>
+        <button class="icon-btn" aria-label={isAr() ? 'القراء' : 'Reciters'} onClick={() => navigate('/quran/reciters')}><Icon name="play" /></button>
+        <button class="icon-btn" aria-label={t('search')} onClick={() => navigate('/library/search')}><Icon name="search" /></button>
+      </>} />
       {user.lastRead && (
         <button class="card soft" style="width:100%;text-align:start;margin-bottom:12px" onClick={() => navigate(`/quran/read/${user.lastRead!.ch}/${user.lastRead!.v}`)}>
           <strong>{t('continueReading')}</strong><br /><span class="text-2">{chs[user.lastRead.ch - 1].name} · {t('ayah')} {num(user.lastRead.v)} · {t('page')} {num(user.lastRead.page)}</span>
@@ -171,7 +174,7 @@ export function QuranReader(props: ReaderProps) {
     <main class="screen" style={focus ? 'padding-top:8px' : ''}>
       {!focus && (
         <TopBar title={title} onBack right={<>
-          <button class="icon-btn" aria-label={t('listen')} onClick={() => playSurah(pageMode ? span!.chs[0] : props.ch!)}><Icon name="play" /></button>
+          <button class="icon-btn" aria-label={t('listen')} onClick={() => void playFromReader(pageMode ? span!.chs[0] : props.ch!, settings.reciterId)}><Icon name="play" /></button>
           <button class="icon-btn" aria-label="خيارات" onClick={() => setPanel(panel === 'none' ? 'tafsir' : panel === 'tafsir' ? 'translation' : 'none')}><Icon name="book" /></button>
         </>}>
           <small class="muted num">{t('juz')} {num(curJuz)} · {t('page')} {num(curPage)}</small>
@@ -255,7 +258,7 @@ function AyahSheet({ sel, onClose, chs, meta, texts, tafsirId }: { sel: { ch: nu
         <>
           <p class="ayah-text" style="font-size:calc(var(--quran-size) * .85);text-align:start;text-align-last:start;margin-bottom:12px">{text}</p>
           <div class="grid-2">
-            <button class="btn secondary" onClick={() => { playSurah(sel.ch, sel.v); onClose(); }}><Icon name="play" />{t('listen')}</button>
+            <button class="btn secondary" onClick={() => { void playFromReader(sel.ch, settings.reciterId); onClose(); }}><Icon name="play" />{t('listen')}</button>
             <button class="btn secondary" onClick={() => setView('tafsir')}><Icon name="book" />{t('tafsir')}</button>
             <button class="btn secondary" onClick={() => setView('translation')}>EN {t('translation')}</button>
             <button class="btn secondary" onClick={() => setView('bookmark')}><Icon name="star" />{existing ? (isAr() ? 'تعديل العلامة' : 'Edit bookmark') : t('bookmark')}</button>

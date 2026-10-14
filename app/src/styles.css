@@ -77,7 +77,7 @@ small, .small { font-size: .875em; }
 .screen { flex: 1; padding: calc(var(--safe-top) + var(--space-3)) var(--space-4) calc(88px + var(--safe-bottom)); max-width: 760px; width: 100%; margin: 0 auto; }
 .screen.wide { max-width: 1100px; }
 .topbar { display: flex; align-items: center; gap: var(--space-3); min-height: var(--tap); margin-bottom: var(--space-4); }
-.topbar h1 { flex: 1; font-size: 1.25em; }
+.topbar h1 { flex: 1; font-size: 1.25em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .topbar .back { width: var(--tap); height: var(--tap); display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 1.4em; }
 .topbar .back:active { background: var(--surface-2); }
 

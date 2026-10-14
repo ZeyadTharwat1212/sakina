@@ -1,0 +1,121 @@
+/**
+ * Player engine (section 11): queue, repeat (off/one/all/ayah-range when timings exist), seek ±10s, sleep timer,
+ * last position per recording+surah, Media Session (lock screen / headset keys), local file first, stream second.
+ * Honest sync: ayah highlighting only when the source provides timings for THIS recording.
+ */
+import { getCatalog, recordingById, fileUrl, getTimings, displayName, type Recording, type AyahTiming, type Catalog } from './catalog';
+import { localSource } from './downloads';
+import { getUser, updateUser } from '../store';
+import { getChapters } from '../content';
+
+export interface Track { recId: string; surah: number }
+export interface PlayerState {
+  queue: Track[]; index: number; playing: boolean; loading: boolean; error: string | null;
+  pos: number; dur: number; rate: number; repeat: 'off' | 'one' | 'all';
+  timings: AyahTiming[] | null; currentAyah: number | null; ayahRange: { from: number; to: number } | null;
+  sleepAt: number | null; open: 'none' | 'mini' | 'full'; local: boolean;
+}
+let s: PlayerState = { queue: [], index: -1, playing: false, loading: false, error: null, pos: 0, dur: 0, rate: 1, repeat: 'off', timings: null, currentAyah: null, ayahRange: null, sleepAt: null, open: 'none', local: false };
+const subs = new Set<() => void>();
+const set = (p: Partial<PlayerState>) => { s = { ...s, ...p }; subs.forEach((f) => f()); };
+export const getPlayer = () => s;
+export function subscribePlayer(f: () => void) { subs.add(f); return () => { subs.delete(f); }; }
+export const current = (): Track | null => s.queue[s.index] || null;
+
+let audio: HTMLAudioElement | null = null;
+let catalog: Catalog | null = null;
+let saveTimer: number | undefined;
+let blobUrl: string | null = null;
+
+function el() {
+  if (audio) return audio;
+  audio = new Audio(); audio.preload = 'metadata';
+  audio.addEventListener('play', () => set({ playing: true, error: null }));
+  audio.addEventListener('pause', () => set({ playing: false }));
+  audio.addEventListener('waiting', () => set({ loading: true }));
+  audio.addEventListener('canplay', () => set({ loading: false }));
+  audio.addEventListener('durationchange', () => set({ dur: audio!.duration || 0 }));
+  audio.addEventListener('timeupdate', onTime);
+  audio.addEventListener('ended', onEnded);
+  audio.addEventListener('error', () => set({ playing: false, loading: false, error: s.local ? 'تعذّر تشغيل الملف المنزّل — أعد تنزيله' : 'تعذّر تشغيل التلاوة — تحقق من الاتصال، أو نزّل السورة للاستماع دون إنترنت' }));
+  if ('mediaSession' in navigator) {
+    const ms = navigator.mediaSession;
+    ms.setActionHandler('play', () => void play());
+    ms.setActionHandler('pause', () => pause());
+    ms.setActionHandler('previoustrack', () => void prev());
+    ms.setActionHandler('nexttrack', () => void next());
+    ms.setActionHandler('seekbackward', () => seekBy(-10));
+    ms.setActionHandler('seekforward', () => seekBy(10));
+    try { ms.setActionHandler('seekto', (d) => { if (d.seekTime != null) seekTo(d.seekTime); }); } catch { /* unsupported */ }
+  }
+  return audio;
+}
+
+function onTime() {
+  const a = audio!; const pos = a.currentTime;
+  let currentAyah = s.currentAyah;
+  if (s.timings) {
+    const ms = pos * 1000;
+    const t = s.timings.find((x) => ms >= x.start && ms < x.end);
+    currentAyah = t ? t.ayah : currentAyah;
+    if (s.ayahRange && t && t.ayah > s.ayahRange.to) { const from = s.timings.find((x) => x.ayah === s.ayahRange!.from); if (from) a.currentTime = from.start / 1000; }
+  }
+  set({ pos, currentAyah });
+  if (s.sleepAt && Date.now() >= s.sleepAt) { pause(); set({ sleepAt: null }); }
+  clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(() => { const t = current(); if (t) updateUser((u) => ({ listenPos: { ...(u.listenPos || {}), [`${t.recId}#${t.surah}`]: pos }, lastListen: { ch: t.surah, v: currentAyah || 1, page: 0, at: Date.now(), kind: 'listen' } })); }, 1500);
+}
+async function onEnded() {
+  if (s.repeat === 'one') { el().currentTime = 0; await el().play(); return; }
+  if (s.index < s.queue.length - 1) await load(s.index + 1, true);
+  else if (s.repeat === 'all' && s.queue.length) await load(0, true);
+  else set({ playing: false });
+  const t = current(); if (t) updateUser((u) => ({ listenPos: { ...(u.listenPos || {}), [`${t.recId}#${t.surah}`]: 0 } }));
+}
+
+async function load(index: number, autoplay: boolean) {
+  catalog ||= await getCatalog();
+  const t = s.queue[index]; if (!t) return;
+  const rec = recordingById(catalog, t.recId); if (!rec) { set({ error: 'التسجيل غير موجود في الفهرس' }); return; }
+  const a = el();
+  if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
+  const local = await localSource(rec.id, t.surah);
+  if (local?.startsWith('blob:')) blobUrl = local;
+  a.src = local || fileUrl(rec, t.surah);
+  a.playbackRate = s.rate;
+  set({ index, pos: 0, dur: 0, timings: null, currentAyah: null, ayahRange: null, error: null, loading: true, local: !!local, open: s.open === 'none' ? 'mini' : s.open });
+  const saved = getUser().listenPos?.[`${rec.id}#${t.surah}`];
+  if (saved && saved > 5) a.currentTime = saved;
+  void updateMediaSession(rec, t.surah);
+  void getTimings(catalog, rec, t.surah).then((tm) => { if (current() === t) set({ timings: tm }); });
+  if (autoplay) { try { await a.play(); } catch { set({ loading: false }); } }
+}
+async function updateMediaSession(rec: Recording, surah: number) {
+  if (!('mediaSession' in navigator)) return;
+  const chs = await getChapters();
+  navigator.mediaSession.metadata = new MediaMetadata({ title: `سورة ${chs[surah - 1].name}`, artist: displayName(rec), album: rec.recitationAr || rec.recitation, artwork: [{ src: 'icon-512.png', sizes: '512x512', type: 'image/png' }] });
+}
+
+/* ---------- public API ---------- */
+export async function playQueue(tracks: Track[], startIndex = 0) { set({ queue: tracks, open: s.open === 'none' ? 'mini' : s.open }); await load(startIndex, true); }
+export async function playSurah(recId: string, surah: number, wholeMushaf = true) {
+  catalog ||= await getCatalog();
+  const rec = recordingById(catalog, recId);
+  const list = rec && wholeMushaf ? (rec.complete ? Array.from({ length: 114 }, (_, i) => i + 1) : rec.surahList || [surah]) : [surah];
+  const tracks = list.map((n) => ({ recId, surah: n }));
+  await playQueue(tracks, Math.max(0, tracks.findIndex((x) => x.surah === surah)));
+}
+export async function play() { if (s.index < 0 && s.queue.length) return load(0, true); try { await el().play(); } catch { /* error event */ } }
+export function pause() { audio?.pause(); }
+export async function toggle() { s.playing ? pause() : await play(); }
+export async function next() { if (s.index < s.queue.length - 1) await load(s.index + 1, true); }
+export async function prev() { if (el().currentTime > 4 || s.index <= 0) { el().currentTime = 0; return; } await load(s.index - 1, true); }
+export function seekTo(sec: number) { const a = el(); a.currentTime = Math.max(0, Math.min(sec, a.duration || sec)); }
+export function seekBy(delta: number) { seekTo(el().currentTime + delta); }
+export function setRate(rate: number) { el().playbackRate = rate; set({ rate }); }
+export function setRepeat(r: PlayerState['repeat']) { set({ repeat: r }); }
+export function setAyahRange(r: { from: number; to: number } | null) { set({ ayahRange: r }); if (r && s.timings) { const t = s.timings.find((x) => x.ayah === r.from); if (t) seekTo(t.start / 1000); } }
+export function setSleep(minutes: number | null) { set({ sleepAt: minutes ? Date.now() + minutes * 60000 : null }); }
+export function setOpen(o: PlayerState['open']) { set({ open: o }); }
+export function stop() { if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load(); } if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; } set({ playing: false, open: 'none', queue: [], index: -1, pos: 0, dur: 0, timings: null, currentAyah: null, sleepAt: null }); }
+export function removeFromQueue(i: number) { const q = s.queue.filter((_, k) => k !== i); set({ queue: q, index: i < s.index ? s.index - 1 : Math.min(s.index, q.length - 1) }); }

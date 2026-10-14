@@ -10,7 +10,7 @@ const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, de
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
-page.on('console', (m) => { if (m.type() === 'error' && !/favicon/.test(m.text())) errors.push(m.text()); });
+page.on('console', (m) => { if (m.type() === 'error' && !/favicon|ERR_TUNNEL|mp3quran/.test(m.text())) errors.push(m.text()); });
 const shot = (n) => page.screenshot({ path: `${OUT}/${n}.png` });
 const ok = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); console.log('✓', m); };
 
@@ -151,6 +151,28 @@ await page.click('.seg button:has-text("English")');
 await page.goto(BASE + '/#/');
 await page.waitForSelector('text=Next prayer');
 await shot('20-english-today');
+
+// Audio library — catalogue, famous section, reciter page with 114 statuses, downloads manager
+await page.setViewportSize({ width: 390, height: 844 });
+await page.goto(BASE + '/#/quran/reciters');
+await page.waitForSelector('.list-item');
+ok((await page.locator('.list-item:has-text("محمود خليل الحصري")').count()) > 0, 'Famous reciters section lists al-Hussary in Arabic');
+await shot('22-reciters');
+await page.click('.list-item:has-text("محمود خليل الحصري")');
+await page.waitForSelector('text=mp3quran:118');
+ok((await page.locator('.chips.scroll .chip').count()) >= 4, 'Hussary page shows multiple recordings (hafs/warsh/qalun/duri/mujawwad)');
+ok((await page.locator('.list .list-item').count()) === 114, '114 surah rows with status');
+await shot('23-reciter-page');
+await page.click('.list .list-item:nth-child(1) button.grow');
+await page.waitForSelector('.miniplayer');
+ok(await page.isVisible('.miniplayer'), 'Mini player appears after tapping a surah (stream attempt)');
+await page.click('.miniplayer button.grow');
+await page.waitForSelector('.sheet');
+await shot('24-full-player');
+await page.keyboard.press('Escape');
+await page.goto(BASE + '/#/quran/downloads');
+await page.waitForSelector('text=Wi-Fi');
+await shot('25-downloads');
 
 // Tablet width
 await page.setViewportSize({ width: 1024, height: 768 });

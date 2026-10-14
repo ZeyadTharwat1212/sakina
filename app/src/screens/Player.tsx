@@ -1,101 +1,94 @@
-/** Section 11: streaming player (MP3Quran catalogue). No ayah-level sync claimed; no offline download until rights are confirmed. */
+/** Mini player (fixed above the tab bar) that expands into the full player sheet. */
 import { useEffect, useState } from 'preact/hooks';
-import { getReciters, getChapters, type Reciter, type Chapter } from '../lib/content';
-import { getSettings, updateSettings, updateUser } from '../lib/store';
+import { getPlayer, subscribePlayer, toggle, next, prev, seekTo, seekBy, setRate, setRepeat, setSleep, setOpen, stop, setAyahRange, removeFromQueue, playQueue } from '../lib/audio/player';
+import { getCatalog, recordingById, displayName, STYLE_AR, type Catalog } from '../lib/audio/catalog';
+import { getChapters, type Chapter } from '../lib/content';
 import { t, num, isAr } from '../lib/i18n';
+import { navigate } from '../lib/router';
 import { Icon, Sheet } from '../components/ui';
+import * as DL from '../lib/audio/downloads';
 
-interface PlayerState { reciter: Reciter | null; ch: number; playing: boolean; error: string | null; pos: number; dur: number; open: boolean; pickReciter: boolean }
-let state: PlayerState = { reciter: null, ch: 0, playing: false, error: null, pos: 0, dur: 0, open: false, pickReciter: false };
-const subs = new Set<() => void>();
-const set = (p: Partial<PlayerState>) => { state = { ...state, ...p }; subs.forEach((f) => f()); };
-let audio: HTMLAudioElement | null = null;
-let reciters: Reciter[] = [];
-
-function ensureAudio() {
-  if (audio) return audio;
-  audio = new Audio();
-  audio.preload = 'none';
-  audio.addEventListener('timeupdate', () => set({ pos: audio!.currentTime, dur: audio!.duration || 0 }));
-  audio.addEventListener('play', () => set({ playing: true, error: null }));
-  audio.addEventListener('pause', () => set({ playing: false }));
-  audio.addEventListener('ended', () => { if (state.ch < 114) void playSurah(state.ch + 1); else set({ playing: false }); });
-  audio.addEventListener('error', () => set({ playing: false, error: isAr() ? 'تعذّر تشغيل التلاوة — تحقق من الاتصال بالإنترنت.' : 'Could not play — check your internet connection.' }));
-  return audio;
-}
-
-export async function playSurah(ch: number, _ayah?: number) {
-  if (!reciters.length) reciters = (await getReciters()).reciters;
-  const id = getSettings().reciterId;
-  let r = reciters.find((x) => x.id === id) || null;
-  if (!r) { set({ open: true, pickReciter: true, ch }); return; }
-  const a = ensureAudio();
-  const url = `${r.server}${String(ch).padStart(3, '0')}.mp3`;
-  if (state.ch !== ch || a.src !== url) { a.src = url; set({ ch, reciter: r, pos: 0, dur: 0 }); }
-  set({ open: true, pickReciter: false, reciter: r, ch });
-  try { await a.play(); } catch { /* error event handles it */ }
-  updateUser({ lastListen: { ch, v: _ayah || 1, page: 0, at: Date.now(), kind: 'listen' } });
-}
-export function pause() { audio?.pause(); }
-export function stop() { if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load(); } set({ playing: false, open: false, ch: 0, pos: 0, dur: 0 }); }
-
-const fmt = (s: number) => isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '–';
+const fmt = (s: number) => isFinite(s) && s > 0 ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '–:––';
 
 export function MiniPlayer() {
   const [, force] = useState(0);
   const [chs, setChs] = useState<Chapter[] | null>(null);
-  const [full, setFull] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'complete'>('complete');
-  const [q, setQ] = useState('');
-  useEffect(() => { const f = () => force((n) => n + 1); subs.add(f); return () => { subs.delete(f); }; }, []);
-  useEffect(() => { getChapters().then(setChs); getReciters().then((r) => { reciters = r.reciters; force((n) => n + 1); }); }, []);
-  if (!state.open) return null;
-  const name = chs && state.ch ? chs[state.ch - 1].name : '';
-  const list = reciters.filter((r) => (filter === 'all' || r.complete) && (!q || r.name.toLowerCase().includes(q.toLowerCase()) || r.recitation.toLowerCase().includes(q.toLowerCase())));
-
+  const [cat, setCat] = useState<Catalog | null>(null);
+  const [showQueue, setShowQueue] = useState(false);
+  useEffect(() => { const u = subscribePlayer(() => force((n) => n + 1)); getChapters().then(setChs); getCatalog().then(setCat); return u; }, []);
+  const p = getPlayer();
+  const tr = p.queue[p.index];
+  if (p.open === 'none' || !tr || !chs || !cat) return null;
+  const rec = recordingById(cat, tr.recId);
+  const name = chs[tr.surah - 1].name;
+  const who = rec ? displayName(rec) : tr.recId;
+  const pct = p.dur ? (p.pos / p.dur) * 100 : 0;
+  const downloaded = DL.isDownloaded(tr.recId, tr.surah);
+  const dl = DL.itemOf(tr.recId, tr.surah);
   return (
     <>
-      {!state.pickReciter && (
+      {p.open === 'mini' && (
         <div class="miniplayer" role="region" aria-label={t('listen')}>
-          <button class="icon-btn" aria-label={state.playing ? t('pause') : t('play')} onClick={() => (state.playing ? pause() : playSurah(state.ch))}><Icon name={state.playing ? 'pause' : 'play'} /></button>
-          <button class="grow" style="text-align:start;min-width:0" onClick={() => setFull(true)}>
-            <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{name} · {state.reciter?.name}</div>
-            <small class="muted num">{fmt(state.pos)} / {fmt(state.dur)}{state.error ? ` · ${state.error}` : ''}</small>
+          <button class="icon-btn" aria-label={p.playing ? t('pause') : t('play')} onClick={() => void toggle()}><Icon name={p.loading ? 'more' : p.playing ? 'pause' : 'play'} /></button>
+          <button class="grow" style="text-align:start;min-width:0" onClick={() => setOpen('full')}>
+            <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">سورة {name} · {who}</div>
+            <small class="muted num">{fmt(p.pos)} / {fmt(p.dur)}{p.local ? ` · ${isAr() ? 'من الجهاز' : 'offline'}` : ''}{p.currentAyah ? ` · ${t('ayah')} ${num(p.currentAyah)}` : ''}{p.error ? ` · ${p.error}` : ''}</small>
+            <div class="progress" style="height:3px;margin-top:4px"><div style={`width:${pct}%`} /></div>
           </button>
+          <button class="icon-btn" aria-label={isAr() ? 'التالية' : 'Next'} onClick={() => void next()}><Icon name="next" /></button>
           <button class="icon-btn" aria-label={t('stop')} onClick={stop}><Icon name="close" /></button>
         </div>
       )}
-      <Sheet open={full || state.pickReciter} onClose={() => { setFull(false); if (state.pickReciter) stop(); }} title={state.pickReciter ? t('reciter') : `${name} · ${state.reciter?.name ?? ''}`}>
-        {state.pickReciter || full ? (
-          <>
-            {!state.pickReciter && (
-              <div style="margin-bottom:12px">
-                <div class="progress" aria-hidden="true"><div style={`width:${state.dur ? (state.pos / state.dur) * 100 : 0}%`} /></div>
-                <div class="row between" style="margin-top:12px">
-                  <button class="btn secondary sm" disabled={state.ch >= 114} onClick={() => playSurah(state.ch + 1)}>{isAr() ? 'التالية' : 'Next'}</button>
-                  <button class="btn" onClick={() => (state.playing ? pause() : playSurah(state.ch))}>{state.playing ? t('pause') : t('play')}</button>
-                  <button class="btn secondary sm" disabled={state.ch <= 1} onClick={() => playSurah(state.ch - 1)}>{isAr() ? 'السابقة' : 'Previous'}</button>
-                </div>
-                <p class="muted small" style="margin-top:12px">{t('noSync')} · {t('streamNote')}</p>
-                <hr />
-                <h3 style="margin-bottom:8px">{t('reciter')}</h3>
+      <Sheet open={p.open === 'full'} onClose={() => setOpen('mini')} title={`سورة ${name}`}>
+        <p class="text-2" style="margin-top:-8px">{who}{rec ? ` · ${STYLE_AR[rec.style]} · ${rec.riwayahAr}` : ''}</p>
+        {p.error && <p class="notice" style="margin:8px 0">{p.error}</p>}
+        <input type="range" min={0} max={p.dur || 0} step={1} value={p.pos} onInput={(e) => seekTo(Number((e.target as HTMLInputElement).value))} style="width:100%;margin:12px 0 4px" aria-label={isAr() ? 'الموضع' : 'Position'} />
+        <div class="row between num small muted"><span>{fmt(p.pos)}</span><span>{fmt(p.dur)}</span></div>
+        <div class="row" style="justify-content:center;gap:6px;margin:8px 0">
+          <button class="icon-btn" aria-label={isAr() ? 'السابقة' : 'Previous'} onClick={() => void prev()}><Icon name="back" /></button>
+          <button class="chip" onClick={() => seekBy(-10)}>−١٠</button>
+          <button class="counter-btn" style="width:72px;height:72px;font-size:1em;margin:0" aria-label={p.playing ? t('pause') : t('play')} onClick={() => void toggle()}><Icon name={p.playing ? 'pause' : 'play'} /></button>
+          <button class="chip" onClick={() => seekBy(10)}>+١٠</button>
+          <button class="icon-btn" aria-label={isAr() ? 'التالية' : 'Next'} onClick={() => void next()}><Icon name="next" /></button>
+        </div>
+        <div class="chips" style="justify-content:center">
+          {(['off', 'one', 'all'] as const).map((r) => <button key={r} class="chip" aria-pressed={p.repeat === r} onClick={() => setRepeat(r)}>{r === 'off' ? (isAr() ? 'بلا تكرار' : 'No repeat') : r === 'one' ? (isAr() ? 'تكرار السورة' : 'Repeat surah') : (isAr() ? 'تكرار القائمة' : 'Repeat all')}</button>)}
+          {[0.75, 1, 1.25, 1.5].map((r) => <button key={r} class="chip" aria-pressed={p.rate === r} onClick={() => setRate(r)}>{r}×</button>)}
+        </div>
+        <div class="chips" style="justify-content:center;margin-top:8px">
+          <span class="muted small" style="align-self:center">{isAr() ? 'مؤقت النوم:' : 'Sleep:'}</span>
+          {[null, 10, 20, 30, 60].map((m) => <button key={String(m)} class="chip" aria-pressed={m == null ? !p.sleepAt : !!p.sleepAt && Math.abs(p.sleepAt - Date.now() - m * 60000) < 60000 * 2} onClick={() => setSleep(m)}>{m == null ? (isAr() ? 'إيقاف' : 'off') : `${num(m)} ${isAr() ? 'د' : 'min'}`}</button>)}
+        </div>
+        <hr />
+        {p.timings ? (
+          <div>
+            <p class="small text-2">{isAr() ? 'توقيتات الآيات متاحة لهذا التسجيل من المصدر.' : 'Ayah timings are available for this recording.'} {p.currentAyah ? `${t('ayah')} ${num(p.currentAyah)}` : ''}</p>
+            <div class="row" style="margin-top:6px;gap:8px">
+              <button class="btn secondary sm" onClick={() => navigate(`/quran/read/${tr.surah}/${p.currentAyah || 1}`)}>{isAr() ? 'افتح الآية في المصحف' : 'Open ayah'}</button>
+              {p.currentAyah && <button class="btn secondary sm" aria-pressed={!!p.ayahRange} onClick={() => setAyahRange(p.ayahRange ? null : { from: p.currentAyah!, to: p.currentAyah! })}>{p.ayahRange ? (isAr() ? 'إيقاف تكرار الآية' : 'Stop ayah loop') : (isAr() ? 'تكرار هذه الآية' : 'Loop this ayah')}</button>}
+              {p.ayahRange && <button class="btn ghost sm" onClick={() => setAyahRange({ from: p.ayahRange!.from, to: p.ayahRange!.to + 1 })}>{isAr() ? 'وسّع النطاق +١' : 'Extend +1'}</button>}
+            </div>
+          </div>
+        ) : <p class="muted small">{t('noSync')}</p>}
+        <hr />
+        <div class="row between">
+          <span class="small">{downloaded ? <span class="badge ok">{isAr() ? 'منزّلة — تعمل دون إنترنت' : 'downloaded'}</span> : dl?.status === 'downloading' ? <span class="badge">{isAr() ? 'جارٍ التنزيل' : 'downloading'}</span> : <button class="btn ghost sm" onClick={() => rec && DL.enqueue(rec, [tr.surah])}>{isAr() ? 'تنزيل هذه السورة' : 'Download this surah'}</button>}</span>
+          <button class="btn ghost sm" onClick={() => setShowQueue(!showQueue)}>{isAr() ? `قائمة الانتظار (${num(p.queue.length)})` : `Queue (${p.queue.length})`}</button>
+        </div>
+        {showQueue && (
+          <div class="list" style="margin-top:8px;max-height:36vh;overflow:auto">
+            {p.queue.map((q, i) => (
+              <div key={i} class="list-item" style={i === p.index ? 'background:var(--primary-soft)' : ''}>
+                <button class="grow" style="text-align:start" onClick={() => void playQueue(p.queue, i)}><span class="title">{chs[q.surah - 1].name}</span></button>
+                <button class="icon-btn" aria-label={isAr() ? 'إزالة' : 'Remove'} onClick={() => removeFromQueue(i)}><Icon name="close" /></button>
               </div>
-            )}
-            <div class="row" style="margin-bottom:8px">
-              <input class="input" placeholder={t('search')} value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
-              <button class="chip" aria-pressed={filter === 'complete'} onClick={() => setFilter(filter === 'complete' ? 'all' : 'complete')}>{t('complete114')}</button>
-            </div>
-            <div class="list" style="max-height:45vh;overflow:auto">
-              {list.map((r) => (
-                <button key={r.id} class="list-item" onClick={() => { updateSettings({ reciterId: r.id }); set({ pickReciter: false }); setFull(false); void playSurah(state.ch || 1); }}>
-                  <span class="grow"><span class="title">{r.name}</span><br /><span class="sub">{r.recitation}</span></span>
-                  <span class={`badge ${r.complete ? 'ok' : 'warn'}`}>{r.complete ? t('complete114') : `${num(r.surahTotal)}/114 · ${t('incomplete')}`}</span>
-                </button>
-              ))}
-            </div>
-            <p class="muted small" style="margin-top:8px">{isAr() ? 'الفهرس من MP3Quran · البث عبر الإنترنت' : 'Catalogue from MP3Quran · streamed'} · <a href="#/library/sources">{t('sources')}</a></p>
-          </>
-        ) : null}
+            ))}
+          </div>
+        )}
+        <div class="row" style="margin-top:12px;gap:8px">
+          <button class="btn secondary sm" onClick={() => { setOpen('mini'); navigate(`/quran/reciters/${rec?.reciterId || ''}`); }}>{isAr() ? 'صفحة القارئ' : 'Reciter page'}</button>
+          <button class="btn secondary sm" onClick={() => { setOpen('mini'); navigate('/quran/reciters'); }}>{isAr() ? 'تغيير القارئ' : 'Change reciter'}</button>
+        </div>
       </Sheet>
     </>
   );

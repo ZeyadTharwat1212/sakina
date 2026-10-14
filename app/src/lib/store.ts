@@ -66,6 +66,7 @@ export interface UserData {
   sessions: Record<string, DhikrSession>; // key = `${catId}:${yyyy-mm-dd}`
   tasbih: { count: number; target: number };
   log: Record<string, { adhkarMorning?: boolean; adhkarEvening?: boolean; wird?: boolean }>; // private daily log
+  listenPos?: Record<string, number>; // `${recordingId}#${surah}` → seconds
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -82,7 +83,7 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 export const DEFAULT_USER: UserData = {
   lastRead: null, lastListen: null, bookmarks: [], favAdhkar: [], favHadith: [], sessions: {},
-  tasbih: { count: 0, target: 33 }, log: {},
+  tasbih: { count: 0, target: 33 }, log: {}, listenPos: {},
 };
 
 type Listener = () => void;

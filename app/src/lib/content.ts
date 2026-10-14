@@ -13,7 +13,6 @@ export interface AdhkarPack { source: string; categories: { id: number; name: st
 export interface Dhikr { id: number; text: string; count: number; ref: string | null; note: string | null }
 export interface HadithIndex { id: string; title: string; author: string; total: number; chapters: { id: number; ar: string; en: string; count: number }[] }
 export interface HadithChapter { chapter: number; hadiths: { id: number; ar: string; narrator: string | null }[] }
-export interface Reciter { id: string; name: string; recitation: string; server: string; surahTotal: number; complete: boolean; riwayah: string; style: string }
 export interface LedgerEntry { id: string; kind: string; title: string; author?: string; source: string; licence: string; licenceStatus: string; offlineBundling: string; edition?: string; reviewStatus: string; reviewNotes?: string; upstreamRevision?: string; builtOn: string }
 
 const cache = new Map<string, Promise<unknown>>();
@@ -33,7 +32,6 @@ export const getSearchIndex = () => load<[number, number, string][]>('quran/sear
 export const getAdhkar = () => load<AdhkarPack>('adhkar/azkar.json');
 export const getHadithIndex = (book: string) => load<HadithIndex>(`hadith/${book}/index.json`);
 export const getHadithChapter = (book: string, chapter: number) => load<HadithChapter>(`hadith/${book}/${chapter}.json`);
-export const getReciters = () => load<{ pattern: string; reciters: Reciter[] }>('audio/reciters.json');
 export const getLedger = () => load<{ generatedOn: string; entries: LedgerEntry[] }>('ledger.json');
 
 export const TAFSIRS = [

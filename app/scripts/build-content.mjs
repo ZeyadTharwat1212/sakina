@@ -268,29 +268,56 @@ hadithPack('the_9_books/muslim', 'muslim', 'صحيح مسلم', 'الإمام م
 hadithPack('forties/nawawi40', 'nawawi40', 'الأربعون النووية', 'الإمام يحيى بن شرف النووي', 'Phase-2 content; included for structure testing.');
 
 /* ------------------------------------------------------------------ */
-/* 6. Reciters catalogue — MP3Quran (streaming links only)               */
+/* 6. Reciters catalogue — MP3Quran (streaming; user-initiated download)   */
 /* ------------------------------------------------------------------ */
+// Famous reciters (section target list) → MP3Quran reciter ids, matched by hand against the English catalogue names.
+const FAMOUS = [
+  [118, 'محمود خليل الحصري'], [112, 'محمد صديق المنشاوي'], [51, 'عبد الباسط عبد الصمد'], [125, 'مصطفى إسماعيل'],
+  [121, 'محمود علي البنا'], [241, 'محمد رفعت'], [106, 'محمد محمود الطبلاوي'], [109, 'محمد أيوب'], [76, 'علي جابر'],
+  [123, 'مشاري راشد العفاسي'], [54, 'عبد الرحمن السديس'], [31, 'سعود الشريم'], [102, 'ماهر المعيقلي'], [92, 'ياسر الدوسري'],
+  [30, 'سعد الغامدي'], [5, 'أحمد العجمي'], [74, 'علي الحذيفي'], [60, 'عبد الله بصفر'], [4, 'أبو بكر الشاطري'], [81, 'فارس عباد'],
+  [86, 'ناصر القطامي'], [20, 'خالد الجليل'], [12, 'إدريس أبكر'], [89, 'هاني الرفاعي'], [225, 'عبد الرحمن العوسي'],
+  [64, 'عبد الرشيد صوفي'], [138, 'نورين محمد صديق'], [267, 'عبد الله كامل'], [231, 'هزاع البلوشي'], [221, 'رعد الكردي'],
+  [253, 'إسلام صبحي'], [259, 'أحمد النفيس'], [111, 'محمد جبريل'],
+];
+function parseRecitation(rec) {
+  const r = rec.toLowerCase();
+  const riwayah = /hafs/.test(r) ? 'hafs' : /warsh/.test(r) ? 'warsh' : /qalon|qaloon|qalun/.test(r) ? 'qalun' : /aldori|al-dori|douri|duri/.test(r) ? 'duri' : /albazzi|bazzi/.test(r) ? 'bazzi' : /qunbul/.test(r) ? 'qunbul' : /shu'?bah|shoba/.test(r) ? 'shubah' : /khalaf/.test(r) ? 'khalaf' : /khallad/.test(r) ? 'khallad' : /alsoosi|soosi|susi/.test(r) ? 'susi' : /ibn thakwan|thakwan/.test(r) ? 'ibn-dhakwan' : /hisham/.test(r) ? 'hisham' : 'unknown';
+  const style = /mojawwad|mujawwad/.test(r) ? 'mujawwad' : /mo'?lim|moalim|muallim/.test(r) ? 'muallim' : 'murattal';
+  return { riwayah, style };
+}
+const RIWAYAH_AR = { hafs: 'حفص عن عاصم', warsh: 'ورش عن نافع', qalun: 'قالون عن نافع', duri: 'الدوري عن أبي عمرو', bazzi: 'البزي عن ابن كثير', qunbul: 'قنبل عن ابن كثير', shubah: 'شعبة عن عاصم', khalaf: 'خلف عن حمزة', khallad: 'خلاد عن حمزة', susi: 'السوسي عن أبي عمرو', 'ibn-dhakwan': 'ابن ذكوان عن ابن عامر', hisham: 'هشام عن ابن عامر', unknown: 'غير محددة في المصدر' };
 {
   const mp = rj(path.join(SRC, 'qj/data/audio/mp3quran.json'));
-  const list = (mp.reciters || mp).map((r) => ({
-    id: r.id, name: r.name, recitation: r.recitation, server: r.server, surahTotal: r.surah_total,
-    complete: r.surah_total === 114,
-    riwayah: /Hafs/i.test(r.recitation) ? 'hafs' : /Warsh/i.test(r.recitation) ? 'warsh' : /Qalon|Qaloon/i.test(r.recitation) ? 'qalun' : 'other',
-    style: /Mojawwad/i.test(r.recitation) ? 'mujawwad' : /Mo'?lim|Moalim/i.test(r.recitation) ? 'muallim' : 'murattal',
-  }));
-  wj('audio/reciters.json', { pattern: '{server}{surah:3}.mp3', reciters: list });
+  const famousMap = new Map(FAMOUS.map(([id, ar]) => [String(id), ar]));
+  const recordings = (mp.reciters || mp).map((r) => {
+    const [reciterId, moshafId] = String(r.id).split('-');
+    const { riwayah, style } = parseRecitation(r.recitation);
+    return {
+      id: `mp3quran:${reciterId}:${moshafId}`, source: 'mp3quran', reciterId, moshafId,
+      name: r.name, nameAr: famousMap.get(reciterId) || null, recitation: r.recitation,
+      server: r.server, surahTotal: r.surah_total, complete: r.surah_total === 114,
+      surahList: null, // filled by the live catalogue refresh (API field surah_list); null = unknown for partial sets
+      riwayah, riwayahAr: RIWAYAH_AR[riwayah], style,
+    };
+  });
+  const reciters = {};
+  for (const rec of recordings) (reciters[rec.reciterId] ||= { id: rec.reciterId, name: rec.name, nameAr: rec.nameAr, famous: famousMap.has(rec.reciterId), recordings: [] }).recordings.push(rec.id);
+  const missing = FAMOUS.filter(([id]) => !reciters[String(id)]).map(([, ar]) => ar);
+  wj('audio/catalog.json', {
+    source: 'mp3quran', snapshotOf: 'https://mp3quran.net/api/v3/reciters?language=eng', fileUrl: '{server}{surah:3}.mp3',
+    liveApi: { reciters: 'https://mp3quran.net/api/v3/reciters?language=ar', timing: 'https://mp3quran.net/api/v3/ayat_timing?surah={surah}&read={moshafId}' },
+    recordings, reciters: Object.values(reciters), famousOrder: FAMOUS.map(([id]) => String(id)), famousMissing: missing,
+  });
   const meta = tanzilSources.find((s) => s.path === 'data/audio/mp3quran.json');
   addLedger({
-    id: 'audio-mp3quran-catalogue',
-    kind: 'audio-catalogue',
-    title: 'فهرس القراء (MP3Quran)',
-    source: 'mp3quran.net API v3 via risan/quran-json snapshot',
-    upstreamRevision: rev('qj'),
-    licence: meta?.license || 'No redistribution licence stated by mp3quran.net; we link/stream, we do not copy files into the app.',
-    licenceStatus: 'unknown',
-    offlineBundling: 'catalogue only. Per-surah download for offline listening requires written permission from mp3quran.net / the reciter (section 12).',
+    id: 'audio-mp3quran-catalogue', kind: 'audio-catalogue', title: 'فهرس القراء والتسجيلات (MP3Quran)',
+    source: 'mp3quran.net API v3 (snapshot via risan/quran-json) + live refresh from the app', upstreamRevision: rev('qj'),
+    licence: meta?.license || 'No written redistribution licence published by mp3quran.net.',
+    licenceStatus: 'streaming-and-user-download-per-site-function',
+    offlineBundling: 'Catalogue bundled. Audio files are never bundled or re-hosted; the app streams from mp3quran servers and lets the USER download to their own device (the same function mp3quran.net offers on its site). Re-hosting on a private server is NOT permitted without written consent.',
     reviewStatus: 'n/a',
-    reviewNotes: `${list.length} recitations; completeness flag derived from surah_total === 114. No per-ayah timing data: the player must not claim ayah-level sync (section 11).`,
+    reviewNotes: `${recordings.length} recordings / ${Object.keys(reciters).length} reciters; ${FAMOUS.length - missing.length}/${FAMOUS.length} famous reciters matched by id; missing: ${missing.join(', ') || 'none'}. Ayah timings exist only for some recordings (live API); otherwise no ayah sync is shown.`,
   });
 }
 

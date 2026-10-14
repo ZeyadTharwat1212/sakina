@@ -41,7 +41,12 @@ export function Onboarding() {
     <div class="onb">
       {step === 0 && (
         <>
-          <div class="logo">سكينة</div>
+          <div class="art-host" style="margin:-16px -20px 8px;padding:28px 20px 36px;border-radius:0 0 28px 28px;background:var(--primary-soft)">
+            <span class="art-layer pattern-star" aria-hidden="true" />
+            <span class="art-layer arch-band" aria-hidden="true" />
+            <img class="logo-mark only-light" src="logo-mark.svg" alt="" width="96" height="96" /><img class="logo-mark only-dark" src="logo-mark-dark.svg" alt="" width="96" height="96" />
+            <div class="logo-word">سكينة</div>
+          </div>
           <h1 style="text-align:center">{t('welcome')}</h1>
           <p class="text-2" style="text-align:center">{t('welcomeSub')}</p>
           <div class="field"><label>{t('language')}</label>

@@ -63,6 +63,7 @@ VARIANTS = {
     'black': (INK, INK),
     'white': (WHITE, WHITE),
     'ivory-on-emerald': (IVORY, GOLD),
+    'ivory': (IVORY, GOLD),
 }
 
 # Wordmark: the tentative name set in Amiri Quran (OFL). If the final name changes, only this text changes.

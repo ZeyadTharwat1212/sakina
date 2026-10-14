@@ -207,3 +207,20 @@ small, .small { font-size: .875em; }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: .9em; }
 .kv dt { color: var(--muted); } .kv dd { margin: 0; }
 hr { border: 0; border-top: 1px solid var(--line); margin: var(--space-3) 0; }
+
+/* ---------- Islamic-geometry art layers (section: visual identity). Tinted through CSS masks so they follow the theme. ---------- */
+.art-host { position: relative; overflow: hidden; }
+.art-host > * { position: relative; }
+.art-layer { position: absolute; inset: 0; pointer-events: none; background: var(--primary); }
+.art-layer.pattern-star { opacity: .07; -webkit-mask: url('/art/pattern-star.svg') 0 0 / 120px 120px repeat; mask: url('/art/pattern-star.svg') 0 0 / 120px 120px repeat; }
+.art-layer.pattern-mashrabiya { opacity: .06; -webkit-mask: url('/art/pattern-mashrabiya.svg') 0 0 / 80px 80px repeat; mask: url('/art/pattern-mashrabiya.svg') 0 0 / 80px 80px repeat; }
+.art-layer.arch-band { opacity: .14; top: auto; height: 120px; -webkit-mask: url('/art/arch-band.svg') center bottom / auto 120px repeat-x; mask: url('/art/arch-band.svg') center bottom / auto 120px repeat-x; }
+.card.primary .art-layer { background: var(--on-primary); }
+:root[data-theme="dark"] .art-layer.pattern-star { opacity: .09; }
+.hero { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 16/9; background: var(--surface-2) center/cover no-repeat; }
+.hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.logo-mark { width: 96px; height: 96px; display: block; margin: 0 auto; }
+.logo-word { font-family: var(--font-quran); font-size: 2.2em; color: var(--primary); text-align: center; line-height: 1.2; }
+@media (prefers-reduced-motion: no-preference) { .art-layer.arch-band { transition: opacity var(--motion); } }
+
+.only-dark { display: none; } :root[data-theme="dark"] .only-dark { display: block; } :root[data-theme="dark"] .only-light { display: none; }

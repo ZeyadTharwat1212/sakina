@@ -47,7 +47,8 @@ export function Today() {
 
   return (
     <main class="screen">
-      <header class="topbar">
+      <header class="topbar art-host" style="margin:-12px -16px 16px;padding:12px 16px 8px;border-radius:0 0 22px 22px">
+        <span class="art-layer arch-band" aria-hidden="true" style="opacity:.09" />
         <div style="flex:1">
           <h1>{t('today')}</h1>
           <small class="muted">{fmtDate(now, tz)} · <span title={t('hijriNote')}>{formatHijri(hijri, isAr())}</span>{flags.length ? ` · ${flags.join(' · ')}` : ''}</small>
@@ -61,7 +62,8 @@ export function Today() {
 
       {/* 1 — Next prayer */}
       {next && loc ? (
-        <section class="card primary" onClick={() => navigate('/prayer')} role="button" tabIndex={0}>
+        <section class="card primary art-host" onClick={() => navigate('/prayer')} role="button" tabIndex={0}>
+          <span class="art-layer pattern-star" aria-hidden="true" style="opacity:.06" />
           <div class="row between"><span class="muted">{t('nextPrayer')}</span><span class="muted small">{loc.name}</span></div>
           <h2 style="font-size:1.6em;margin:4px 0">{t(next.name)} <span class="num" style="font-weight:500">{fmtTime(next.at, loc.tz)}</span></h2>
           <Countdown to={next.at} />

@@ -63,7 +63,7 @@ export function SettingsScreen() {
           </div>
         </section>
         <section class="card">
-          <h2>{t('about')}</h2>
+          <div class="row" style="gap:12px;margin-bottom:8px"><img class="only-light" src="logo-mark.svg" alt="" width="40" height="40" /><img class="only-dark" src="logo-mark-dark.svg" alt="" width="40" height="40" /><h2>{t('about')}</h2></div>
           <p class="text-2 small" style="margin-top:8px">سكينة · {t('version')} 0.1.0 · {isAr() ? 'يعمل دون إنترنت بالكامل عدا بث التلاوات.' : 'Fully offline except streamed recitations.'}</p>
           <button class="btn ghost sm" style="margin-top:8px" onClick={() => navigate('/library/sources')}>{t('sources')}</button>
           <button class="btn ghost sm" style="margin-top:8px" onClick={() => updateSettings({ onboarded: false })}>{isAr() ? 'إعادة الترحيب' : 'Re-run welcome'}</button>

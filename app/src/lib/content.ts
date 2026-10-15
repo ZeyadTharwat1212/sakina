@@ -32,7 +32,7 @@ export const getSearchIndex = () => load<[number, number, string][]>('quran/sear
 export const getAdhkar = () => load<AdhkarPack>('adhkar/azkar.json');
 export const getHadithIndex = (book: string) => load<HadithIndex>(`hadith/${book}/index.json`);
 export const getHadithChapter = (book: string, chapter: number) => load<HadithChapter>(`hadith/${book}/${chapter}.json`);
-export const getAsma = () => load<{ source: string; note: string; names: { ar: string; tr: string; search: string }[] }>('asma/asma.json');
+export const getAsma = () => load<{ source: string; note: string; names: { ar: string; tr: string; search: string; meaning?: string }[] }>('asma/asma.json');
 export const getLedger = () => load<{ generatedOn: string; entries: LedgerEntry[] }>('ledger.json');
 
 export const TAFSIRS = [

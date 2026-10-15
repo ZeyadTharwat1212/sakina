@@ -52,7 +52,15 @@ export interface Settings {
   prayer: PrayerSettings;
   hiddenCards: string[];
   showProgress: boolean;
-  reminders: { fridayKahf: boolean; fridaySalawat: boolean; sunrise: boolean; duha: boolean; lastThird: boolean; trackerEvening: boolean };
+  reminders: { fridayKahf: boolean; fridaySalawat: boolean; sunrise: boolean; duha: boolean; lastThird: boolean; trackerEvening: boolean; fastEve: boolean };
+  numerals: 'auto' | 'ar' | 'en';
+  kahfTime: string;              // "HH:MM" local time for the Friday Kahf reminder
+  salawat: { perDay: number; fridayOnly: boolean }; // salawat reminders spread between sunrise and isha
+  adhkarReminders: { morning: boolean; morningAt: string; evening: boolean; eveningAt: string; sleep: boolean; sleepAt: string };
+  floatingDhikr: 'off' | 'rare' | 'low' | 'medium' | 'high'; // in-app gentle dhikr banner while the app is open
+  qiyam: { third: 'off' | 'first' | 'second' | 'last'; beforeFajrMin: number; witr: boolean };
+  fajrAlarm: { on: boolean; offsetMin: number; repeatMin: number };
+  ramadan: { iftar: boolean; suhoor: boolean; suhoorMin: number; qadr: boolean; chime: boolean };
 }
 
 export interface ReadingPosition { ch: number; v: number; page: number; at: number; kind: 'read' | 'listen' }
@@ -65,10 +73,10 @@ export interface UserData {
   favAdhkar: number[];
   favHadith: string[];       // "bukhari:123"
   sessions: Record<string, DhikrSession>; // key = `${catId}:${yyyy-mm-dd}`
-  tasbih: { count: number; target: number };
+  tasbih: { count: number; target: number; label?: string; total?: number };
   log: Record<string, { adhkarMorning?: boolean; adhkarEvening?: boolean; wird?: boolean }>; // private daily log
   listenPos?: Record<string, number>; // `${recordingId}#${surah}` → seconds
-  tracker?: Record<string, { fajr?: boolean; dhuhr?: boolean; asr?: boolean; maghrib?: boolean; isha?: boolean; duha?: boolean; witr?: boolean; fast?: boolean }>; // yyyy-mm-dd → private log
+  tracker?: Record<string, { fajr?: boolean; dhuhr?: boolean; asr?: boolean; maghrib?: boolean; isha?: boolean; duha?: boolean; witr?: boolean; qiyam?: boolean; fast?: boolean; skipped?: string[] }>; // yyyy-mm-dd → private log
   khatma?: { startDate: string; days: number; startPage: number; createdAt: number } | null;
   myDuas?: { id: string; text: string; at: number }[];
 }
@@ -84,7 +92,13 @@ export const DEFAULT_SETTINGS: Settings = {
     notifyMode: 'notification', preMinutes: 0,
   },
   hiddenCards: [], showProgress: true,
-  reminders: { fridayKahf: false, fridaySalawat: false, sunrise: false, duha: false, lastThird: false, trackerEvening: false },
+  reminders: { fridayKahf: false, fridaySalawat: false, sunrise: false, duha: false, lastThird: false, trackerEvening: false, fastEve: false },
+  numerals: 'auto', kahfTime: '09:00', salawat: { perDay: 3, fridayOnly: true },
+  adhkarReminders: { morning: false, morningAt: '07:00', evening: false, eveningAt: '17:30', sleep: false, sleepAt: '22:30' },
+  floatingDhikr: 'off',
+  qiyam: { third: 'off', beforeFajrMin: 0, witr: false },
+  fajrAlarm: { on: false, offsetMin: 0, repeatMin: 5 },
+  ramadan: { iftar: false, suhoor: false, suhoorMin: 45, qadr: false, chime: true },
 };
 export const DEFAULT_USER: UserData = {
   lastRead: null, lastListen: null, bookmarks: [], favAdhkar: [], favHadith: [], sessions: {},
@@ -109,7 +123,8 @@ async function writeKey(key: string, value: string) {
 
 export async function initStore() {
   const [s, u] = await Promise.all([readKey('sakina.settings'), readKey('sakina.user')]);
-  if (s) { try { const j = JSON.parse(s); settings = { ...DEFAULT_SETTINGS, ...j, prayer: { ...DEFAULT_SETTINGS.prayer, ...(j.prayer || {}) }, reminders: { ...DEFAULT_SETTINGS.reminders, ...(j.reminders || {}) } }; } catch { /* keep defaults */ } }
+  if (s) { try { const j = JSON.parse(s); settings = { ...DEFAULT_SETTINGS, ...j };
+      for (const k of ['prayer', 'reminders', 'salawat', 'adhkarReminders', 'qiyam', 'fajrAlarm', 'ramadan'] as const) (settings as unknown as Record<string, unknown>)[k] = { ...(DEFAULT_SETTINGS[k] as object), ...((j[k] as object) || {}) }; } catch { /* keep defaults */ } }
   if (u) { try { user = { ...DEFAULT_USER, ...JSON.parse(u) }; } catch { /* keep defaults */ } }
   ready = true;
   applyTheme();

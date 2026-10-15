@@ -321,12 +321,17 @@ const RIWAYAH_AR = { hafs: 'حفص عن عاصم', warsh: 'ورش عن نافع'
   });
 }
 
-/* 6b. Asmaa al-Husna (names only; meanings deferred to scholar review) */
+/* 6b. Asmaa al-Husna (names + short meanings, pending scholar review) */
 {
   const a = rj(path.resolve('scripts/data/asma.json'));
   wj('asma/asma.json', a);
-  addLedger({ id: 'asma-al-husna-names', kind: 'reference-list', title: 'أسماء الله الحسنى (الأسماء فقط)', source: 'التعداد المشهور في رواية الترمذي (مكتوب يدويًا في scripts/data/asma.json)', licence: 'n/a (أسماء)', licenceStatus: 'granted', offlineBundling: 'allowed', reviewStatus: 'not-scholar-reviewed', reviewNotes: 'لا معاني مضمّنة؛ تُضاف بعد مراجعة من مصدر معتمد. الخلاف في التعداد مذكور في الشاشة.' });
+  addLedger({ id: 'asma-al-husna-names', kind: 'reference-list', title: 'أسماء الله الحسنى (الأسماء ومعانٍ مختصرة)', source: 'التعداد المشهور في رواية الترمذي (مكتوب يدويًا في scripts/data/asma.json)', licence: 'n/a (أسماء)', licenceStatus: 'granted', offlineBundling: 'allowed', reviewStatus: 'not-scholar-reviewed', reviewNotes: 'المعاني صياغة مختصرة من المعاني المشهورة في شروح الأسماء (كُتبت في scripts/data/asma.json)؛ تُعرض مع تنبيه، وتحتاج مراجعة عالم قبل اعتبارها معتمدة. الخلاف في التعداد مذكور في الشاشة.' });
 }
+
+/* 6c. App-written educational texts (teach, fasting virtues) and the generated chime — rights are ours; review pending */
+addLedger({ id: 'teach-basics', kind: 'educational-text', title: 'التعليم الإسلامي: الوضوء، التيمم، صفة الصلاة', source: 'نص مكتوب للتطبيق (app/src/data/teach.ts) على ما اتفق عليه الفقهاء مع الإشارة للفروق الكبرى', licence: 'app-original', licenceStatus: 'granted', offlineBundling: 'allowed', reviewStatus: 'not-scholar-reviewed', reviewNotes: 'يُعرض بوسم «لم يُراجع علميًا بعد». يحتاج مراجعة عالم قبل اعتباره مرجعًا.' });
+addLedger({ id: 'fasting-virtues', kind: 'educational-text', title: 'صائمون: فضائل أيام الصيام المسنونة (نصوص مختصرة بمصادرها)', source: 'app/src/lib/calendar.ts — صياغة مختصرة لمعاني أحاديث مشهورة مع ذكر المصدر', licence: 'app-original', licenceStatus: 'granted', offlineBundling: 'allowed', reviewStatus: 'not-scholar-reviewed', reviewNotes: 'المعنى لا اللفظ؛ تُعرض مع وسم المراجعة. الأيام تُحسب من التقويم الهجري الحسابي.' });
+addLedger({ id: 'generated-chime', kind: 'audio', title: 'نغمة الإفطار/التنبيه المولَّدة داخل التطبيق (WebAudio)', source: 'app/src/lib/notify.ts playChime()', licence: 'app-original', licenceStatus: 'granted', offlineBundling: 'allowed', reviewStatus: 'n/a', reviewNotes: 'لا ملفات صوت خارجية ولا تسجيل أذان.' });
 
 /* ------------------------------------------------------------------ */
 /* 7. Fonts                                                            */

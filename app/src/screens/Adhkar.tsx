@@ -141,7 +141,10 @@ export function DhikrSession({ catId }: { catId: number }) {
 export function Tasbih() {
   const { user } = useStore();
   const { count, target } = user.tasbih;
+  const label = user.tasbih.label || '';
   const [hapt, setHapt] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const PRESETS = ['سبحان الله', 'الحمد لله', 'الله أكبر', 'لا إله إلا الله', 'أستغفر الله', 'لا حول ولا قوة إلا بالله', 'سبحان الله وبحمده', 'اللهم صلِّ على محمد'];
   const set = (p: Partial<typeof user.tasbih>) => updateUser((u) => ({ tasbih: { ...u.tasbih, ...p } }));
   return (
     <main class="screen">
@@ -149,12 +152,19 @@ export function Tasbih() {
       <section class="card" style="text-align:center">
         <div class="chips" style="justify-content:center;margin-bottom:8px">{[33, 99, 100, 1000].map((x) => <button key={x} class="chip" aria-pressed={target === x} onClick={() => set({ target: x })}>{num(x)}</button>)}</div>
         <small class="muted">{t('target')} — {isAr() ? 'اختيار شخصي، ليس عددًا مسنونًا بذاته' : 'your own choice, not a prescribed count'}</small>
-        <button class="counter-btn" onClick={() => { if (hapt) tap(); set({ count: count + 1 }); }}>{num(count)}<span style="font-size:.4em;opacity:.8">/{num(target)}</span></button>
+        {label && <p class="dhikr-text" style="margin:8px 0 0;font-size:1.3em">{label}</p>}
+        <button class="counter-btn" onClick={() => { if (hapt) tap(); set({ count: count + 1 >= target ? 0 : count + 1, total: (user.tasbih.total || 0) + 1 }); if (count + 1 >= target && hapt) tap(); }}>{num(count)}<span style="font-size:.4em;opacity:.8">/{num(target)}</span></button>
+        <small class="muted">{isAr() ? `الإجمالي: ${num(user.tasbih.total || 0)}` : `Total: ${user.tasbih.total || 0}`}</small>
         <div class="row" style="justify-content:center;gap:8px">
           <button class="btn secondary sm" disabled={!count} onClick={() => set({ count: count - 1 })}><Icon name="undo" />{t('undo')}</button>
           <button class="btn secondary sm" onClick={() => set({ count: 0 })}>{t('reset')}</button>
         </div>
         <div style="margin-top:12px"><Toggle label={isAr() ? 'اهتزاز' : 'Haptics'} checked={hapt} onChange={setHapt} /></div>
+      </section>
+      <section class="card" style="margin-top:12px">
+        <div class="row between"><h3>{isAr() ? 'الذكر' : 'Dhikr'}</h3><button class="btn ghost sm" onClick={() => setEditing(!editing)}>{isAr() ? 'إضافة ذكر' : 'Custom'}</button></div>
+        <div class="chips scroll" style="margin-top:8px">{PRESETS.map((x) => <button key={x} class="chip" aria-pressed={label === x} onClick={() => set({ label: x, count: 0 })}>{x}</button>)}<button class="chip" aria-pressed={!label} onClick={() => set({ label: '', count: 0 })}>{isAr() ? 'بدون' : 'None'}</button></div>
+        {editing && <input class="input" style="margin-top:8px" placeholder={isAr() ? 'اكتب ذكرًا خاصًا' : 'Custom dhikr'} value={label} onInput={(e) => set({ label: (e.target as HTMLInputElement).value })} />}
       </section>
     </main>
   );

@@ -5,7 +5,8 @@ import { useStore, updateSettings, todayKey, updateUser } from '../lib/store';
 import { t, num, fmtTime, fmtDate, isAr } from '../lib/i18n';
 import { nextPrayer, methodByKey, isLocationStale, zonedParts, PRAYERS } from '../lib/prayer';
 import { toHijri, formatHijri, hijriFlags } from '../lib/hijri';
-import { getChapters, getAdhkar, getHadithChapter, getHadithIndex, getSurah, getMeta, ayahDisplay } from '../lib/content';
+import { getChapters, getAdhkar, getHadithChapter, getHadithIndex, getSurah, getMeta, ayahDisplay, getAsma } from '../lib/content';
+import { ramadanInfo, fastingFor, addDays } from '../lib/calendar';
 import { navigate } from '../lib/router';
 import { Icon, useAsync, useNow, Notice, shareText } from '../components/ui';
 import { permissionState, isNative } from '../lib/notify';
@@ -39,6 +40,7 @@ export function Today() {
   const adhkar = useAsync(getAdhkar, []);
   const nawawi = useAsync(async () => { const idx = await getHadithIndex('nawawi40'); return getHadithChapter('nawawi40', idx.chapters[0].id); }, []);
   const aod = useAyahOfDay();
+  const asma = useAsync(getAsma, []);
 
   const now = new Date();
   const tz = loc?.tz || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -60,6 +62,17 @@ export function Today() {
   const lastRead = user.lastRead;
   const lastCh = lastRead && chapters.data ? chapters.data[lastRead.ch - 1] : null;
   const hadith = nawawi.data ? nawawi.data.hadiths[dayN % nawawi.data.hadiths.length] : null;
+  const nameOfDay = asma.data ? asma.data.names[dayN % asma.data.names.length] : null;
+  const ram = ramadanInfo(now, settings.hijriAdjust);
+  const fastToday = fastingFor(addDays(now, 0), settings.hijriAdjust);
+  const fastTomorrow = fastingFor(addDays(now, 1), settings.hijriAdjust);
+  // Tracker prompt: the most recent prayer whose time has passed today and is not yet logged or skipped
+  const trk = (user.tracker?.[todayKey()] || {}) as Record<string, boolean | string[]>;
+  const passed = next ? (['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).filter((p) => next.day.times[p].getTime() <= now.getTime()) : [];
+  const askPrayer = passed.length ? passed[passed.length - 1] : null;
+  const skipped = (trk.skipped as string[] | undefined) || [];
+  const showAsk = askPrayer && !trk[askPrayer] && !skipped.includes(askPrayer);
+  const setTrk = (patch: Record<string, boolean | string[]>) => updateUser((u) => ({ tracker: { ...(u.tracker || {}), [todayKey()]: { ...(u.tracker?.[todayKey()] || {}), ...patch } } }));
 
   return (
     <main class="screen">
@@ -102,7 +115,32 @@ export function Today() {
       {isNative && loc && perm !== 'granted' && <div style="margin-top:12px"><Notice action={t('enable')} onAction={() => navigate('/prayer/diagnostics')}>{t('notificationsOff')}</Notice></div>}
 
       {/* Quick tools */}
-      {!hidden.has('tools') && <div style="margin-top:14px"><ToolsGrid ids={['qibla', 'tasbih', 'tracker', 'mosques', 'reciters', 'khatma', 'hijri', 'asma']} /></div>}
+      {!hidden.has('tools') && <div style="margin-top:14px"><ToolsGrid ids={['qibla', 'tasbih', 'tracker', 'mosques', 'reciters', 'khatma', 'hijri', 'asma', 'ramadan', 'fasting', 'qiyam', 'cards']} /><button class="btn ghost sm block" style="margin-top:4px" onClick={() => navigate('/library')}>{isAr() ? 'كل الأدوات' : 'All tools'}</button></div>}
+
+      {/* Tracker prompt + today's ring (reference: "لا تنس صلاة الظهر — نعم لقد صليت / لا") */}
+      {!hidden.has('tracker') && loc && next && (
+        <section class="card" style="margin-top:12px">
+          {showAsk ? (
+            <div class="row between"><div><strong>{isAr() ? `هل صليتَ ${t(askPrayer!)}؟` : `Did you pray ${t(askPrayer!)}?`}</strong><br /><small class="muted">{isAr() ? 'سجل خاص على جهازك' : 'Private log'}</small></div>
+              <div class="row" style="gap:6px"><button class="btn sm" onClick={() => setTrk({ [askPrayer!]: true })}>{isAr() ? 'نعم' : 'Yes'}</button><button class="btn ghost sm" onClick={() => setTrk({ skipped: [...skipped, askPrayer!] })}>{isAr() ? 'لاحقًا' : 'Later'}</button></div></div>
+          ) : <div class="row between"><strong>{isAr() ? 'صلوات اليوم' : 'Today’s prayers'}</strong><button class="btn ghost sm" onClick={() => navigate('/library/tracker')}>{isAr() ? 'المتتبع' : 'Tracker'}</button></div>}
+          <div class="tracker-ring">
+            {(['fajr', 'duha', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).map((p) => <button key={p} class={`tr ${trk[p] ? 'on' : ''}`} onClick={() => setTrk({ [p]: !trk[p] })}><i>{trk[p] ? '✓' : ''}</i><span>{t(p)}</span></button>)}
+          </div>
+        </section>
+      )}
+
+      {/* Ramadan / fasting cards */}
+      {(ram.inRamadan || ram.daysUntil <= 45) && (
+        <section class="card" style="margin-top:12px" onClick={() => navigate('/library/ramadan')} role="button" tabIndex={0}>
+          <div class="row between"><div><h2>{isAr() ? 'رمضان' : 'Ramadan'}</h2><p class="text-2">{ram.inRamadan ? (isAr() ? `اليوم ${num(ram.dayIndex + 1)} — الإمساكية والتنبيهات` : `Day ${ram.dayIndex + 1}`) : (isAr() ? `بقي ${num(ram.daysUntil)} يومًا (حسابيًا) — الإمساكية جاهزة` : `${ram.daysUntil} days to go`)}</p></div><Icon name="moon" /></div>
+        </section>
+      )}
+      {!ram.inRamadan && (fastToday.reasons.length || fastTomorrow.reasons.length) ? (
+        <section class="card" style="margin-top:12px" onClick={() => navigate('/library/fasting')} role="button" tabIndex={0}>
+          <div class="row between"><div><h2>{isAr() ? 'صائمون' : 'Fasting'}</h2><p class="text-2">{fastToday.reasons.length ? (isAr() ? `اليوم: ${fastToday.reasons.map((r) => r.title).join(' · ')}` : `Today: ${fastToday.reasons.map((r) => r.title).join(' · ')}`) : (isAr() ? `غدًا: ${fastTomorrow.reasons.map((r) => r.title).join(' · ')}` : `Tomorrow: ${fastTomorrow.reasons.map((r) => r.title).join(' · ')}`)}</p></div><Icon name="sun" /></div>
+        </section>
+      ) : null}
 
       {/* Continue reading */}
       <section class="card" style="margin-top:12px" onClick={() => navigate(lastRead ? `/quran/read/${lastRead.ch}/${lastRead.v}` : '/quran/read/1/1')} role="button" tabIndex={0}>
@@ -131,6 +169,13 @@ export function Today() {
           <div class="row between"><h2>{isAr() ? 'آية اليوم' : 'Ayah of the day'}</h2><small class="muted">{aod.data.ch.name} · {num(aod.data.v)}</small></div>
           <p class="ayah-text" style="font-size:calc(var(--quran-size) * .85);text-align:start;text-align-last:start;margin-top:8px">{aod.data.text}</p>
           <div class="row" style="margin-top:6px;gap:4px"><button class="btn ghost sm" onClick={(e) => { e.stopPropagation(); navigate(`/quran/read/${aod.data!.ch.id}/${aod.data!.v}`); }}>{isAr() ? 'اقرأ' : 'Read'}</button><button class="btn ghost sm" onClick={(e) => { e.stopPropagation(); shareText(`﴿${aod.data!.text}﴾ [${aod.data!.ch.name}: ${aod.data!.v}]`); }}><Icon name="share" />{t('share')}</button></div>
+        </section>
+      )}
+
+      {nameOfDay && (
+        <section class="card" style="margin-top:12px" onClick={() => navigate('/library/asma')} role="button" tabIndex={0}>
+          <div class="row between"><h2>{isAr() ? 'اسم من أسماء الله الحسنى' : 'Name of Allah'}</h2><small class="muted">{num((dayN % 99) + 1)}/٩٩</small></div>
+          <div class="row" style="gap:12px;margin-top:6px;align-items:flex-start"><div style="font-family:var(--font-quran);font-size:1.9em;color:var(--primary);flex:none">{nameOfDay.ar}</div><p class="small" style="line-height:1.6">{nameOfDay.meaning}</p></div>
         </section>
       )}
 

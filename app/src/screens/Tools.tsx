@@ -18,10 +18,17 @@ export const TOOLS = [
   { id: 'tasbih', ar: 'السبحة الإلكترونية', en: 'Tasbih', icon: 'adhkar', go: '/adhkar/tasbih' },
   { id: 'asma', ar: 'أسماء الله الحسنى', en: 'Names of Allah', icon: 'star', go: '/library/asma' },
   { id: 'mosques', ar: 'المساجد القريبة', en: 'Nearby mosques', icon: 'pin', go: '/library/mosques' },
+  { id: 'ramadan', ar: 'رمضان', en: 'Ramadan', icon: 'moon', go: '/library/ramadan' },
+  { id: 'fasting', ar: 'صائمون', en: 'Fasting days', icon: 'sun', go: '/library/fasting' },
+  { id: 'qiyam', ar: 'قيام الليل', en: 'Qiyam al-layl', icon: 'star', go: '/library/qiyam' },
+  { id: 'fajrAlarm', ar: 'منبه الفجر', en: 'Fajr alarm', icon: 'bell', go: '/library/fajr-alarm' },
+  { id: 'teach', ar: 'التعليم الإسلامي', en: 'Islamic basics', icon: 'info', go: '/library/teach' },
+  { id: 'cards', ar: 'كروت التهنئة', en: 'Greeting cards', icon: 'share', go: '/library/cards' },
   { id: 'duas', ar: 'أدعيتي', en: 'My duas', icon: 'info', go: '/library/duas' },
-  { id: 'wallpapers', ar: 'خلفيات', en: 'Wallpapers', icon: 'sun', go: '/library/wallpapers' },
-  { id: 'hadith', ar: 'الحديث', en: 'Hadith', icon: 'library', go: '/library/hadith/bukhari' },
+  { id: 'wallpapers', ar: 'خلفيات وحالات', en: 'Wallpapers', icon: 'sun', go: '/library/wallpapers' },
+  { id: 'hadith', ar: 'المكتبة (الحديث)', en: 'Hadith', icon: 'library', go: '/library/hadith/bukhari' },
   { id: 'nawafil', ar: 'النوافل والأوقات', en: 'Nawafil', icon: 'sun', go: '/prayer/nawafil' },
+  { id: 'help', ar: 'هل لا تعمل التنبيهات؟', en: 'Alerts not working?', icon: 'bell', go: '/library/help' },
 ];
 export function ToolsGrid({ ids }: { ids?: string[] }) {
   const list = ids ? TOOLS.filter((x) => ids.includes(x.id)) : TOOLS;
@@ -187,9 +194,10 @@ export function AsmaScreen() {
         {d.data.names.map((n, i) => (
           <button key={i} class="card" style="text-align:center;padding:14px 8px" onClick={() => navigate(`/library/search?q=${encodeURIComponent(n.search)}`)}>
             <div class="muted small">{num(i + 1)}</div>
-            <div style="font-family:var(--font-quran);font-size:1.7em;color:var(--primary)">{n.ar}</div>
-            <div class="muted small" style="direction:ltr">{n.tr}</div>
-            <div class="muted small">{isAr() ? 'ابحث في القرآن' : 'Find in Quran'}</div>
+            <div style="font-family:var(--font-quran);font-size:1.7em;line-height:1.6;color:var(--primary)">{n.ar}</div>
+            <div class="muted small" style="direction:ltr;margin-top:2px">{n.tr}</div>
+            {n.meaning && <p class="small" style="margin-top:6px;line-height:1.5;text-align:start">{n.meaning}</p>}
+            <div class="muted small" style="margin-top:4px">{isAr() ? 'ابحث في القرآن' : 'Find in Quran'}</div>
           </button>
         ))}
       </div>
@@ -205,12 +213,14 @@ export function MosquesScreen() {
   const [state, setState] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const [list, setList] = useState<Mosque[]>([]);
   const [err, setErr] = useState('');
+  const [km, setKm] = useState(3);
   const loc = settings.location;
   const load = async () => {
     if (!loc) return;
     setState('loading');
     try {
-      const q = `[out:json][timeout:20];(node["amenity"="place_of_worship"]["religion"="muslim"](around:3000,${loc.lat},${loc.lng});way["amenity"="place_of_worship"]["religion"="muslim"](around:3000,${loc.lat},${loc.lng}););out center 60;`;
+      const r0 = km * 1000;
+      const q = `[out:json][timeout:25];(node["amenity"="place_of_worship"]["religion"="muslim"](around:${r0},${loc.lat},${loc.lng});way["amenity"="place_of_worship"]["religion"="muslim"](around:${r0},${loc.lat},${loc.lng}););out center 120;`;
       const r = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const j = await r.json();
@@ -225,11 +235,12 @@ export function MosquesScreen() {
       {!loc ? <Notice action={t('chooseCity')} onAction={() => navigate('/prayer/city')}>{t('chooseCity')}</Notice> : (
         <>
           <section class="card">
-            <p class="text-2 small">{isAr() ? `البحث حول: ${loc.name} (نصف قطر 3 كم). يُرسل موقعك إلى خادم OpenStreetMap عند الضغط فقط — لا يُحفظ.` : `Search around ${loc.name} (3 km). Your coordinates are sent to OpenStreetMap only when you tap.`}</p>
+            <p class="text-2 small">{isAr() ? `البحث حول: ${loc.name}. يُرسل موقعك إلى خادم OpenStreetMap عند الضغط فقط — لا يُحفظ.` : `Search around ${loc.name}. Your coordinates are sent to OpenStreetMap only when you tap.`}</p>
+            <div class="chips" style="margin-top:8px">{[1, 3, 5, 10, 25].map((k) => <button key={k} class="chip" aria-pressed={km === k} onClick={() => setKm(k)}>{num(k)} {isAr() ? 'كم' : 'km'}</button>)}</div>
             <button class="btn" style="margin-top:8px" disabled={state === 'loading'} onClick={load}>{state === 'loading' ? '…' : (isAr() ? 'ابحث الآن' : 'Search')}</button>
           </section>
           {state === 'error' && <div style="margin-top:12px"><Notice action={isAr() ? 'إعادة المحاولة' : 'Retry'} onAction={load}>{isAr() ? `تعذّر الوصول إلى الخريطة (${err}). تحقق من الاتصال.` : `Map unavailable (${err}).`}</Notice></div>}
-          {state === 'ok' && list.length === 0 && <p class="muted" style="text-align:center;padding:24px">{isAr() ? 'لا مساجد مسجلة في الخريطة ضمن 3 كم.' : 'No mosques mapped within 3 km.'}</p>}
+          {state === 'ok' && list.length === 0 && <p class="muted" style="text-align:center;padding:24px">{isAr() ? `لا مساجد مسجلة في الخريطة ضمن ${num(km)} كم.` : `No mosques mapped within ${km} km.`}</p>}
           {list.length > 0 && (
             <div class="list" style="margin-top:12px">
               {list.map((mq) => (
@@ -258,6 +269,7 @@ export function WallpapersScreen() {
     <main class="screen">
       <TopBar title={isAr() ? 'خلفيات' : 'Wallpapers'} onBack />
       <p class="text-2 small" style="margin-bottom:12px">{isAr() ? 'جرافيكس أصلية من هوية التطبيق — بلا آيات داخل الصور، ويمكن حفظها كخلفية.' : 'Original artwork from the app identity — no verses inside images.'}</p>
+      <button class="btn secondary block" style="margin-bottom:12px" onClick={() => navigate('/library/cards')}>{isAr() ? 'صانع حالة واتساب (ذكر على خلفية)' : 'Status maker (dhikr on artwork)'}</button>
       <div class="grid-2">
         {items.map((w) => (
           <div key={w.f} class="card" style="padding:8px">

@@ -76,7 +76,7 @@ export function Icon({ name }: { name: string }) {
     pin: 'M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12zm0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', bell: 'M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0',
     sun: 'M12 4V2M12 22v-2M4 12H2M22 12h-2M5 5l-1.5-1.5M19 19l1.5 1.5M5 19l-1.5 1.5M19 5l1.5-1.5M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z', book: 'M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z',
     info: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 8h.01M12 12v5',
-    download: 'M12 3v12M6 9l6 6 6-6M4 20h16', next: 'M9 6l6 6-6 6', refresh: 'M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5',
+    download: 'M12 3v12M6 9l6 6 6-6M4 20h16', moon: 'M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z', next: 'M9 6l6 6-6 6', refresh: 'M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5',
   };
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="24" height="24"><path d={p[name] || ''} /></svg>;
 }

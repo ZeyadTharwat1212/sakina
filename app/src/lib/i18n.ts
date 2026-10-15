@@ -76,15 +76,18 @@ export const isAr = () => getSettings().lang === 'ar';
 const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
 export function num(n: number | string): string {
   const s = String(n);
-  return isAr() ? s.replace(/\d/g, (d) => AR_DIGITS[Number(d)]) : s;
+  const pref = getSettings().numerals;
+  const ar = pref === 'ar' ? true : pref === 'en' ? false : isAr();
+  return ar ? s.replace(/\d/g, (d) => AR_DIGITS[Number(d)]) : s;
 }
+const numLocale = () => { const p = getSettings().numerals; return p === 'ar' ? 'ar-EG' : p === 'en' ? (isAr() ? 'ar-EG-u-nu-latn' : 'en-GB') : (isAr() ? 'ar-EG' : 'en-GB'); };
 export function fmtTime(d: Date, tz: string): string {
   try {
-    return new Intl.DateTimeFormat(isAr() ? 'ar-EG' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz }).format(d);
+    return new Intl.DateTimeFormat(numLocale(), { hour: '2-digit', minute: '2-digit', timeZone: tz }).format(d);
   } catch { return d.toLocaleTimeString(); }
 }
 export function fmtDate(d: Date, tz?: string): string {
   try {
-    return new Intl.DateTimeFormat(isAr() ? 'ar-EG' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz }).format(d);
+    return new Intl.DateTimeFormat(numLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz }).format(d);
   } catch { return d.toDateString(); }
 }

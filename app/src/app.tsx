@@ -13,6 +13,8 @@ import { SettingsScreen } from './screens/Settings';
 import { MiniPlayer } from './screens/Player';
 import { ReciterLibrary, ReciterPage, DownloadsManager } from './screens/Audio';
 import { TrackerScreen, HijriScreen, KhatmaScreen, AsmaScreen, MosquesScreen, WallpapersScreen, DuasScreen } from './screens/Tools';
+import { RamadanScreen, FastingScreen, QiyamScreen, FajrAlarmScreen, TeachScreen, CardsScreen, HelpScreen } from './screens/More';
+import { FloatingDhikr } from './components/FloatingDhikr';
 
 export function App() {
   const route = useRoute();
@@ -51,6 +53,8 @@ export function App() {
         : p[1] === 'search' ? <SearchScreen q={route.query.get('q') || ''} />
         : p[1] === 'tracker' ? <TrackerScreen /> : p[1] === 'hijri' ? <HijriScreen /> : p[1] === 'khatma' ? <KhatmaScreen />
         : p[1] === 'asma' ? <AsmaScreen /> : p[1] === 'mosques' ? <MosquesScreen /> : p[1] === 'wallpapers' ? <WallpapersScreen /> : p[1] === 'duas' ? <DuasScreen />
+        : p[1] === 'ramadan' ? <RamadanScreen /> : p[1] === 'fasting' ? <FastingScreen /> : p[1] === 'qiyam' ? <QiyamScreen /> : p[1] === 'fajr-alarm' ? <FajrAlarmScreen />
+        : p[1] === 'teach' ? <TeachScreen id={p[2]} /> : p[1] === 'cards' ? <CardsScreen /> : p[1] === 'help' ? <HelpScreen />
         : p[1] === 'sources' ? <SourcesScreen /> : <LibraryHome />;
       break;
     case 'settings': screen = <SettingsScreen />; break;
@@ -61,6 +65,7 @@ export function App() {
   return (
     <div class="app">
       {screen}
+      <FloatingDhikr />
       <MiniPlayer />
       <nav class="tabbar" aria-label="التنقل الرئيسي">
         {TABS.map((tb) => (

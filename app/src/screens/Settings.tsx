@@ -26,6 +26,8 @@ export function SettingsScreen() {
           <h2>{t('language')}</h2>
           <Seg value={settings.lang} options={[{ v: 'ar', label: 'العربية' }, { v: 'en', label: 'English' }]} onChange={async (v) => { updateSettings({ lang: v }); await reschedule(settings.location, settings.prayer); }} />
           <p class="muted small" style="margin-top:8px">{isAr() ? 'لغة الواجهة فقط؛ القرآن والحديث والأذكار تبقى بنصها الأصلي.' : 'UI language only; Quran, hadith and adhkar stay in their original text.'}</p>
+          <div class="field" style="margin-top:12px"><label>{isAr() ? 'لغة الأرقام' : 'Numerals'}</label>
+            <Seg value={settings.numerals} options={[{ v: 'auto', label: t('auto') }, { v: 'ar', label: '١٢٣' }, { v: 'en', label: '123' }]} onChange={(v) => updateSettings({ numerals: v })} /></div>
         </section>
         <section class="card">
           <h2>{t('theme')}</h2>
@@ -49,9 +51,36 @@ export function SettingsScreen() {
         <section class="card">
           <h2>{isAr() ? 'التذكيرات الاختيارية' : 'Optional reminders'}</h2>
           <p class="muted small" style="margin:4px 0 8px">{isAr() ? 'كلها معطّلة افتراضيًا. تُحسب من نفس محرك المواقيت وتعمل في تطبيق الهاتف.' : 'All off by default; computed from the same engine; native app only.'}</p>
-          {([['sunrise', isAr() ? 'تنبيه الشروق (انتهاء وقت الفجر)' : 'Sunrise alert'], ['duha', isAr() ? 'تذكير الضحى' : 'Duha reminder'], ['lastThird', isAr() ? 'الثلث الأخير من الليل' : 'Last third of the night'], ['fridayKahf', isAr() ? 'الجمعة: سورة الكهف' : 'Friday: al-Kahf'], ['fridaySalawat', isAr() ? 'الجمعة: الصلاة على النبي' : 'Friday: salawat'], ['trackerEvening', isAr() ? 'تذكير تسجيل الصلوات مساءً' : 'Evening tracker reminder']] as const).map(([k, label]) => (
+          {([['sunrise', isAr() ? 'تنبيه الشروق (انتهاء وقت الفجر)' : 'Sunrise alert'], ['duha', isAr() ? 'تذكير الضحى' : 'Duha reminder'], ['lastThird', isAr() ? 'الثلث الأخير من الليل' : 'Last third of the night'], ['trackerEvening', isAr() ? 'تذكير تسجيل الصلوات مساءً' : 'Evening tracker reminder'], ['fastEve', isAr() ? 'صيام الغد (الاثنين/الخميس/البيض…)' : 'Tomorrow’s sunnah fast']] as const).map(([k, label]) => (
             <Toggle key={k} label={label} checked={settings.reminders[k]} onChange={async (v) => { updateSettings({ reminders: { ...settings.reminders, [k]: v } }); await reschedule(settings.location, settings.prayer); }} />
           ))}
+          <div class="list" style="margin-top:8px">
+            <button class="list-item" onClick={() => navigate('/library/qiyam')}><span class="grow"><span class="title">{isAr() ? 'قيام الليل والتهجد والوتر' : 'Qiyam, tahajjud, witr'}</span><br /><span class="sub">{settings.qiyam.third === 'off' && !settings.qiyam.beforeFajrMin && !settings.qiyam.witr ? (isAr() ? 'معطّل' : 'Off') : (isAr() ? 'مفعّل' : 'On')}</span></span></button>
+            <button class="list-item" onClick={() => navigate('/library/fajr-alarm')}><span class="grow"><span class="title">{isAr() ? 'منبه الفجر' : 'Fajr alarm'}</span><br /><span class="sub">{settings.fajrAlarm.on ? (isAr() ? 'مفعّل' : 'On') : (isAr() ? 'معطّل' : 'Off')}</span></span></button>
+            <button class="list-item" onClick={() => navigate('/library/ramadan')}><span class="grow"><span class="title">{isAr() ? 'رمضان: الإفطار والمسحراتي' : 'Ramadan: iftar & suhoor'}</span></span></button>
+          </div>
+        </section>
+        <section class="card">
+          <h2>{isAr() ? 'يوم الجمعة والصلاة على النبي ﷺ' : 'Friday & salawat'}</h2>
+          <Toggle label={isAr() ? 'تذكير قراءة سورة الكهف' : 'Surat al-Kahf reminder'} checked={settings.reminders.fridayKahf} onChange={async (v) => { updateSettings({ reminders: { ...settings.reminders, fridayKahf: v } }); await reschedule(settings.location, settings.prayer); }} />
+          {settings.reminders.fridayKahf && <div class="row between" style="margin:4px 0 8px"><span class="small">{isAr() ? 'موعد التذكير' : 'Time'}</span><input class="input" type="time" style="width:auto" value={settings.kahfTime} onChange={async (e) => { updateSettings({ kahfTime: (e.target as HTMLInputElement).value }); await reschedule(settings.location, settings.prayer); }} /></div>}
+          <Toggle label={isAr() ? 'تذكير الصلاة على النبي ﷺ' : 'Salawat reminder'} checked={settings.reminders.fridaySalawat} onChange={async (v) => { updateSettings({ reminders: { ...settings.reminders, fridaySalawat: v } }); await reschedule(settings.location, settings.prayer); }} />
+          {settings.reminders.fridaySalawat && <>
+            <div class="row between" style="margin:4px 0"><span class="small">{isAr() ? 'عدد مرات التذكير في اليوم' : 'Times per day'}</span><div class="chips">{[1, 3, 5].map((n) => <button key={n} class="chip" aria-pressed={settings.salawat.perDay === n} onClick={async () => { updateSettings({ salawat: { ...settings.salawat, perDay: n } }); await reschedule(settings.location, settings.prayer); }}>{num(n)}</button>)}</div></div>
+            <Toggle label={isAr() ? 'يوم الجمعة فقط' : 'Friday only'} sub={isAr() ? 'وإلا فكل يوم' : 'Otherwise every day'} checked={settings.salawat.fridayOnly} onChange={async (v) => { updateSettings({ salawat: { ...settings.salawat, fridayOnly: v } }); await reschedule(settings.location, settings.prayer); }} />
+          </>}
+        </section>
+        <section class="card">
+          <h2>{t('adhkar')}</h2>
+          {([['morning', 'morningAt', t('morningAdhkar')], ['evening', 'eveningAt', t('eveningAdhkar')], ['sleep', 'sleepAt', isAr() ? 'أذكار النوم' : 'Sleep adhkar']] as const).map(([k, at, label]) => (
+            <div key={k} class="row between" style="gap:8px">
+              <div class="grow"><Toggle label={label} checked={settings.adhkarReminders[k]} onChange={async (v) => { updateSettings({ adhkarReminders: { ...settings.adhkarReminders, [k]: v } }); await reschedule(settings.location, settings.prayer); }} /></div>
+              <input class="input" type="time" style="width:auto;flex:none" value={settings.adhkarReminders[at]} onChange={async (e) => { updateSettings({ adhkarReminders: { ...settings.adhkarReminders, [at]: (e.target as HTMLInputElement).value } }); await reschedule(settings.location, settings.prayer); }} />
+            </div>
+          ))}
+          <div class="field" style="margin-top:12px"><label>{isAr() ? 'الأذكار العائمة داخل التطبيق' : 'Floating dhikr (in-app)'}</label>
+            <Seg value={settings.floatingDhikr} options={[{ v: 'off', label: isAr() ? 'إيقاف' : 'Off' }, { v: 'rare', label: isAr() ? 'نادر' : 'Rare' }, { v: 'low', label: isAr() ? 'منخفض' : 'Low' }, { v: 'medium', label: isAr() ? 'متوسط' : 'Medium' }, { v: 'high', label: isAr() ? 'عالٍ' : 'High' }]} onChange={(v) => updateSettings({ floatingDhikr: v })} />
+            <p class="muted small" style="margin-top:6px">{isAr() ? 'يظهر ذكر قصير بمصدره أثناء استخدام التطبيق. العرض فوق التطبيقات الأخرى يحتاج إذن النظام في التطبيق الأصلي.' : 'A short sourced dhikr appears while you use the app. Drawing over other apps needs a native permission.'}</p></div>
         </section>
         <section class="card">
           <h2>{t('hijri')}</h2>
@@ -73,6 +102,7 @@ export function SettingsScreen() {
           <div class="row" style="gap:12px;margin-bottom:8px"><img class="only-light" src="logo-mark.svg" alt="" width="40" height="40" /><img class="only-dark" src="logo-mark-dark.svg" alt="" width="40" height="40" /><h2>{t('about')}</h2></div>
           <p class="text-2 small" style="margin-top:8px">سكينة · {t('version')} 0.1.0 · {isAr() ? 'يعمل دون إنترنت بالكامل عدا بث التلاوات.' : 'Fully offline except streamed recitations.'}</p>
           <button class="btn ghost sm" style="margin-top:8px" onClick={() => navigate('/library/sources')}>{t('sources')}</button>
+          <button class="btn ghost sm" style="margin-top:8px" onClick={() => navigate('/library/help')}>{isAr() ? 'هل لا تعمل التنبيهات؟' : 'Alerts not working?'}</button>
           <button class="btn ghost sm" style="margin-top:8px" onClick={() => updateSettings({ onboarded: false })}>{isAr() ? 'إعادة الترحيب' : 'Re-run welcome'}</button>
         </section>
       </div>

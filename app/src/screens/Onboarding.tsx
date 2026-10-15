@@ -98,6 +98,11 @@ export function Onboarding() {
           <h1>{t('notifications')}</h1>
           <p class="text-2 small">{t('whyNotify')}</p>
           {!isNative && <p class="notice">{isAr() ? 'التنبيهات تعمل في تطبيق الهاتف فقط، لا في المتصفح.' : 'Notifications work in the phone app only, not in a browser.'}</p>}
+          <div class="card" style="margin-top:8px">
+            {(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).map((p) => <Toggle key={p} label={t(p)} checked={settings.prayer.notify[p]} onChange={(v) => updatePrayer({ notify: { ...settings.prayer.notify, [p]: v } })} />)}
+            <hr />
+            <Toggle label={isAr() ? 'تذكير قيام الليل (الثلث الأخير)' : 'Qiyam reminder (last third)'} sub={isAr() ? 'يمكن اختيار الثلث الأول أو الثاني لاحقًا' : 'Change the third later'} checked={settings.qiyam.third === 'last'} onChange={(v) => updateSettings({ qiyam: { ...settings.qiyam, third: v ? 'last' : 'off' } })} />
+          </div>
           <div class="spacer" />
           <button class="btn block" onClick={async () => { await requestPermission(); setStep(4); }}>{t('enable')}</button>
           <button class="btn ghost block" onClick={() => setStep(4)}>{t('later')}</button>

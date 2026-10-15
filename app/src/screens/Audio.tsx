@@ -1,6 +1,6 @@
 /** Sections 11–12 UI: reciter library (famous + all), reciter page with recordings and 114-surah status, downloads manager. */
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { getCatalog, refreshCatalog, recordingsOf, displayName, hasSurah, STYLE_AR, fileUrl, type Catalog, type Recording } from '../lib/audio/catalog';
+import { getCatalog, refreshCatalog, recordingsOf, displayName, hasSurah, STYLE_AR, fileUrl, hasTimings, timedRecordingFor, type Catalog, type Recording } from '../lib/audio/catalog';
 import * as DL from '../lib/audio/downloads';
 import { playSurah, playAyahRange, getPlayer, subscribePlayer } from '../lib/audio/player';
 import { getChapters, type Chapter } from '../lib/content';
@@ -26,7 +26,7 @@ export function ReciterLibrary({ playSurahAfter, range }: { playSurahAfter?: num
   const c = cat.data;
   const matches = (r: { name: string; nameAr: string | null }) => !q || r.name.toLowerCase().includes(q.toLowerCase()) || (r.nameAr || '').includes(q);
   const recFilter = (rec: Recording) => (riw === 'all' || (riw === 'other' ? !['hafs', 'warsh', 'qalun'].includes(rec.riwayah) : rec.riwayah === riw)) && (!onlyComplete || rec.complete);
-  const reciterOk = (id: string) => recordingsOf(c, id).some(recFilter);
+  const reciterOk = (id: string) => recordingsOf(c, id).some(recFilter) && (!range || recordingsOf(c, id).some(hasTimings));
   const famous = c.famousOrder.map((id) => c.reciters.find((r) => r.id === id)).filter((r): r is NonNullable<typeof r> => !!r && matches(r) && reciterOk(r.id));
   const others = c.reciters.filter((r) => !r.famous && matches(r) && reciterOk(r.id)).sort((a, b) => displayName(a).localeCompare(displayName(b), 'ar'));
   const doRefresh = async () => {
@@ -44,6 +44,7 @@ export function ReciterLibrary({ playSurahAfter, range }: { playSurahAfter?: num
         <span class="icon-btn" style="background:var(--primary-soft);color:var(--primary);border-radius:12px"><Icon name="play" /></span>
         <span class="grow"><span class="title">{displayName(r)}</span>{r.nameAr && <span class="sub"> · {r.name}</span>}<br />
           <span class="sub">{num(recs.length)} {isAr() ? 'تسجيل' : 'recordings'} · {num(complete)} {isAr() ? 'مصحف كامل' : 'complete'}{dl ? ` · ${num(dl)} ${isAr() ? 'سورة منزّلة' : 'downloaded'}` : ''}</span></span>
+        {recs.some(hasTimings) && <span class="badge" title={isAr() ? 'توقيتات آيات' : 'ayah timings'}>{isAr() ? 'آيات' : 'ayahs'}</span>}
         {settings.reciterId && recs.some((x) => x.id === settings.reciterId) && <span class="badge ok">{isAr() ? 'الافتراضي' : 'default'}</span>}
       </button>
     );
@@ -51,7 +52,7 @@ export function ReciterLibrary({ playSurahAfter, range }: { playSurahAfter?: num
   return (
     <main class="screen">
       <TopBar title={isAr() ? 'القراء' : 'Reciters'} onBack right={<button class="icon-btn" aria-label={isAr() ? 'التنزيلات' : 'Downloads'} onClick={() => navigate('/quran/downloads')}><Icon name="library" /></button>} />
-      {playSurahAfter && <div style="margin-bottom:12px"><Notice kind="info">{range ? (isAr() ? `اختر قارئًا لتشغيل الآيات ${range.from}–${range.to} فقط (يلزم تسجيل بتوقيتات آيات)` : `Choose a reciter to play ayahs ${range.from}–${range.to} only (needs ayah timings)`) : (isAr() ? 'اختر قارئًا لتشغيل السورة' : 'Choose a reciter to play the surah')}</Notice></div>}
+      {playSurahAfter && <div style="margin-bottom:12px"><Notice kind="info">{range ? (isAr() ? `اختر قارئًا لتشغيل الآيات ${num(range.from)}–${num(range.to)} فقط — تُعرض هنا التسجيلات التي تحوي توقيتات آيات` : `Choose a reciter to play ayahs ${range.from}–${range.to} only — only recordings with ayah timings are listed`) : (isAr() ? 'اختر قارئًا لتشغيل السورة' : 'Choose a reciter to play the surah')}</Notice></div>}
       <input class="input" placeholder={isAr() ? 'ابحث باسم القارئ (عربي/إنجليزي)' : 'Search reciter'} value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
       <div class="chips scroll" style="margin:10px 0">
         {(['all', 'hafs', 'warsh', 'qalun', 'other'] as const).map((k) => <button key={k} class="chip" aria-pressed={riw === k} onClick={() => setRiw(k)}>{k === 'all' ? (isAr() ? 'كل الروايات' : 'All') : k === 'hafs' ? 'حفص' : k === 'warsh' ? 'ورش' : k === 'qalun' ? 'قالون' : (isAr() ? 'روايات أخرى' : 'Other')}</button>)}
@@ -83,7 +84,7 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
   const [sel, setSel] = useState<Set<number>>(new Set());
   const [estimate, setEstimate] = useState<{ bytes: number | null; n: number } | null>(null);
   const [confirm, setConfirm] = useState(false);
-  useEffect(() => { if (cat.data && !recId) { const recs = recordingsOf(cat.data, id); const pref = recs.find((r) => r.id === settings.reciterId) || recs.find((r) => r.complete && r.riwayah === 'hafs' && r.style === 'murattal') || recs[0]; setRecId(pref?.id || null); } }, [cat.data]);
+  useEffect(() => { if (cat.data && !recId) { const recs = recordingsOf(cat.data, id); const pref = (range && timedRecordingFor(cat.data, id, recs.find((r) => r.id === settings.reciterId))) || recs.find((r) => r.id === settings.reciterId) || recs.find((r) => r.complete && r.riwayah === 'hafs' && r.style === 'murattal') || recs[0]; setRecId(pref?.id || null); } }, [cat.data]);
   if (!cat.data || !chapters.data) return <main class="screen"><TopBar title="" onBack /><Loading error={cat.error || chapters.error} /></main>;
   const c = cat.data, chs = chapters.data;
   const reciter = c.reciters.find((r) => r.id === id);
@@ -120,7 +121,7 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
       <TopBar title={displayName(reciter)} onBack />
       {recs.length > 1 && (
         <div class="chips scroll" style="margin-bottom:12px">
-          {recs.map((r) => <button key={r.id} class="chip" style="white-space:nowrap" aria-pressed={r.id === rec.id} onClick={() => setRecId(r.id)}>{STYLE_AR[r.style]} · {r.riwayahAr.split(' ')[0]}{r.complete ? '' : ` · ${num(r.surahTotal)}/114`}</button>)}
+          {recs.map((r) => <button key={r.id} class="chip" style="white-space:nowrap" aria-pressed={r.id === rec.id} onClick={() => setRecId(r.id)}>{STYLE_AR[r.style]} · {r.riwayahAr.split(' ')[0]}{r.complete ? '' : ` · ${num(r.surahTotal)}/114`}{hasTimings(r) ? ' · ⏱' : ''}</button>)}
         </div>
       )}
       <section class="card">

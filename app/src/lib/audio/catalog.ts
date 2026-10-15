@@ -118,6 +118,30 @@ function parseRecitationClient(rec: string): { riwayah: string; style: Recording
   return { riwayah, style };
 }
 
+/** Which MP3Quran "reads" (moshaf ids) publish ayah timings — fetched live from /ayat_timing/reads and cached;
+ *  the baked list (115 ids, verified 2026-10-15) is the offline fallback. */
+const TIMED_FALLBACK = '1,3,4,5,6,8,9,10,12,13,14,16,17,20,21,22,24,25,30,31,32,33,38,39,40,42,43,44,46,48,49,50,51,53,54,55,56,58,59,60,61,62,65,66,67,69,70,71,72,74,75,76,77,78,80,81,86,87,88,89,92,106,109,110,112,115,118,119,120,122,123,133,134,135,137,139,159,181,193,198,201,203,208,217,219,221,225,229,232,236,243,244,245,250,256,258,259,265,268,269,270,273,282,288,289,294,295,296,299,300,303,305,314,340,10905'.split(',');
+let timedReads: Set<string> | null = null;
+export function timedReadsSync(): Set<string> {
+  if (timedReads) return timedReads;
+  try { const j = JSON.parse(localStorage.getItem('sakina.timedReads') || 'null'); if (Array.isArray(j) && j.length) { timedReads = new Set(j.map(String)); return timedReads; } } catch { /* ignore */ }
+  timedReads = new Set(TIMED_FALLBACK); return timedReads;
+}
+export async function refreshTimedReads(): Promise<Set<string>> {
+  try {
+    const j = (await fetchJson('https://mp3quran.net/api/v3/ayat_timing/reads')) as { id: number }[];
+    if (Array.isArray(j) && j.length > 50) { timedReads = new Set(j.map((r) => String(r.id))); try { localStorage.setItem('sakina.timedReads', JSON.stringify([...timedReads])); } catch { /* ignore */ } }
+  } catch { /* keep fallback */ }
+  return timedReadsSync();
+}
+export const hasTimings = (rec: Recording) => timedReadsSync().has(String(rec.moshafId));
+/** Best recording with ayah timings for a reciter (prefer the same riwayah/style as `like`, then Hafs murattal). */
+export function timedRecordingFor(c: Catalog, reciterId: string, like?: Recording | null): Recording | null {
+  const list = recordingsOf(c, reciterId).filter(hasTimings);
+  if (!list.length) return null;
+  return list.find((r) => like && r.riwayah === like.riwayah && r.style === like.style) || list.find((r) => r.riwayah === 'hafs' && r.style === 'murattal') || list.find((r) => r.riwayah === 'hafs') || list[0];
+}
+
 /** Ayah timings for a recording+surah (only some recordings have them). Cached per session. */
 export interface AyahTiming { ayah: number; start: number; end: number }
 const timingCache = new Map<string, AyahTiming[] | null>();

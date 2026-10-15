@@ -3,7 +3,7 @@
  * last position per recording+surah, Media Session (lock screen / headset keys), local file first, stream second.
  * Honest sync: ayah highlighting only when the source provides timings for THIS recording.
  */
-import { getCatalog, recordingById, fileUrl, getTimings, displayName, type Recording, type AyahTiming, type Catalog } from './catalog';
+import { getCatalog, recordingById, fileUrl, getTimings, displayName, hasTimings, timedRecordingFor, refreshTimedReads, type Recording, type AyahTiming, type Catalog } from './catalog';
 import { localSource } from './downloads';
 import { getUser, updateUser } from '../store';
 import { getChapters } from '../content';
@@ -112,10 +112,20 @@ async function updateMediaSession(rec: Recording, surah: number) {
 
 /* ---------- public API ---------- */
 export async function playQueue(tracks: Track[], startIndex = 0) { set({ queue: tracks, open: s.open === 'none' ? 'mini' : s.open }); await load(startIndex, true); }
-/** Play only the chosen ayahs of one surah (needs ayah timings for the recording). */
+/** Play only the chosen ayahs of one surah. Needs ayah timings: if the chosen recording has none, switch to another
+ *  recording of the same reciter that has them, else to al-Hussary (Hafs, murattal) — and say so in the player. */
 export async function playAyahRange(recId: string, surah: number, from: number, to: number) {
-  set({ queue: [{ recId, surah }], open: s.open === 'none' ? 'mini' : s.open });
+  catalog ||= await getCatalog();
+  void refreshTimedReads();
+  let rec = recordingById(catalog, recId); let note: string | null = null;
+  if (rec && !hasTimings(rec)) {
+    const alt = timedRecordingFor(catalog, rec.reciterId, rec) || timedRecordingFor(catalog, '118') || catalog.recordings.find(hasTimings) || null;
+    if (alt) { note = `تسجيل «${rec.recitationAr || rec.recitation}» بلا توقيتات آيات، فتم التشغيل من ${alt.reciterId === rec.reciterId ? `تسجيل «${alt.recitationAr || alt.recitation}»` : `«${displayName(alt)}»`} الذي يحوي توقيتات.`; rec = alt; }
+  }
+  if (!rec) return;
+  set({ queue: [{ recId: rec.id, surah }], open: s.open === 'none' ? 'mini' : s.open });
   await load(0, true, { from: Math.min(from, to), to: Math.max(from, to) });
+  if (note) set({ rangeNote: note });
 }
 export async function playSurah(recId: string, surah: number, wholeMushaf = true) {
   catalog ||= await getCatalog();

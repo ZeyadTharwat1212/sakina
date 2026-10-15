@@ -321,6 +321,13 @@ const RIWAYAH_AR = { hafs: 'حفص عن عاصم', warsh: 'ورش عن نافع'
   });
 }
 
+/* 6b. Asmaa al-Husna (names only; meanings deferred to scholar review) */
+{
+  const a = rj(path.resolve('scripts/data/asma.json'));
+  wj('asma/asma.json', a);
+  addLedger({ id: 'asma-al-husna-names', kind: 'reference-list', title: 'أسماء الله الحسنى (الأسماء فقط)', source: 'التعداد المشهور في رواية الترمذي (مكتوب يدويًا في scripts/data/asma.json)', licence: 'n/a (أسماء)', licenceStatus: 'granted', offlineBundling: 'allowed', reviewStatus: 'not-scholar-reviewed', reviewNotes: 'لا معاني مضمّنة؛ تُضاف بعد مراجعة من مصدر معتمد. الخلاف في التعداد مذكور في الشاشة.' });
+}
+
 /* ------------------------------------------------------------------ */
 /* 7. Fonts                                                            */
 /* ------------------------------------------------------------------ */

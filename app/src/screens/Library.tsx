@@ -5,6 +5,7 @@ import { useStore, updateUser } from '../lib/store';
 import { t, num, isAr } from '../lib/i18n';
 import { navigate } from '../lib/router';
 import { TopBar, Icon, useAsync, Loading, shareText, copyText, Notice } from '../components/ui';
+import { ToolsGrid } from './Tools';
 
 const BOOKS = [
   { id: 'bukhari', name: 'صحيح البخاري', en: 'Sahih al-Bukhari' },
@@ -18,7 +19,9 @@ export function LibraryHome() {
     <main class="screen">
       <TopBar title={t('library')} right={<button class="icon-btn" aria-label={t('search')} onClick={() => navigate('/library/search')}><Icon name="search" /></button>} />
       <button class="input" style="text-align:start;color:var(--muted);margin-bottom:16px" onClick={() => navigate('/library/search')}>{t('searchHint')}</button>
-      <h2 style="margin-bottom:8px">{t('hadith')}</h2>
+      <h2 style="margin-bottom:8px">{isAr() ? 'الأدوات' : 'Tools'}</h2>
+      <ToolsGrid />
+      <h2 style="margin:20px 0 8px">{t('hadith')}</h2>
       <div class="list">
         {BOOKS.map((b) => (
           <button key={b.id} class="list-item" onClick={() => navigate(`/library/hadith/${b.id}`)}>

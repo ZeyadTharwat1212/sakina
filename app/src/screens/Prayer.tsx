@@ -7,7 +7,8 @@ import { PRAYERS, computeDay, civilDate, nextPrayer, methodByKey, METHODS, CITIE
 import { reschedule, permissionState, requestPermission, pendingCount, testNotification, isNative, type PermState } from '../lib/notify';
 import { navigate } from '../lib/router';
 import { TopBar, Seg, Toggle, Notice, useNow, Icon } from '../components/ui';
-import { toHijri, formatHijri } from '../lib/hijri';
+import { toHijri, formatHijri, HIJRI_MONTHS } from '../lib/hijri';
+import { useMonthRows } from './Tools';
 
 function NoLocation() {
   return <main class="screen"><TopBar title={t('prayer')} /><div class="card soft"><h2>{t('chooseCity')}</h2><p class="text-2 small" style="margin:8px 0">{t('whyLocation')}</p><button class="btn" onClick={() => navigate('/prayer/city')}>{t('chooseCity')}</button></div></main>;
@@ -17,6 +18,7 @@ export function PrayerHome() {
   const { settings } = useStore();
   const loc = settings.location;
   const [range, setRange] = useState<'day' | 'week' | 'month'>('day');
+  const [monthOffset, setMonthOffset] = useState(0);
   const now = useNow(30000);
   if (!loc) return <NoLocation />;
   const ps = settings.prayer;
@@ -24,8 +26,10 @@ export function PrayerHome() {
   const next = nextPrayer(loc, ps, now);
   const today = next.day;
   const hijri = toHijri(now, settings.hijriAdjust);
-  const days = range === 'day' ? 1 : range === 'week' ? 7 : 30;
-  const rows = Array.from({ length: days }, (_, i) => computeDay(loc, ps, civilDate(loc.tz, i, now)));
+  const monthRows = useMonthRows(loc, ps, monthOffset);
+  const rows = range === 'day' ? [] : range === 'week' ? Array.from({ length: 7 }, (_, i) => computeDay(loc, ps, civilDate(loc.tz, i, now))) : monthRows;
+  const monthDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const mh1 = toHijri(monthDate, settings.hijriAdjust), mh2 = toHijri(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0), settings.hijriAdjust);
   const todayParts = zonedParts(now, loc.tz);
   const isToday = (d: Date) => d.getDate() === todayParts.d && d.getMonth() + 1 === todayParts.m;
 
@@ -65,12 +69,19 @@ export function PrayerHome() {
       <div style="margin:16px 0 8px"><Seg value={range} options={[{ v: 'day', label: t('today') }, { v: 'week', label: t('week') }, { v: 'month', label: t('month') }]} onChange={setRange} /></div>
       {range !== 'day' && (
         <div class="card" style="overflow:auto;padding:8px">
+          {range === 'month' && (
+            <div class="row between" style="margin-bottom:6px">
+              <button class="icon-btn" aria-label="prev" onClick={() => setMonthOffset(monthOffset - 1)}><Icon name="next" /></button>
+              <div style="text-align:center"><strong>{monthDate.toLocaleDateString(isAr() ? 'ar-EG' : 'en-GB', { month: 'long', year: 'numeric' })}</strong><br /><small class="muted">{HIJRI_MONTHS[mh1.m - 1]}{mh1.m !== mh2.m ? ` – ${HIJRI_MONTHS[mh2.m - 1]}` : ''} {num(mh2.y)}هـ</small></div>
+              <button class="icon-btn" aria-label="next" onClick={() => setMonthOffset(monthOffset + 1)}><Icon name="back" /></button>
+            </div>
+          )}
           <table class="table">
             <thead><tr><th>{isAr() ? 'اليوم' : 'Day'}</th>{PRAYERS.map((p) => <th key={p}>{t(p)}</th>)}</tr></thead>
             <tbody>
               {rows.map((d) => (
                 <tr key={d.date.getTime()} class={isToday(d.date) ? 'today' : ''}>
-                  <td>{d.date.toLocaleDateString(isAr() ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short' })}</td>
+                  <td>{d.date.toLocaleDateString(isAr() ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short' })}<br /><small class="muted">{num(toHijri(d.date, settings.hijriAdjust).d)}</small></td>
                   {PRAYERS.map((p) => <td key={p} class={p === 'sunrise' ? 'muted' : ''}>{fmtTime(d.times[p], loc.tz)}</td>)}
                 </tr>
               ))}

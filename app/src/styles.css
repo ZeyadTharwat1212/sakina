@@ -224,3 +224,38 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--space-3) 0; }
 @media (prefers-reduced-motion: no-preference) { .art-layer.arch-band { transition: opacity var(--motion); } }
 
 .only-dark { display: none; } :root[data-theme="dark"] .only-dark { display: block; } :root[data-theme="dark"] .only-light { display: none; }
+
+/* ---------- Home hero & tools (reference-app parity) ---------- */
+.hero-card { border-radius: 22px; padding: var(--space-4); color: var(--text); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); cursor: pointer; }
+.hero-card .muted { color: var(--text-2); }
+.hero-card.scene-dawn { background: linear-gradient(180deg, #F3E9DA 0%, var(--surface) 70%); }
+.hero-card.scene-day { background: linear-gradient(180deg, #E3EDE7 0%, var(--surface) 70%); }
+.hero-card.scene-evening { background: linear-gradient(180deg, #EFE0C9 0%, var(--surface) 70%); }
+.hero-card.scene-night { background: linear-gradient(180deg, #DCE4E6 0%, var(--surface) 70%); }
+:root[data-theme="dark"] .hero-card.scene-dawn { background: linear-gradient(180deg, #2B2A22 0%, var(--surface) 70%); }
+:root[data-theme="dark"] .hero-card.scene-day { background: linear-gradient(180deg, #1C3A30 0%, var(--surface) 70%); }
+:root[data-theme="dark"] .hero-card.scene-evening { background: linear-gradient(180deg, #332A1D 0%, var(--surface) 70%); }
+:root[data-theme="dark"] .hero-card.scene-night { background: linear-gradient(180deg, #121A22 0%, var(--surface) 70%); }
+.hero-card .countdown { color: var(--primary); }
+.prayer-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 10px; }
+.prayer-strip .ps { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; background: color-mix(in srgb, var(--surface-2) 70%, transparent); font-size: .85em; }
+.prayer-strip .ps.on { background: var(--primary); color: var(--on-primary); font-weight: 700; }
+.prayer-strip .ps.sunrise { color: var(--sunrise); }
+.prayer-strip .ps.on.sunrise { color: var(--on-primary); }
+.tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (min-width: 720px) { .tools-grid { grid-template-columns: repeat(6, 1fr); } }
+.tool { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 2px; font-size: .78em; color: var(--text-2); text-align: center; line-height: 1.2; }
+.tool-ic { width: 54px; height: 54px; border-radius: 18px; background: var(--primary-soft); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; }
+.tool-ic svg { width: 26px; height: 26px; }
+.tool:active .tool-ic { transform: scale(.95); }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 12px; }
+.cal-h { text-align: center; font-size: .75em; color: var(--muted); }
+.cal-d { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 44px; border-radius: 10px; font-size: .9em; gap: 1px; }
+.cal-d small { font-size: .65em; }
+.cal-d.today { outline: 2px solid var(--primary); outline-offset: -2px; }
+.cal-d.sel { background: var(--primary); color: var(--on-primary); }
+.cal-d.sel small { color: var(--on-primary); opacity: .8; }
+.cal-d.flag { background: var(--primary-soft); }
+.cal-d .dots { display: flex; gap: 2px; height: 5px; }
+.cal-d .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--copper-text); }
+.cal-d.sel .dots i { background: var(--on-primary); }

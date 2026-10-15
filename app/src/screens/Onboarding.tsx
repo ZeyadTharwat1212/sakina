@@ -6,7 +6,7 @@ import { t, isAr } from '../lib/i18n';
 import { CITIES, METHODS, suggestMethod } from '../lib/prayer';
 import { requestPermission, reschedule, isNative } from '../lib/notify';
 import { navigate } from '../lib/router';
-import { Seg } from '../components/ui';
+import { Seg, Toggle } from '../components/ui';
 
 export function Onboarding() {
   const { settings } = useStore();
@@ -104,6 +104,20 @@ export function Onboarding() {
         </>
       )}
       {step === 4 && (
+        <>
+          <h1>{t('theme')}</h1>
+          <p class="text-2 small">{isAr() ? 'يمكن تغييره لاحقًا من الإعدادات.' : 'Can be changed later in Settings.'}</p>
+          <div class="grid-2">
+            {([['auto', t('auto')], ['light', t('light')], ['dark', t('dark')], ['paper', t('paper')]] as const).map(([v, label]) => (
+              <button key={v} class="card" style={`text-align:center;${settings.theme === v ? 'outline:2px solid var(--primary)' : ''}`} onClick={() => updateSettings({ theme: v })}><strong>{label}</strong></button>
+            ))}
+          </div>
+          <div class="field"><Toggle label={t('simpleMode')} checked={settings.simpleMode} onChange={(v) => updateSettings({ simpleMode: v })} /></div>
+          <div class="spacer" />
+          <button class="btn block" onClick={() => setStep(5)}>{t('next')}</button>
+        </>
+      )}
+      {step === 5 && (
         <>
           <h1>{t('goal')}</h1>
           <div class="stack">

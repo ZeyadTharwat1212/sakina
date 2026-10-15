@@ -5,8 +5,9 @@
  */
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import type { Location, PrayerSettings } from './store';
-import { upcomingSchedule, type PrayerName } from './prayer';
+import type { Location, PrayerSettings, Settings } from './store';
+import { upcomingSchedule, computeDay, civilDate, nightTimes, type PrayerName } from './prayer';
+import { getSettings } from './store';
 import { t, fmtTime } from './i18n';
 
 export const isNative = Capacitor.isNativePlatform();
@@ -26,7 +27,7 @@ export async function pendingCount(): Promise<number> {
 }
 
 const BASE_ID = 7000;
-const DAYS = 10; // 5 prayers × 10 days = 50 < iOS pending limit (64)
+const DAYS = 7; // 5 prayers × 7 days = 35, plus optional reminders, kept under the iOS pending limit (64)
 
 /** Cancel everything we scheduled and schedule afresh for the current location/settings (section 15/16: no stale or duplicate alerts). */
 export async function reschedule(loc: Location | null, ps: PrayerSettings): Promise<number> {
@@ -43,11 +44,31 @@ export async function reschedule(loc: Location | null, ps: PrayerSettings): Prom
     schedule: { at: new Date(p.at.getTime() - ps.preMinutes * 60000), allowWhileIdle: true },
     sound: ps.notifyMode === 'silent' ? undefined : 'default',
     silent: ps.notifyMode === 'silent',
-    extra: { prayer: p.name },
+    extra: { prayer: p.name as string },
   }));
-  if (notifications.length) await LocalNotifications.schedule({ notifications });
-  return notifications.length;
+  // Optional reminders (section 19/26 + reference-app parity): all opt-in, computed from the same engine.
+  const rem = (getSettings() as Settings).reminders;
+  const extras: typeof notifications = [];
+  for (let i = 0; i < DAYS; i++) {
+    const civil = civilDate(loc.tz, i);
+    const d = computeDay(loc, ps, civil);
+    const nt = nightTimes(loc, ps, civil);
+    const push = (at: Date, title: string, body: string) => { if (at.getTime() > Date.now()) extras.push({ id: BASE_ID + 100 + extras.length, title, body, schedule: { at, allowWhileIdle: true }, sound: 'default', silent: false, extra: { prayer: 'reminder' } }); };
+    if (rem.sunrise) push(d.times.sunrise, t('sunrise'), isArNow() ? 'انتهى وقت الفجر (حدث فلكي)' : 'Fajr time has ended (sunrise)');
+    if (rem.duha) push(nt.duhaReminder, t('duha'), isArNow() ? `تذكيرك الشخصي بصلاة الضحى (الشروق + ${ps.duhaOffsetMin} د)` : 'Your Duha reminder');
+    if (rem.lastThird) push(nt.lastThird, t('lastThird'), isArNow() ? 'بداية الثلث الأخير من الليل (مغرب → فجر)' : 'Last third of the night begins');
+    if (rem.trackerEvening) push(new Date(d.times.isha.getTime() + 60 * 60000), isArNow() ? 'متتبع الصلوات' : 'Prayer tracker', isArNow() ? 'سجّل صلوات اليوم (خاص على جهازك)' : 'Log today’s prayers (private)');
+    if (civil.getDay() === 5) {
+      const nine = new Date(d.times.sunrise.getTime() + 2 * 3600000);
+      if (rem.fridayKahf) push(nine, isArNow() ? 'الجمعة' : 'Friday', isArNow() ? 'قراءة سورة الكهف' : 'Surat al-Kahf');
+      if (rem.fridaySalawat) push(new Date(nine.getTime() + 3600000), isArNow() ? 'الجمعة' : 'Friday', isArNow() ? 'أكثِر من الصلاة على النبي ﷺ' : 'Salawat on the Prophet ﷺ');
+    }
+  }
+  const all = [...notifications, ...extras].slice(0, 60);
+  if (all.length) await LocalNotifications.schedule({ notifications: all });
+  return all.length;
 }
+const isArNow = () => getSettings().lang === 'ar';
 
 export async function testNotification() {
   if (!isNative) return false;

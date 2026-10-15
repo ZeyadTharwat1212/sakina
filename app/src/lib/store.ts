@@ -52,6 +52,7 @@ export interface Settings {
   prayer: PrayerSettings;
   hiddenCards: string[];
   showProgress: boolean;
+  reminders: { fridayKahf: boolean; fridaySalawat: boolean; sunrise: boolean; duha: boolean; lastThird: boolean; trackerEvening: boolean };
 }
 
 export interface ReadingPosition { ch: number; v: number; page: number; at: number; kind: 'read' | 'listen' }
@@ -67,6 +68,9 @@ export interface UserData {
   tasbih: { count: number; target: number };
   log: Record<string, { adhkarMorning?: boolean; adhkarEvening?: boolean; wird?: boolean }>; // private daily log
   listenPos?: Record<string, number>; // `${recordingId}#${surah}` → seconds
+  tracker?: Record<string, { fajr?: boolean; dhuhr?: boolean; asr?: boolean; maghrib?: boolean; isha?: boolean; duha?: boolean; witr?: boolean; fast?: boolean }>; // yyyy-mm-dd → private log
+  khatma?: { startDate: string; days: number; startPage: number; createdAt: number } | null;
+  myDuas?: { id: string; text: string; at: number }[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -80,10 +84,11 @@ export const DEFAULT_SETTINGS: Settings = {
     notifyMode: 'notification', preMinutes: 0,
   },
   hiddenCards: [], showProgress: true,
+  reminders: { fridayKahf: false, fridaySalawat: false, sunrise: false, duha: false, lastThird: false, trackerEvening: false },
 };
 export const DEFAULT_USER: UserData = {
   lastRead: null, lastListen: null, bookmarks: [], favAdhkar: [], favHadith: [], sessions: {},
-  tasbih: { count: 0, target: 33 }, log: {}, listenPos: {},
+  tasbih: { count: 0, target: 33 }, log: {}, listenPos: {}, tracker: {}, khatma: null, myDuas: [],
 };
 
 type Listener = () => void;
@@ -104,7 +109,7 @@ async function writeKey(key: string, value: string) {
 
 export async function initStore() {
   const [s, u] = await Promise.all([readKey('sakina.settings'), readKey('sakina.user')]);
-  if (s) { try { settings = { ...DEFAULT_SETTINGS, ...JSON.parse(s), prayer: { ...DEFAULT_SETTINGS.prayer, ...(JSON.parse(s).prayer || {}) } }; } catch { /* keep defaults */ } }
+  if (s) { try { const j = JSON.parse(s); settings = { ...DEFAULT_SETTINGS, ...j, prayer: { ...DEFAULT_SETTINGS.prayer, ...(j.prayer || {}) }, reminders: { ...DEFAULT_SETTINGS.reminders, ...(j.reminders || {}) } }; } catch { /* keep defaults */ } }
   if (u) { try { user = { ...DEFAULT_USER, ...JSON.parse(u) }; } catch { /* keep defaults */ } }
   ready = true;
   applyTheme();

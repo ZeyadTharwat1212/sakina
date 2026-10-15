@@ -47,6 +47,13 @@ export function SettingsScreen() {
           </div>
         </section>
         <section class="card">
+          <h2>{isAr() ? 'التذكيرات الاختيارية' : 'Optional reminders'}</h2>
+          <p class="muted small" style="margin:4px 0 8px">{isAr() ? 'كلها معطّلة افتراضيًا. تُحسب من نفس محرك المواقيت وتعمل في تطبيق الهاتف.' : 'All off by default; computed from the same engine; native app only.'}</p>
+          {([['sunrise', isAr() ? 'تنبيه الشروق (انتهاء وقت الفجر)' : 'Sunrise alert'], ['duha', isAr() ? 'تذكير الضحى' : 'Duha reminder'], ['lastThird', isAr() ? 'الثلث الأخير من الليل' : 'Last third of the night'], ['fridayKahf', isAr() ? 'الجمعة: سورة الكهف' : 'Friday: al-Kahf'], ['fridaySalawat', isAr() ? 'الجمعة: الصلاة على النبي' : 'Friday: salawat'], ['trackerEvening', isAr() ? 'تذكير تسجيل الصلوات مساءً' : 'Evening tracker reminder']] as const).map(([k, label]) => (
+            <Toggle key={k} label={label} checked={settings.reminders[k]} onChange={async (v) => { updateSettings({ reminders: { ...settings.reminders, [k]: v } }); await reschedule(settings.location, settings.prayer); }} />
+          ))}
+        </section>
+        <section class="card">
           <h2>{t('hijri')}</h2>
           <p class="text-2">{formatHijri(toHijri(new Date(), settings.hijriAdjust), isAr())}</p>
           <p class="muted small">{t('hijriNote')}</p>

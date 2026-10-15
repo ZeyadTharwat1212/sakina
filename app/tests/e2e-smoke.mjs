@@ -26,8 +26,9 @@ ok((await page.locator('.list-item[aria-pressed="true"]').textContent()).include
 await shot('02-method');
 await page.click('text=التالي');
 await page.click('.btn:has-text("لاحقًا")');
+await page.click('.btn:has-text("التالي")'); // theme step
 await page.click('.btn:has-text("قراءة")');
-await page.waitForSelector('.card.primary');
+await page.waitForSelector('.hero-card');
 await shot('03-today');
 ok(await page.isVisible('text=الصلاة التالية'), 'Today shows next prayer');
 ok(await page.isVisible('text=محسوب'), 'Prayer time is labelled "calculated"');
@@ -143,7 +144,7 @@ await shot('18-dark-reader');
 await page.goto(BASE + '/#/settings');
 await page.click('.seg button:has-text("ورقي")');
 await page.goto(BASE + '/#/');
-await page.waitForSelector('.card.primary');
+await page.waitForSelector('.hero-card');
 await shot('19-paper-today');
 // English UI
 await page.goto(BASE + '/#/settings');
@@ -173,6 +174,35 @@ await page.keyboard.press('Escape');
 await page.goto(BASE + '/#/quran/downloads');
 await page.waitForSelector('text=Wi-Fi');
 await shot('25-downloads');
+
+// Reference-app parity tools: tracker, hijri calendar, khatma, asma, wallpapers, my duas
+await page.goto(BASE + '/#/library/tracker');
+await page.waitForSelector('.cal');
+await page.click('.switch:has-text("Fajr"), .switch:has-text("الفجر")');
+ok((await page.locator('.switch[aria-checked="true"]').count()) >= 1, 'Tracker toggles a prayer');
+await shot('26-tracker');
+await page.goto(BASE + '/#/library/hijri');
+await page.waitForSelector('.cal');
+await shot('27-hijri');
+await page.goto(BASE + '/#/library/khatma');
+await page.waitForSelector('.chip');
+await page.click('.btn:has-text("Start"), .btn:has-text("ابدأ")');
+await page.waitForSelector('.card.primary');
+ok(true, 'Khatma plan started');
+await shot('28-khatma');
+await page.goto(BASE + '/#/library/asma');
+await page.waitForSelector('.grid-2 .card');
+ok((await page.locator('.grid-2 .card').count()) === 99, '99 names listed');
+await shot('29-asma');
+await page.goto(BASE + '/#/library/wallpapers');
+await page.waitForSelector('img[src*="art/"]');
+await page.goto(BASE + '/#/library/duas');
+await page.waitForSelector('textarea');
+await page.goto(BASE + '/#/');
+await page.waitForSelector('.tools-grid');
+ok((await page.locator('.tools-grid .tool').count()) === 8, 'Home quick tools grid');
+ok((await page.locator('.prayer-strip .ps').count()) === 6, 'Home shows the 6-time strip');
+await shot('30-home');
 
 // Tablet width
 await page.setViewportSize({ width: 1024, height: 768 });

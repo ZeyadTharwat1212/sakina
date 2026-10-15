@@ -60,6 +60,22 @@ await page.click('.list-item:has-text("البقرة · ٢٥٥")');
 await page.waitForSelector('#a-2-255');
 ok(true, 'Returned to the same ayah');
 
+// Multi-ayah selection → listen only to those ayahs (routes to the reciter picker when no reciter is chosen)
+await page.goto(BASE + '/#/quran/read/2/255');
+await page.waitForSelector('#a-2-255');
+await page.click('#a-2-255');
+await page.click('.sheet >> text=اختيار عدة آيات');
+await page.waitForSelector('.multi-bar');
+await page.click('#a-2-257');
+ok((await page.textContent('.multi-bar')).includes('٢٥٥–٢٥٧'), 'Selection bar shows ayah range 255–257');
+ok((await page.locator('.ayah-item.selected, .ayah.selected').count()) === 3, 'Three ayahs highlighted');
+await page.click('.multi-bar .btn:has-text("استماع")');
+await page.waitForURL(/reciters\?play=2&from=255&to=257/);
+ok(true, 'Listen on a selection asks for a reciter with the range kept');
+await page.click('.list-item:has-text("محمود خليل الحصري")');
+await page.waitForSelector('.miniplayer', { timeout: 15000 });
+ok(true, 'Range playback started (timings fetched live on a real network)');
+
 // Page mode + surah 9 (no basmala) + surah 1
 await page.goto(BASE + '/#/quran/page/187');
 await page.waitForSelector('#a-9-1');

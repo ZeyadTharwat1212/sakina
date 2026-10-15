@@ -35,8 +35,8 @@ export function App() {
     case 'quran':
       screen = p[1] === 'read' ? <QuranReader ch={Number(p[2]) || 1} v={Number(p[3]) || 1} />
         : p[1] === 'page' ? <QuranReader page={Number(p[2]) || 1} />
-        : p[1] === 'reciters' && p[2] ? <ReciterPage id={p[2]} playAfter={route.query.get('play') ? Number(route.query.get('play')) : undefined} />
-        : p[1] === 'reciters' ? <ReciterLibrary playSurahAfter={route.query.get('play') ? Number(route.query.get('play')) : undefined} />
+        : p[1] === 'reciters' && p[2] ? <ReciterPage id={p[2]} playAfter={route.query.get('play') ? Number(route.query.get('play')) : undefined} range={route.query.get('from') ? { from: Number(route.query.get('from')), to: Number(route.query.get('to') || route.query.get('from')) } : undefined} />
+        : p[1] === 'reciters' ? <ReciterLibrary playSurahAfter={route.query.get('play') ? Number(route.query.get('play')) : undefined} range={route.query.get('from') ? { from: Number(route.query.get('from')), to: Number(route.query.get('to') || route.query.get('from')) } : undefined} />
         : p[1] === 'downloads' ? <DownloadsManager />
         : <QuranIndex />;
       break;

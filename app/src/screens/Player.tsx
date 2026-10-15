@@ -42,6 +42,8 @@ export function MiniPlayer() {
       <Sheet open={p.open === 'full'} onClose={() => setOpen('mini')} title={`سورة ${name}`}>
         <p class="text-2" style="margin-top:-8px">{who}{rec ? ` · ${STYLE_AR[rec.style]} · ${rec.riwayahAr}` : ''}</p>
         {p.error && <p class="notice" style="margin:8px 0">{p.error}</p>}
+        {p.rangeNote && <p class="notice" style="margin:8px 0">{p.rangeNote}</p>}
+        {p.ayahRange && <p class="small" style="margin:8px 0;text-align:center"><span class="badge ok">{isAr() ? `الآيات ${num(p.ayahRange.from)}–${num(p.ayahRange.to)} فقط` : `Ayahs ${p.ayahRange.from}–${p.ayahRange.to} only`}</span> <small class="muted">{p.repeat === 'off' ? (isAr() ? 'يتوقف عند نهايتها؛ فعّل التكرار لإعادتها' : 'Stops at the end; turn on repeat to loop') : (isAr() ? 'تتكرر' : 'looping')}</small></p>}
         <input type="range" min={0} max={p.dur || 0} step={1} value={p.pos} onInput={(e) => seekTo(Number((e.target as HTMLInputElement).value))} style="width:100%;margin:12px 0 4px" aria-label={isAr() ? 'الموضع' : 'Position'} />
         <div class="row between num small muted"><span>{fmt(p.pos)}</span><span>{fmt(p.dur)}</span></div>
         <div class="row" style="justify-content:center;gap:6px;margin:8px 0">

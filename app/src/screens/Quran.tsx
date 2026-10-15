@@ -105,7 +105,15 @@ export function QuranReader(props: ReaderProps) {
   }, [meta.data, props.ch, props.page]);
   const texts = useAsync(async () => span ? Promise.all(span.chs.map(getSurah)) : [], [span?.chs.join(',')]);
   const [sel, setSel] = useState<{ ch: number; v: number } | null>(null);
+  const [multi, setMulti] = useState<{ ch: number; from: number; to: number } | null>(null); // "اختر عدة آيات" mode
   const [panel, setPanel] = useState<'none' | 'tafsir' | 'translation'>('none');
+  const inMulti = (ch: number, v: number) => !!multi && multi.ch === ch && v >= multi.from && v <= multi.to;
+  const tapAyah = (ch: number, v: number) => {
+    if (!multi) { setSel({ ch, v }); return; }
+    if (multi.ch !== ch) { setMulti({ ch, from: v, to: v }); return; }
+    if (v === multi.from && v === multi.to) { setMulti(null); return; }
+    if (v < multi.from) setMulti({ ...multi, from: v }); else if (v > multi.to) setMulti({ ...multi, to: v }); else if (v - multi.from <= multi.to - v) setMulti({ ...multi, from: v }); else setMulti({ ...multi, to: v });
+  };
   const [focus, setFocus] = useState(false);
   const scrolledRef = useRef(false);
 
@@ -151,7 +159,7 @@ export function QuranReader(props: ReaderProps) {
         {settings.quranMode === 'page' || pageMode ? (
           <p class="ayah-text">
             {verses.map((x) => (
-              <span key={x.v} id={`a-${s.ch}-${x.v}`} class={`ayah ${sel?.ch === s.ch && sel.v === x.v ? 'selected' : ''}`} onClick={() => setSel({ ch: s.ch, v: x.v })} role="button" tabIndex={0}>
+              <span key={x.v} id={`a-${s.ch}-${x.v}`} class={`ayah ${(sel?.ch === s.ch && sel.v === x.v) || inMulti(s.ch, x.v) ? 'selected' : ''}`} onClick={() => tapAyah(s.ch, x.v)} role="button" tabIndex={0}>
                 {ayahDisplay(s, x)} <span class="ayah-no">﴿{toArabicIndic(x.v)}﴾</span>{isSajda(m, s.ch, x.v) && <span class="badge" title="سجدة">۩</span>}{' '}
               </span>
             ))}
@@ -159,7 +167,7 @@ export function QuranReader(props: ReaderProps) {
         ) : (
           <div class="ayah-list">
             {verses.map((x) => (
-              <div key={x.v} id={`a-${s.ch}-${x.v}`} class={`ayah-item ${sel?.ch === s.ch && sel.v === x.v ? 'selected' : ''}`} onClick={() => setSel({ ch: s.ch, v: x.v })} role="button" tabIndex={0}>
+              <div key={x.v} id={`a-${s.ch}-${x.v}`} class={`ayah-item ${(sel?.ch === s.ch && sel.v === x.v) || inMulti(s.ch, x.v) ? 'selected' : ''}`} onClick={() => tapAyah(s.ch, x.v)} role="button" tabIndex={0}>
                 <p class="ayah-text">{ayahDisplay(s, x)} <span class="ayah-no">﴿{toArabicIndic(x.v)}﴾</span>{isSajda(m, s.ch, x.v) && <span class="badge" title="سجدة">۩</span>}</p>
                 {panel !== 'none' && <PanelText kind={panel} ch={s.ch} v={x.v} tafsirId={settings.tafsir} />}
               </div>
@@ -219,7 +227,15 @@ export function QuranReader(props: ReaderProps) {
       </div>
       <p class="muted small" style="margin-top:16px;text-align:center">{isAr() ? 'النص: مشروع تنزيل (Tanzil) — رواية حفص عن عاصم، نسخة حرفية دون تعديل.' : 'Text: Tanzil Project — Hafs ʿan ʿĀṣim, verbatim.'} <a href="#/library/sources">{t('sources')}</a></p>
 
-      <AyahSheet sel={sel} onClose={() => setSel(null)} chs={chs} meta={m} texts={texts.data} tafsirId={settings.tafsir} />
+      <AyahSheet sel={sel} onClose={() => setSel(null)} chs={chs} meta={m} texts={texts.data} tafsirId={settings.tafsir} onMulti={() => { if (sel) { setMulti({ ch: sel.ch, from: sel.v, to: sel.v }); setSel(null); } }} />
+      {multi && (() => { const st = texts.data!.find((x) => x.ch === multi.ch)!; const c = chs[multi.ch - 1]; const n = multi.to - multi.from + 1; const joined = st.verses.slice(multi.from - 1, multi.to).map((v) => `${ayahDisplay(st, v)} ﴿${toArabicIndic(v.v)}﴾`).join(' '); const ref = `﴿${joined}﴾ [${c.name}: ${multi.from}${n > 1 ? `–${multi.to}` : ''}]`; return (
+        <div class="multi-bar" role="toolbar">
+          <div class="grow"><strong>{c.name} · {n === 1 ? `${t('ayah')} ${num(multi.from)}` : `${t('ayah')} ${num(multi.from)}–${num(multi.to)}`}</strong><br /><small class="muted">{isAr() ? 'اضغط آية أخرى لتوسيع التحديد، أو الآية نفسها لإلغائه' : 'Tap another ayah to extend, the same one to clear'}</small></div>
+          <button class="btn sm" onClick={() => { void playFromReader(multi.ch, settings.reciterId, { from: multi.from, to: multi.to }); }}><Icon name="play" />{t('listen')}</button>
+          <button class="icon-btn" aria-label={t('copy')} onClick={() => void copyText(ref)}><Icon name="copy" /></button>
+          <button class="icon-btn" aria-label={t('share')} onClick={() => void shareText(`${ref}\n${isAr() ? 'المصدر: مشروع تنزيل، رواية حفص' : 'Source: Tanzil, Hafs'}`)}><Icon name="share" /></button>
+          <button class="icon-btn" aria-label={t('cancel')} onClick={() => setMulti(null)}><Icon name="close" /></button>
+        </div>); })()}
     </main>
   );
 }
@@ -232,7 +248,7 @@ function PanelText({ kind, ch, v, tafsirId }: { kind: 'tafsir' | 'translation'; 
   return <p class="tafsir-text" style={`margin-top:8px;color:var(--text-2);${kind === 'translation' ? 'direction:ltr;text-align:left;font-family:var(--font-ui)' : ''}`}><small class="badge" style="margin-inline-end:6px">{label}</small>{row.t}</p>;
 }
 
-function AyahSheet({ sel, onClose, chs, meta, texts, tafsirId }: { sel: { ch: number; v: number } | null; onClose: () => void; chs: Chapter[]; meta: QuranMeta; texts: SurahText[]; tafsirId: string }) {
+function AyahSheet({ sel, onClose, chs, meta, texts, tafsirId, onMulti }: { sel: { ch: number; v: number } | null; onClose: () => void; chs: Chapter[]; meta: QuranMeta; texts: SurahText[]; tafsirId: string; onMulti: () => void }) {
   const { user, settings } = useStore();
   const [view, setView] = useState<'actions' | 'tafsir' | 'translation' | 'bookmark'>('actions');
   const [tid, setTid] = useState(tafsirId);
@@ -258,7 +274,9 @@ function AyahSheet({ sel, onClose, chs, meta, texts, tafsirId }: { sel: { ch: nu
         <>
           <p class="ayah-text" style="font-size:calc(var(--quran-size) * .85);text-align:start;text-align-last:start;margin-bottom:12px">{text}</p>
           <div class="grid-2">
-            <button class="btn secondary" onClick={() => { void playFromReader(sel.ch, settings.reciterId); onClose(); }}><Icon name="play" />{t('listen')}</button>
+            <button class="btn secondary" onClick={() => { void playFromReader(sel.ch, settings.reciterId, { from: sel.v, to: sel.v }); onClose(); }}><Icon name="play" />{isAr() ? 'استماع لهذه الآية' : 'Listen to this ayah'}</button>
+            <button class="btn secondary" onClick={onMulti}><Icon name="check" />{isAr() ? 'اختيار عدة آيات' : 'Select more ayahs'}</button>
+            <button class="btn secondary" onClick={() => { void playFromReader(sel.ch, settings.reciterId); onClose(); }}><Icon name="play" />{isAr() ? 'استماع من بداية السورة' : 'Listen from surah start'}</button>
             <button class="btn secondary" onClick={() => setView('tafsir')}><Icon name="book" />{t('tafsir')}</button>
             <button class="btn secondary" onClick={() => setView('translation')}>EN {t('translation')}</button>
             <button class="btn secondary" onClick={() => setView('bookmark')}><Icon name="star" />{existing ? (isAr() ? 'تعديل العلامة' : 'Edit bookmark') : t('bookmark')}</button>

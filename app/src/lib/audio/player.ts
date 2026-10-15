@@ -12,10 +12,10 @@ export interface Track { recId: string; surah: number }
 export interface PlayerState {
   queue: Track[]; index: number; playing: boolean; loading: boolean; error: string | null;
   pos: number; dur: number; rate: number; repeat: 'off' | 'one' | 'all';
-  timings: AyahTiming[] | null; currentAyah: number | null; ayahRange: { from: number; to: number } | null;
+  timings: AyahTiming[] | null; currentAyah: number | null; ayahRange: { from: number; to: number } | null; rangeNote: string | null;
   sleepAt: number | null; open: 'none' | 'mini' | 'full'; local: boolean;
 }
-let s: PlayerState = { queue: [], index: -1, playing: false, loading: false, error: null, pos: 0, dur: 0, rate: 1, repeat: 'off', timings: null, currentAyah: null, ayahRange: null, sleepAt: null, open: 'none', local: false };
+let s: PlayerState = { queue: [], index: -1, playing: false, loading: false, error: null, pos: 0, dur: 0, rate: 1, repeat: 'off', timings: null, currentAyah: null, ayahRange: null, rangeNote: null, sleepAt: null, open: 'none', local: false };
 const subs = new Set<() => void>();
 const set = (p: Partial<PlayerState>) => { s = { ...s, ...p }; subs.forEach((f) => f()); };
 export const getPlayer = () => s;
@@ -58,7 +58,12 @@ function onTime() {
     const ms = pos * 1000;
     const t = s.timings.find((x) => ms >= x.start && ms < x.end);
     currentAyah = t ? t.ayah : currentAyah;
-    if (s.ayahRange && t && t.ayah > s.ayahRange.to) { const from = s.timings.find((x) => x.ayah === s.ayahRange!.from); if (from) a.currentTime = from.start / 1000; }
+    if (s.ayahRange && t && t.ayah > s.ayahRange.to) {
+      // End of the chosen ayahs: loop when repeat is on, otherwise stop at the start of the selection (section 11: play *only* what was chosen).
+      const from = s.timings.find((x) => x.ayah === s.ayahRange!.from);
+      if (s.repeat === 'off') { a.pause(); if (from) a.currentTime = from.start / 1000; set({ playing: false, currentAyah: s.ayahRange.from }); return; }
+      if (from) a.currentTime = from.start / 1000;
+    }
   }
   set({ pos, currentAyah });
   if (s.sleepAt && Date.now() >= s.sleepAt) { pause(); set({ sleepAt: null }); }
@@ -73,7 +78,7 @@ async function onEnded() {
   const t = current(); if (t) updateUser((u) => ({ listenPos: { ...(u.listenPos || {}), [`${t.recId}#${t.surah}`]: 0 } }));
 }
 
-async function load(index: number, autoplay: boolean) {
+async function load(index: number, autoplay: boolean, range?: { from: number; to: number }) {
   catalog ||= await getCatalog();
   const t = s.queue[index]; if (!t) return;
   const rec = recordingById(catalog, t.recId); if (!rec) { set({ error: 'التسجيل غير موجود في الفهرس' }); return; }
@@ -83,11 +88,20 @@ async function load(index: number, autoplay: boolean) {
   if (local?.startsWith('blob:')) blobUrl = local;
   a.src = local || fileUrl(rec, t.surah);
   a.playbackRate = s.rate;
-  set({ index, pos: 0, dur: 0, timings: null, currentAyah: null, ayahRange: null, error: null, loading: true, local: !!local, open: s.open === 'none' ? 'mini' : s.open });
-  const saved = getUser().listenPos?.[`${rec.id}#${t.surah}`];
-  if (saved && saved > 5) a.currentTime = saved;
+  set({ index, pos: 0, dur: 0, timings: null, currentAyah: null, ayahRange: null, rangeNote: null, error: null, loading: true, local: !!local, open: s.open === 'none' ? 'mini' : s.open });
   void updateMediaSession(rec, t.surah);
-  void getTimings(catalog, rec, t.surah).then((tm) => { if (current() === t) set({ timings: tm }); });
+  if (range) {
+    // Chosen ayahs: wait for the timings first so playback starts exactly at the first chosen ayah.
+    const tm = await getTimings(catalog, rec, t.surah);
+    if (current() !== t) return;
+    const from = tm?.find((x) => x.ayah === range.from);
+    if (tm && from) { set({ timings: tm, ayahRange: range, currentAyah: range.from }); a.currentTime = from.start / 1000; }
+    else set({ timings: tm, rangeNote: 'لا تتوفر توقيتات آيات لهذا التسجيل، فلا يمكن تشغيل آيات محددة؛ يُشغَّل من بداية السورة. اختر تسجيلًا آخر (الحصري، العفاسي، المعيقلي… لها توقيتات غالبًا).' });
+  } else {
+    const saved = getUser().listenPos?.[`${rec.id}#${t.surah}`];
+    if (saved && saved > 5) a.currentTime = saved;
+    void getTimings(catalog, rec, t.surah).then((tm) => { if (current() === t) set({ timings: tm }); });
+  }
   if (autoplay) { try { await a.play(); } catch { set({ loading: false }); } }
 }
 async function updateMediaSession(rec: Recording, surah: number) {
@@ -98,6 +112,11 @@ async function updateMediaSession(rec: Recording, surah: number) {
 
 /* ---------- public API ---------- */
 export async function playQueue(tracks: Track[], startIndex = 0) { set({ queue: tracks, open: s.open === 'none' ? 'mini' : s.open }); await load(startIndex, true); }
+/** Play only the chosen ayahs of one surah (needs ayah timings for the recording). */
+export async function playAyahRange(recId: string, surah: number, from: number, to: number) {
+  set({ queue: [{ recId, surah }], open: s.open === 'none' ? 'mini' : s.open });
+  await load(0, true, { from: Math.min(from, to), to: Math.max(from, to) });
+}
 export async function playSurah(recId: string, surah: number, wholeMushaf = true) {
   catalog ||= await getCatalog();
   const rec = recordingById(catalog, recId);
@@ -114,7 +133,7 @@ export function seekTo(sec: number) { const a = el(); a.currentTime = Math.max(0
 export function seekBy(delta: number) { seekTo(el().currentTime + delta); }
 export function setRate(rate: number) { el().playbackRate = rate; set({ rate }); }
 export function setRepeat(r: PlayerState['repeat']) { set({ repeat: r }); }
-export function setAyahRange(r: { from: number; to: number } | null) { set({ ayahRange: r }); if (r && s.timings) { const t = s.timings.find((x) => x.ayah === r.from); if (t) seekTo(t.start / 1000); } }
+export function setAyahRange(r: { from: number; to: number } | null) { set({ ayahRange: r, rangeNote: null }); if (r && s.timings) { const t = s.timings.find((x) => x.ayah === r.from); if (t) seekTo(t.start / 1000); } }
 export function setSleep(minutes: number | null) { set({ sleepAt: minutes ? Date.now() + minutes * 60000 : null }); }
 export function setOpen(o: PlayerState['open']) { set({ open: o }); }
 export function stop() { if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load(); } if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; } set({ playing: false, open: 'none', queue: [], index: -1, pos: 0, dur: 0, timings: null, currentAyah: null, sleepAt: null }); }

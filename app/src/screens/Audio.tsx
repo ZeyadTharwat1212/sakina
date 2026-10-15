@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { getCatalog, refreshCatalog, recordingsOf, displayName, hasSurah, STYLE_AR, fileUrl, type Catalog, type Recording } from '../lib/audio/catalog';
 import * as DL from '../lib/audio/downloads';
-import { playSurah, getPlayer, subscribePlayer } from '../lib/audio/player';
+import { playSurah, playAyahRange, getPlayer, subscribePlayer } from '../lib/audio/player';
 import { getChapters, type Chapter } from '../lib/content';
 import { useStore, updateSettings } from '../lib/store';
 import { t, num, isAr } from '../lib/i18n';
@@ -13,7 +13,7 @@ function useDownloads() { const [, f] = useState(0); useEffect(() => DL.subscrib
 function usePlayer() { const [, f] = useState(0); useEffect(() => subscribePlayer(() => f((n) => n + 1)), []); return getPlayer(); }
 
 /* ------------------------------------------------------------------ */
-export function ReciterLibrary({ playSurahAfter }: { playSurahAfter?: number }) {
+export function ReciterLibrary({ playSurahAfter, range }: { playSurahAfter?: number; range?: { from: number; to: number } }) {
   const { settings } = useStore();
   const cat = useAsync(getCatalog, []);
   const [q, setQ] = useState('');
@@ -40,7 +40,7 @@ export function ReciterLibrary({ playSurahAfter }: { playSurahAfter?: number }) 
     const complete = recs.filter((x) => x.complete).length;
     const dl = recs.reduce((a, x) => a + Object.values(DL.getState().items).filter((i) => i.recId === x.id && i.status === 'done').length, 0);
     return (
-      <button class="list-item" onClick={() => navigate(`/quran/reciters/${r.id}${playSurahAfter ? `?play=${playSurahAfter}` : ''}`)}>
+      <button class="list-item" onClick={() => navigate(`/quran/reciters/${r.id}${playSurahAfter ? `?play=${playSurahAfter}${range ? `&from=${range.from}&to=${range.to}` : ''}` : ''}`)}>
         <span class="icon-btn" style="background:var(--primary-soft);color:var(--primary);border-radius:12px"><Icon name="play" /></span>
         <span class="grow"><span class="title">{displayName(r)}</span>{r.nameAr && <span class="sub"> · {r.name}</span>}<br />
           <span class="sub">{num(recs.length)} {isAr() ? 'تسجيل' : 'recordings'} · {num(complete)} {isAr() ? 'مصحف كامل' : 'complete'}{dl ? ` · ${num(dl)} ${isAr() ? 'سورة منزّلة' : 'downloaded'}` : ''}</span></span>
@@ -51,7 +51,7 @@ export function ReciterLibrary({ playSurahAfter }: { playSurahAfter?: number }) 
   return (
     <main class="screen">
       <TopBar title={isAr() ? 'القراء' : 'Reciters'} onBack right={<button class="icon-btn" aria-label={isAr() ? 'التنزيلات' : 'Downloads'} onClick={() => navigate('/quran/downloads')}><Icon name="library" /></button>} />
-      {playSurahAfter && <div style="margin-bottom:12px"><Notice kind="info">{isAr() ? 'اختر قارئًا لتشغيل السورة' : 'Choose a reciter to play the surah'}</Notice></div>}
+      {playSurahAfter && <div style="margin-bottom:12px"><Notice kind="info">{range ? (isAr() ? `اختر قارئًا لتشغيل الآيات ${range.from}–${range.to} فقط (يلزم تسجيل بتوقيتات آيات)` : `Choose a reciter to play ayahs ${range.from}–${range.to} only (needs ayah timings)`) : (isAr() ? 'اختر قارئًا لتشغيل السورة' : 'Choose a reciter to play the surah')}</Notice></div>}
       <input class="input" placeholder={isAr() ? 'ابحث باسم القارئ (عربي/إنجليزي)' : 'Search reciter'} value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
       <div class="chips scroll" style="margin:10px 0">
         {(['all', 'hafs', 'warsh', 'qalun', 'other'] as const).map((k) => <button key={k} class="chip" aria-pressed={riw === k} onClick={() => setRiw(k)}>{k === 'all' ? (isAr() ? 'كل الروايات' : 'All') : k === 'hafs' ? 'حفص' : k === 'warsh' ? 'ورش' : k === 'qalun' ? 'قالون' : (isAr() ? 'روايات أخرى' : 'Other')}</button>)}
@@ -72,7 +72,7 @@ export function ReciterLibrary({ playSurahAfter }: { playSurahAfter?: number }) 
 }
 
 /* ------------------------------------------------------------------ */
-export function ReciterPage({ id, playAfter }: { id: string; playAfter?: number }) {
+export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: number; range?: { from: number; to: number } }) {
   const { settings } = useStore();
   const cat = useAsync(getCatalog, []);
   const chapters = useAsync(getChapters, []);
@@ -113,7 +113,7 @@ export function ReciterPage({ id, playAfter }: { id: string; playAfter?: number 
   };
   const startDownload = async () => { await DL.enqueue(rec, [...sel]); setConfirm(false); setSelecting(false); };
   const isCurrent = (n: number) => player.queue[player.index]?.recId === rec.id && player.queue[player.index]?.surah === n;
-  useEffect(() => { if (playAfter && rec) { void playSurah(rec.id, playAfter); navigate(`/quran/reciters/${id}`, true); } }, [rec?.id]);
+  useEffect(() => { if (playAfter && rec) { updateSettings({ reciterId: rec.id }); if (range) void playAyahRange(rec.id, playAfter, range.from, range.to); else void playSurah(rec.id, playAfter); navigate(`/quran/reciters/${id}`, true); } }, [rec?.id]);
 
   return (
     <main class="screen">
@@ -226,9 +226,9 @@ export function DownloadsManager() {
 }
 
 /* Used by the Quran reader: play with the default recording or go choose one. */
-export async function playFromReader(surah: number, reciterId: string | null) {
-  if (reciterId) { const c = await getCatalog(); if (c.recordings.some((r) => r.id === reciterId)) { await playSurah(reciterId, surah); return; } }
-  navigate(`/quran/reciters?play=${surah}`);
+export async function playFromReader(surah: number, reciterId: string | null, range?: { from: number; to: number }) {
+  if (reciterId) { const c = await getCatalog(); if (c.recordings.some((r) => r.id === reciterId)) { if (range) await playAyahRange(reciterId, surah, range.from, range.to); else await playSurah(reciterId, surah); return; } }
+  navigate(`/quran/reciters?play=${surah}${range ? `&from=${range.from}&to=${range.to}` : ''}`);
 }
 export type { Catalog, Chapter };
 export { Seg };

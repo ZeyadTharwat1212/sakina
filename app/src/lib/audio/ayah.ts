@@ -7,8 +7,8 @@ import { getAyahAudioSources, getChapters } from '../content';
 import { getSettings, updateUser } from '../store';
 import { pause as pauseMain } from './player';
 
-export interface AyahPlayerState { playing: boolean; ch: number; v: number; from: number; to: number; rep: number; reciter: string; error: string | null; loading: boolean }
-let s: AyahPlayerState = { playing: false, ch: 0, v: 0, from: 0, to: 0, rep: 1, reciter: '', error: null, loading: false };
+export interface AyahPlayerState { playing: boolean; ch: number; v: number; from: number; to: number; rep: number; reciter: string; error: string | null; loading: boolean; pos: number; src: string }
+let s: AyahPlayerState = { playing: false, ch: 0, v: 0, from: 0, to: 0, rep: 1, reciter: '', error: null, loading: false, pos: 0, src: '' };
 const subs = new Set<() => void>();
 const set = (p: Partial<AyahPlayerState>) => { s = { ...s, ...p }; subs.forEach((f) => f()); };
 export const getAyahPlayer = () => s;
@@ -26,10 +26,8 @@ async function globalNumber(ch: number, v: number) {
 export async function ayahUrls(ch: number, v: number, reciterId: string): Promise<string[]> {
   const src = await getAyahAudioSources();
   const r = src.reciters.find((x) => x.id === reciterId) || src.reciters[0];
-  const urls: string[] = [];
-  if (r.in) urls.push(src.templates.islamicnet.replace('{bitrate}', '128').replace('{edition}', r.in).replace('{n}', String(await globalNumber(ch, v))));
-  urls.push(src.templates.everyayah.replace('{folder}', r.ea).replace('{sss}', String(ch).padStart(3, '0')).replace('{aaa}', String(v).padStart(3, '0')));
-  if (r.in) urls.push(src.templates.islamicnet.replace('{bitrate}', '64').replace('{edition}', r.in).replace('{n}', String(await globalNumber(ch, v))));
+  const urls: string[] = [src.templates.everyayah.replace('{folder}', r.ea).replace('{sss}', String(ch).padStart(3, '0')).replace('{aaa}', String(v).padStart(3, '0'))];
+  if (r.in) { const n = String(await globalNumber(ch, v)); urls.push(src.templates.islamicnet.replace('{bitrate}', '128').replace('{edition}', r.in).replace('{n}', n), src.templates.islamicnet.replace('{bitrate}', '64').replace('{edition}', r.in).replace('{n}', n)); }
   return urls;
 }
 async function sourceFor(urls: string[]): Promise<string> {
@@ -37,7 +35,7 @@ async function sourceFor(urls: string[]): Promise<string> {
   return urls[0];
 }
 function el() {
-  if (!audio) { audio = new Audio(); audio.preload = 'auto'; }
+  if (!audio) { audio = new Audio(); audio.preload = 'auto'; audio.addEventListener('timeupdate', () => set({ pos: audio!.currentTime, src: audio!.currentSrc })); }
   return audio;
 }
 /** Play one file, trying fallbacks; resolves when it ends (or rejects on error/stop). */

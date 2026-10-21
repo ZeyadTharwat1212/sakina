@@ -1,11 +1,32 @@
 /** Sections 32–33: settings, accessibility, privacy, export/delete. */
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { useStore, updateSettings, wipeAll, exportAll } from '../lib/store';
 import { t, num, isAr } from '../lib/i18n';
 import { navigate } from '../lib/router';
-import { TopBar, Seg, Toggle, Sheet, shareText } from '../components/ui';
+import { TopBar, Seg, Toggle, Sheet, shareText, useAsync } from '../components/ui';
 import { toHijri, formatHijri } from '../lib/hijri';
 import { reschedule } from '../lib/notify';
+import { getAyahAudioSources, downloadAllMushafFonts, mushafFontsCached } from '../lib/content';
+
+function AyahAudioSettings() {
+  const { settings } = useStore();
+  const src = useAsync(getAyahAudioSources, []);
+  const [cached, setCached] = useState<number | null>(null);
+  const [prog, setProg] = useState<string | null>(null);
+  useEffect(() => { mushafFontsCached().then(setCached); }, [prog]);
+  return (
+    <>
+      <p class="muted small" style="margin:4px 0 8px">{isAr() ? 'يُستخدم عند اختيار آية أو عدة آيات من المصحف: ملفات آية بآية من everyayah.com وIslamic Network (مجانية، بلا مفتاح).' : 'Used when you pick ayahs in the mushaf: single-ayah files from everyayah.com / Islamic Network.'}</p>
+      <select class="input" value={settings.ayahReciter} onChange={(e) => updateSettings({ ayahReciter: (e.target as HTMLSelectElement).value })}>
+        {(src.data?.reciters || []).map((r) => <option key={r.id} value={r.id}>{isAr() ? r.ar : r.en}</option>)}
+      </select>
+      <div class="row between" style="margin-top:8px"><span class="small">{isAr() ? 'تكرار كل آية' : 'Repeat each ayah'}</span><div class="chips">{[1, 2, 3, 5, 10].map((n) => <button key={n} class="chip" aria-pressed={settings.ayahRepeat === n} onClick={() => updateSettings({ ayahRepeat: n })}>×{num(n)}</button>)}</div></div>
+      <hr />
+      <div class="row between"><span class="small">{isAr() ? 'خطوط صفحات المصحف (QCF v4)' : 'Mushaf page fonts'}<br /><small class="muted">{cached == null ? '' : isAr() ? `${num(cached)}/48 محفوظة على الجهاز` : `${cached}/48 cached`}</small></span>
+        <button class="btn secondary sm" disabled={!!prog} onClick={async () => { setProg('0'); try { await downloadAllMushafFonts((d, tt) => setProg(`${d}/${tt}`)); } finally { setProg(null); } }}>{prog ? prog : (isAr() ? 'تنزيل الكل (٣٦ م.ب)' : 'Download all (36 MB)')}</button></div>
+    </>
+  );
+}
 
 export function SettingsScreen() {
   const { settings } = useStore();
@@ -32,13 +53,23 @@ export function SettingsScreen() {
         <section class="card">
           <h2>{t('theme')}</h2>
           <Seg value={settings.theme} options={[{ v: 'auto', label: t('auto') }, { v: 'light', label: t('light') }, { v: 'dark', label: t('dark') }, { v: 'paper', label: t('paper') }]} onChange={(v) => updateSettings({ theme: v })} />
+          <div class="field" style="margin-top:12px"><label>{isAr() ? 'خط الواجهة' : 'UI font'}</label>
+            <Seg value={settings.uiFont} options={[{ v: 'readex', label: 'Readex Pro' }, { v: 'plex', label: 'IBM Plex' }, { v: 'noto', label: 'Noto' }]} onChange={(v) => updateSettings({ uiFont: v })} /></div>
+          <div class="field" style="margin-top:12px"><label>{isAr() ? 'خط المصحف (وضع الآيات)' : 'Quran font (ayah mode)'}</label>
+            <Seg value={settings.quranFont} options={[{ v: 'kfgqpc', label: isAr() ? 'مجمع الملك فهد' : 'KFGQPC' }, { v: 'hafs', label: isAr() ? 'حفص (مصحف)' : 'KFGQPC Hafs' }, { v: 'amiri', label: 'Amiri' }]} onChange={(v) => updateSettings({ quranFont: v })} /></div>
           <Range label={t('textSize')} value={settings.uiScale} min={0.9} max={1.4} step={0.05} onChange={(v) => updateSettings({ uiScale: v })} />
           <Range label={t('quranSize')} value={settings.quranSize} min={20} max={48} step={1} onChange={(v) => updateSettings({ quranSize: v })} preview={<p class="ayah-text" style="text-align:start;text-align-last:start">ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ</p>} />
+          <Range label={isAr() ? 'تباعد أسطر المصحف' : 'Quran line spacing'} value={settings.quranLine} min={1.7} max={2.8} step={0.05} onChange={(v) => updateSettings({ quranLine: v })} />
           <Range label={t('bodySize')} value={settings.bodySize} min={14} max={28} step={1} onChange={(v) => updateSettings({ bodySize: v })} />
+          <Toggle label={isAr() ? 'تلوين أحكام التجويد في وضع الآيات' : 'Tajweed colours (ayah mode)'} checked={settings.tajweed} onChange={(v) => updateSettings({ tajweed: v })} />
           <hr />
           <Toggle label={t('simpleMode')} checked={settings.simpleMode} onChange={(v) => updateSettings({ simpleMode: v })} />
           <Toggle label={t('reduceMotion')} checked={settings.reduceMotion} onChange={(v) => updateSettings({ reduceMotion: v })} />
           <Toggle label={isAr() ? 'إظهار التقدم الشخصي' : 'Show personal progress'} sub={isAr() ? 'لا يُحسب ثواب ولا يُقيَّم إيمان — مجرد متابعة خاصة' : 'No reward counting, no judgement — private tracking only'} checked={settings.showProgress} onChange={(v) => updateSettings({ showProgress: v })} />
+        </section>
+        <section class="card">
+          <h2>{isAr() ? 'الاستماع آية بآية' : 'Ayah-by-ayah audio'}</h2>
+          <AyahAudioSettings />
         </section>
         <section class="card">
           <h2>{t('prayer')}</h2>

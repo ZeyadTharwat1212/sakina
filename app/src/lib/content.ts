@@ -40,6 +40,71 @@ export const TAFSIRS = [
   { id: 'jalalayn', name: 'تفسير الجلالين', author: 'المحلي والسيوطي', level: 'مختصر' },
 ] as const;
 
+/* ---------- Second content pass (scripts/build-extras.mjs) ---------- */
+export interface TafsirEntry { id: string; name: string; lang: string; author: string; bundled: boolean; builtin?: boolean; url?: string }
+export interface TranslationEntry { id: string; lang: string; name: string; author: string; bundled: boolean; direction?: string; source?: string }
+export const getTafsirCatalog = () => load<TafsirEntry[]>('tafsir/catalog.json');
+export const getTranslationCatalog = () => load<TranslationEntry[]>('translations/catalog.json');
+export const getHadithBooks = () => load<{ id: string; title: string; author: string; total?: number }[]>('hadith/books.json');
+/** KFGQPC official Hafs text (v18) with page/line per ayah. */
+export const getHafs = (ch: number) => load<{ ch: number; verses: { v: number; t: string; page: number; l1: number; l2: number }[] }>(`quran/hafs/${ch}.json`);
+export const getTajweed = (ch: number) => load<Record<string, [number, number, string][]>>(`quran/tajweed/${ch}.json`);
+export const getAyahAudioSources = () => load<{ templates: { everyayah: string; islamicnet: string }; reciters: { id: string; ar: string; en: string; in: string | null; ea: string }[] }>('audio/ayah-sources.json');
+
+const OFFLINE_CACHE = 'sakina-text-v1';
+/** Any tafsir by id: built-in (quran/tafsir), bundled (tafsir/<id>) or on-demand from jsDelivr (cached on device once fetched). */
+export async function getTafsirAny(id: string, ch: number): Promise<PerVerse> {
+  if (id === 'muyassar' || id === 'jalalayn') return getTafsir(id, ch);
+  const cat = await getTafsirCatalog();
+  const e = cat.find((x) => x.id === id);
+  if (!e) throw new Error('tafsir ' + id);
+  if (e.bundled) return load<PerVerse>(`tafsir/${id}/${ch}.json`);
+  const url = e.url!.replace('{surah}', String(ch));
+  const key = `tafsir:${id}:${ch}`;
+  if (!cache.has(key)) cache.set(key, (async () => {
+    let r: Response | undefined;
+    try { const c = await caches.open(OFFLINE_CACHE); r = await c.match(url) || undefined; } catch { /* no cache API */ }
+    if (!r) { r = await fetch(url); if (!r.ok) throw new Error(`${r.status}`); try { const c = await caches.open(OFFLINE_CACHE); await c.put(url, r.clone()); } catch { /* ignore */ } }
+    const rows = (await r.json()) as { ayah: number; text: string }[];
+    return { ch, verses: rows.map((x) => ({ v: x.ayah, t: x.text })) } as PerVerse;
+  })());
+  return cache.get(key) as Promise<PerVerse>;
+}
+/** Download a whole on-demand tafsir for offline use; reports progress. */
+export async function downloadTafsir(id: string, onProgress?: (done: number) => void) {
+  const cat = await getTafsirCatalog(); const e = cat.find((x) => x.id === id); if (!e || e.bundled) return;
+  const c = await caches.open(OFFLINE_CACHE);
+  for (let ch = 1; ch <= 114; ch++) { const url = e.url!.replace('{surah}', String(ch)); if (!(await c.match(url))) { const r = await fetch(url); if (r.ok) await c.put(url, r); } onProgress?.(ch); }
+}
+export async function tafsirOfflineCount(id: string): Promise<number> {
+  const cat = await getTafsirCatalog(); const e = cat.find((x) => x.id === id); if (!e || e.bundled) return 114;
+  try { const c = await caches.open(OFFLINE_CACHE); let n = 0; for (let ch = 1; ch <= 114; ch++) if (await c.match(e.url!.replace('{surah}', String(ch)))) n++; return n; } catch { return 0; }
+}
+export const getTranslationAny = (id: string, ch: number) => id === 'en-saheeh' ? getTranslation(id, ch) : load<PerVerse>(`translations/${id}/${ch}.json`);
+
+/* ---------- Mushaf pages (QCF v4) ---------- */
+export type MushafWord = [string, 'w' | 'e' | 'h' | 'b' | 'q', string | number | null, 'B' | undefined];
+export interface MushafPage { p: number; font: string; surahs: [number, number, number][]; lines: { n: number; w: MushafWord[] }[] }
+export const getMushafPage = (p: number) => { const key = `mushaf/pages/${p}`; if (!cache.has(key)) cache.set(key, fetch(`mushaf/pages/${p}.json`).then((r) => { if (!r.ok) throw new Error(`page ${p}: ${r.status}`); return r.json(); })); return cache.get(key) as Promise<MushafPage>; };
+export const getMushafVerses = () => { const key = 'mushaf/verses'; if (!cache.has(key)) cache.set(key, fetch('mushaf/verses.json').then((r) => r.json())); return cache.get(key) as Promise<Record<string, { page: number; lines: { line: number; word_start: number; word_end: number }[] }>>; };
+const loadedFonts = new Set<string>();
+/** Load one QCF4 page font (≈0.8 MB, covers ~13 pages) through the FontFace API; cached by the service worker afterwards. */
+export async function ensureMushafFont(name: string): Promise<void> {
+  if (loadedFonts.has(name)) return;
+  const file = name === 'QCF4_QBSML' ? 'QCF4_QBSML.woff2' : `${name}_W.woff2`;
+  const ff = new FontFace(name, `url(fonts/qcf4/${file})`);
+  await ff.load();
+  (document.fonts as unknown as { add: (f: FontFace) => void }).add(ff);
+  loadedFonts.add(name);
+}
+export async function mushafFontsCached(): Promise<number> {
+  try { const keys = await caches.keys(); let n = 0; for (const k of keys) { const c = await caches.open(k); const reqs = await c.keys(); n += reqs.filter((r) => r.url.includes('/fonts/qcf4/')).length; } return n; } catch { return 0; }
+}
+export async function downloadAllMushafFonts(onProgress?: (done: number, total: number) => void) {
+  const names = [...new Set(Object.values(await (await fetch('mushaf/font-map.json')).json() as Record<string, string>)), 'QCF4_QBSML'];
+  let i = 0; for (const n of names) { await ensureMushafFont(n); onProgress?.(++i, names.length); }
+}
+
 /** Display text of an ayah: the stored text is verbatim Tanzil; the basmala prefix of verse 1 is rendered as a header instead. */
 export function ayahDisplay(s: SurahText, v: { v: number; t: string }): string {
   return v.v === 1 && s.basmalaPrefixLen ? v.t.slice(s.basmalaPrefixLen) : v.t;

@@ -1,0 +1,297 @@
+[
+ {
+  "id": "en-saheeh",
+  "lang": "en",
+  "name": "English — Saheeh International",
+  "author": "Saheeh International",
+  "bundled": true
+ },
+ {
+  "id": "eng-abdullahyusufal",
+  "lang": "en",
+  "name": "English — Yusuf Ali",
+  "author": "Abdullah Yusuf Ali",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "eng-mustafakhattaba",
+  "lang": "en",
+  "name": "English — The Clear Quran",
+  "author": "Mustafa Khattab",
+  "bundled": true,
+  "direction": "ltr",
+  "source": ""
+ },
+ {
+  "id": "urd-muhammadjunagar",
+  "lang": "ur",
+  "name": "اردو — محمد جوناگڑھی",
+  "author": "Muhammad Junagarhi",
+  "bundled": true,
+  "direction": "rtl",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "urd-abulaalamaududi",
+  "lang": "ur",
+  "name": "اردو — تفہیم القرآن",
+  "author": "Abul A‘la Maududi",
+  "bundled": true,
+  "direction": "rtl",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "ind-indonesianislam",
+  "lang": "id",
+  "name": "Indonesia — Kemenag",
+  "author": "Indonesian Islamic Affairs Ministry",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://quranenc.com/check/indonesian_affairs/v1.0.0-csv.1 , https://quranenc.com/en/browse/indonesian_affairs , https://quranenc.com ,"
+ },
+ {
+  "id": "tur-diyanetisleri",
+  "lang": "tr",
+  "name": "Türkçe — Diyanet İşleri",
+  "author": "Diyanet İşleri",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "fra-muhammadhamidul",
+  "lang": "fr",
+  "name": "Français — Hamidullah",
+  "author": "Muhammad Hamidullah",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "deu-asfbubenheimand",
+  "lang": "de",
+  "name": "Deutsch — Bubenheim & Elyas",
+  "author": "A. S. F. Bubenheim and N. Elyas",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "spa-islamicfoundati",
+  "lang": "es",
+  "name": "Español — Fundación Islámica (Montada)",
+  "author": "Islamic Foundation",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://quranenc.com/check/spanish_montada_eu/v1.0.0-csv.1 , https://quranenc.com/en/browse/spanish_montada_eu , https://quranenc.com ,"
+ },
+ {
+  "id": "ben-abubakrzakaria",
+  "lang": "bn",
+  "name": "বাংলা — আবু বকর যাকারিয়া",
+  "author": "Abu Bakr Zakaria",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://qurancomplex.gov.sa/"
+ },
+ {
+  "id": "msa-abdullahmuhamma",
+  "lang": "ms",
+  "name": "Melayu — Basmeih",
+  "author": "Abdullah Muhammad Basmeih",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "rus-elmirkuliev",
+  "lang": "ru",
+  "name": "Русский — Кулиев",
+  "author": "Elmir Kuliev",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "zho-muhammadmakin",
+  "lang": "zh",
+  "name": "中文 — 马坚",
+  "author": "Muhammad Makin",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://quranenc.com/check/chinese_makin/v1.0.0-csv.1 , https://quranenc.com/en/browse/chinese_makin , https://quranenc.com ,"
+ },
+ {
+  "id": "hin-maulanaazizulha",
+  "lang": "hi",
+  "name": "हिन्दी — अज़ीज़ुल हक़ उमरी",
+  "author": "Maulana Azizul Haque al-Umari",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://quranenc.com/check/hindi_omari/v1.1.0-csv.1 , https://quranenc.com/en/browse/hindi_omari , https://quranenc.com ,"
+ },
+ {
+  "id": "swa-abdullahmuhamma",
+  "lang": "sw",
+  "name": "Kiswahili — Abdullah Muhammad",
+  "author": "Abdullah Muhammad Abu Bakr",
+  "bundled": true,
+  "direction": "ltr",
+  "source": ""
+ },
+ {
+  "id": "fas-islamhousecompe",
+  "lang": "fa",
+  "name": "فارسی — اسلام‌هاوس",
+  "author": "IslamHouse Persian team",
+  "bundled": true,
+  "direction": "rtl",
+  "source": "https://quranenc.com/check/persian_ih/v1.1.0-csv.1 , https://quranenc.com/en/browse/persian_ih , https://quranenc.com ,"
+ },
+ {
+  "id": "hau-abubakarmahmood",
+  "lang": "ha",
+  "name": "Hausa — Gumi",
+  "author": "Abubakar Mahmood Gumi",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://quranenc.com/check/hausa_gummi/v1.2.0-csv.1 , https://quranenc.com/en/browse/hausa_gummi , https://quranenc.com ,"
+ },
+ {
+  "id": "som-abdullahhasanja",
+  "lang": "so",
+  "name": "Soomaali — Yacquub",
+  "author": "Abdullah Hasan Jacob",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://quranenc.com/en/browse/somali_yacob"
+ },
+ {
+  "id": "ita-hamzarobertopic",
+  "lang": "it",
+  "name": "Italiano — Piccardo",
+  "author": "Hamza Roberto Piccardo",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "por-helminasr",
+  "lang": "pt",
+  "name": "Português — Helmi Nasr",
+  "author": "Helmi Nasr",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://quranenc.com/check/portuguese_nasr/v1.3.0-csv.1 , https://quranenc.com/en/browse/portuguese_nasr , https://quranenc.com ,"
+ },
+ {
+  "id": "nld-sofianssiregar",
+  "lang": "nl",
+  "name": "Nederlands — Siregar",
+  "author": "Sofian S. Siregar",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "bos-besimkorkut",
+  "lang": "bs",
+  "name": "Bosanski — Korkut",
+  "author": "Besim Korkut",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "sqi-hassannahi",
+  "lang": "sq",
+  "name": "Shqip — Nahi",
+  "author": "Hassan Nahi",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://quranenc.com/check/albanian_nahi/v1.1.0-csv.1 , https://quranenc.com/en/browse/albanian_nahi , https://quranenc.com ,"
+ },
+ {
+  "id": "amh-muhammedsadiqan",
+  "lang": "am",
+  "name": "አማርኛ — ሳዲቅ እና ሳኒ",
+  "author": "Muhammed Sadiq and Muhammed Sani Habib",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "tam-abdulhameedbaqa",
+  "lang": "ta",
+  "name": "தமிழ் — பாகவி",
+  "author": "Abdulhameed Baqavi",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://quranenc.com/check/tamil_baqavi/v1.0.0-csv.1 , https://quranenc.com/en/browse/tamil_baqavi , https://quranenc.com ,"
+ },
+ {
+  "id": "mal-abdulhameedmada",
+  "lang": "ml",
+  "name": "മലയാളം — മദനി",
+  "author": "Abdul Hameed Madani and Kunhi Mohammed",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://qurancomplex.gov.sa/"
+ },
+ {
+  "id": "kur-muhammadsalehba",
+  "lang": "ku",
+  "name": "کوردی — بامۆکی",
+  "author": "Muhammad Saleh Bamoki",
+  "bundled": true,
+  "direction": "rtl",
+  "source": "https://quranenc.com/check/kurdish_bamoki/v1.1.0-csv.1 , https://quranenc.com/en/browse/kurdish_bamoki , https://quranenc.com ,"
+ },
+ {
+  "id": "aze-alikhanmusayev",
+  "lang": "az",
+  "name": "Azərbaycan — Musayev",
+  "author": "Alikhan Musayev",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ },
+ {
+  "id": "uzb-alauddinmansour",
+  "lang": "uz",
+  "name": "Oʻzbek — Mansur",
+  "author": "Alauddin Mansour",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://quranenc.com/check/uzbek_mansour/v1.0.0-csv.1 , https://quranenc.com/en/browse/uzbek_mansour , https://quranenc.com ,"
+ },
+ {
+  "id": "jpn-ryoichimita",
+  "lang": "ja",
+  "name": "日本語 — 三田了一",
+  "author": "Ryoichi Mita",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://quranenc.com/check/japanese_meta/v1.0.0-csv.1 , https://quranenc.com/en/browse/japanese_meta , https://quranenc.com ,"
+ },
+ {
+  "id": "kor-hamidchoi",
+  "lang": "ko",
+  "name": "한국어 — 최영길",
+  "author": "Hamid Choi",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "https://qurancomplex.gov.sa/"
+ },
+ {
+  "id": "ara-quran-la",
+  "lang": "tl",
+  "name": "Transliteration (Latin letters)",
+  "author": "Tanzil",
+  "bundled": true,
+  "direction": "ltr",
+  "source": "http://tanzil.net"
+ }
+]

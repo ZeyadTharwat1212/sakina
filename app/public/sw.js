@@ -1,6 +1,6 @@
 /* Sakina service worker — offline shell + content cache. No backend involved. */
 const VERSION = 'sakina-v1';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './content/quran/chapters.json', './content/quran/meta.json', './content/adhkar/azkar.json', './content/ledger.json', './fonts/AmiriQuran.ttf', './fonts/NotoSansArabic-VF.ttf', './fonts/NotoNaskhArabic-VF.ttf'];
+const SHELL = ['./', './index.html', './manifest.webmanifest', './content/quran/chapters.json', './content/quran/meta.json', './content/adhkar/azkar.json', './content/ledger.json', './fonts/ReadexPro-VF.woff2', './fonts/KFGQPC-HafsSmart.woff2', './fonts/NotoNaskhArabic-VF.ttf', './mushaf/font-map.json'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });

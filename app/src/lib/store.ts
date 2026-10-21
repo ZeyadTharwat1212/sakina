@@ -46,7 +46,7 @@ export interface Settings {
   hijriAuthority: string; // free text: which announcement they follow
   tafsir: 'jalalayn' | 'muyassar';
   showTranslation: boolean;
-  quranMode: 'ayah' | 'page';
+  quranMode: 'ayah' | 'page' | 'mushaf';
   reciterId: string | null;
   location: Location | null;
   prayer: PrayerSettings;
@@ -61,6 +61,15 @@ export interface Settings {
   qiyam: { third: 'off' | 'first' | 'second' | 'last'; beforeFajrMin: number; witr: boolean };
   fajrAlarm: { on: boolean; offsetMin: number; repeatMin: number };
   ramadan: { iftar: boolean; suhoor: boolean; suhoorMin: number; qadr: boolean; chime: boolean };
+  uiFont: 'readex' | 'plex' | 'noto';
+  quranFont: 'kfgqpc' | 'hafs' | 'amiri';
+  quranLine: number;           // line-height multiplier for ayah text
+  tajweed: boolean;            // colour tajweed rules in ayah/text modes
+  translationId: string;       // which translation shows under ayahs (translations/catalog.json)
+  tafsirId: string;            // any id from tafsir/catalog.json (replaces the 2-value `tafsir` when set)
+  mushafSize: number;          // px, page mode
+  ayahReciter: string;         // per-ayah audio reciter id (audio/ayah-sources.json)
+  ayahRepeat: number;          // repeat each ayah N times in ayah-by-ayah playback
 }
 
 export interface ReadingPosition { ch: number; v: number; page: number; at: number; kind: 'read' | 'listen' }
@@ -99,6 +108,7 @@ export const DEFAULT_SETTINGS: Settings = {
   qiyam: { third: 'off', beforeFajrMin: 0, witr: false },
   fajrAlarm: { on: false, offsetMin: 0, repeatMin: 5 },
   ramadan: { iftar: false, suhoor: false, suhoorMin: 45, qadr: false, chime: true },
+  uiFont: 'readex', quranFont: 'kfgqpc', quranLine: 2.15, tajweed: false, translationId: 'en-saheeh', tafsirId: 'muyassar', mushafSize: 0, ayahReciter: 'alafasy', ayahRepeat: 1,
 };
 export const DEFAULT_USER: UserData = {
   lastRead: null, lastListen: null, bookmarks: [], favAdhkar: [], favHadith: [], sessions: {},
@@ -170,12 +180,15 @@ export function applyTheme() {
   root.setAttribute('data-motion', settings.reduceMotion ? 'reduce' : 'normal');
   root.setAttribute('data-simple', settings.simpleMode ? '1' : '0');
   root.setAttribute('lang', settings.lang);
+  root.setAttribute('data-ui-font', settings.uiFont);
+  root.setAttribute('data-quran-font', settings.quranFont);
+  root.style.setProperty('--quran-line', String(settings.quranLine));
   root.setAttribute('dir', settings.lang === 'ar' ? 'rtl' : 'ltr');
   root.style.setProperty('--ui-scale', String(settings.simpleMode ? Math.max(1.2, settings.uiScale) : settings.uiScale));
   root.style.setProperty('--quran-size', `${settings.quranSize}px`);
   root.style.setProperty('--body-size', `${settings.bodySize}px`);
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', t === 'dark' ? '#101C18' : t === 'paper' ? '#F1E8D6' : '#F7F4EC');
+  if (meta) meta.setAttribute('content', t === 'dark' ? '#141917' : t === 'paper' ? '#F3EEE3' : '#F6F5F1');
 }
 
 /** Hook: re-render when settings/user change. */

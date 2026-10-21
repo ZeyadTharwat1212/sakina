@@ -1,0 +1,190 @@
+{
+ "templates": {
+  "everyayah": "https://everyayah.com/data/{folder}/{sss}{aaa}.mp3",
+  "islamicnet": "https://cdn.islamic.network/quran/audio/{bitrate}/{edition}/{n}.mp3"
+ },
+ "reciters": [
+  {
+   "id": "alafasy",
+   "ar": "مشاري راشد العفاسي",
+   "en": "Mishary Alafasy",
+   "in": "ar.alafasy",
+   "ea": "Alafasy_128kbps"
+  },
+  {
+   "id": "husary",
+   "ar": "محمود خليل الحصري",
+   "en": "Mahmoud Khalil Al-Husary",
+   "in": "ar.husary",
+   "ea": "Husary_128kbps"
+  },
+  {
+   "id": "husarymujawwad",
+   "ar": "الحصري — مجوَّد",
+   "en": "Al-Husary (Mujawwad)",
+   "in": "ar.husarymujawwad",
+   "ea": "Husary_Mujawwad_64kbps"
+  },
+  {
+   "id": "husarymuallim",
+   "ar": "الحصري — المصحف المعلم",
+   "en": "Al-Husary (Muallim)",
+   "in": null,
+   "ea": "Husary_Muallim_128kbps"
+  },
+  {
+   "id": "abdulbasit",
+   "ar": "عبد الباسط عبد الصمد — مرتل",
+   "en": "Abdul Basit (Murattal)",
+   "in": "ar.abdulbasitmurattal",
+   "ea": "Abdul_Basit_Murattal_192kbps"
+  },
+  {
+   "id": "abdulbasitmujawwad",
+   "ar": "عبد الباسط — مجوَّد",
+   "en": "Abdul Basit (Mujawwad)",
+   "in": "ar.abdulsamad",
+   "ea": "Abdul_Basit_Mujawwad_128kbps"
+  },
+  {
+   "id": "minshawi",
+   "ar": "محمد صديق المنشاوي — مرتل",
+   "en": "Al-Minshawi (Murattal)",
+   "in": "ar.minshawi",
+   "ea": "Minshawy_Murattal_128kbps"
+  },
+  {
+   "id": "minshawimujawwad",
+   "ar": "المنشاوي — مجوَّد",
+   "en": "Al-Minshawi (Mujawwad)",
+   "in": "ar.minshawimujawwad",
+   "ea": "Minshawy_Mujawwad_192kbps"
+  },
+  {
+   "id": "sudais",
+   "ar": "عبد الرحمن السديس",
+   "en": "Abdurrahman As-Sudais",
+   "in": "ar.abdurrahmaansudais",
+   "ea": "Abdurrahmaan_As-Sudais_192kbps"
+  },
+  {
+   "id": "shuraym",
+   "ar": "سعود الشريم",
+   "en": "Saud Ash-Shuraym",
+   "in": "ar.saoodshuraym",
+   "ea": "Saood_ash-Shuraym_128kbps"
+  },
+  {
+   "id": "ghamdi",
+   "ar": "سعد الغامدي",
+   "en": "Saad Al-Ghamdi",
+   "in": null,
+   "ea": "Ghamadi_40kbps"
+  },
+  {
+   "id": "hudhaify",
+   "ar": "علي الحذيفي",
+   "en": "Ali Al-Hudhaify",
+   "in": "ar.hudhaify",
+   "ea": "Hudhaify_128kbps"
+  },
+  {
+   "id": "ayyoub",
+   "ar": "محمد أيوب",
+   "en": "Muhammad Ayyoub",
+   "in": "ar.muhammadayyoub",
+   "ea": "Muhammad_Ayyoub_128kbps"
+  },
+  {
+   "id": "ajamy",
+   "ar": "أحمد بن علي العجمي",
+   "en": "Ahmed Al-Ajamy",
+   "in": "ar.ahmedajamy",
+   "ea": "Ahmed_ibn_Ali_al-Ajamy_128kbps"
+  },
+  {
+   "id": "tablawi",
+   "ar": "محمد محمود الطبلاوي",
+   "en": "Mohammad Al-Tablawi",
+   "in": null,
+   "ea": "Mohammad_al_Tablaway_128kbps"
+  },
+  {
+   "id": "muaiqly",
+   "ar": "ماهر المعيقلي",
+   "en": "Maher Al-Muaiqly",
+   "in": "ar.mahermuaiqly",
+   "ea": "Maher_AlMuaiqly_64kbps"
+  },
+  {
+   "id": "shaatree",
+   "ar": "أبو بكر الشاطري",
+   "en": "Abu Bakr Ash-Shaatree",
+   "in": "ar.shaatree",
+   "ea": "Abu_Bakr_Ash-Shaatree_128kbps"
+  },
+  {
+   "id": "rifai",
+   "ar": "هاني الرفاعي",
+   "en": "Hani Ar-Rifai",
+   "in": "ar.hanirifai",
+   "ea": "Hani_Rifai_192kbps"
+  },
+  {
+   "id": "dussary",
+   "ar": "ياسر الدوسري",
+   "en": "Yasser Ad-Dussary",
+   "in": null,
+   "ea": "Yasser_Ad-Dussary_128kbps"
+  },
+  {
+   "id": "qatami",
+   "ar": "ناصر القطامي",
+   "en": "Nasser Al-Qatami",
+   "in": null,
+   "ea": "Nasser_Alqatami_128kbps"
+  },
+  {
+   "id": "jibreel",
+   "ar": "محمد جبريل",
+   "en": "Muhammad Jibreel",
+   "in": "ar.muhammadjibreel",
+   "ea": "Muhammad_Jibreel_128kbps"
+  },
+  {
+   "id": "basfar",
+   "ar": "عبد الله بصفر",
+   "en": "Abdullah Basfar",
+   "in": null,
+   "ea": "Abdullah_Basfar_192kbps"
+  },
+  {
+   "id": "qahtani",
+   "ar": "خالد القحطاني",
+   "en": "Khalid Al-Qahtani",
+   "in": null,
+   "ea": "Khaalid_Abdullaah_al-Qahtaanee_192kbps"
+  },
+  {
+   "id": "abbad",
+   "ar": "فارس عباد",
+   "en": "Fares Abbad",
+   "in": null,
+   "ea": "Fares_Abbad_64kbps"
+  },
+  {
+   "id": "sowaid",
+   "ar": "أيمن سويد",
+   "en": "Ayman Sowaid",
+   "in": "ar.aymanswoaid",
+   "ea": "Ayman_Sowaid_64kbps"
+  },
+  {
+   "id": "akhdar",
+   "ar": "إبراهيم الأخضر",
+   "en": "Ibrahim Al-Akhdar",
+   "in": "ar.ibrahimakhbar",
+   "ea": "Ibrahim_Akhdar_32kbps"
+  }
+ ]
+}

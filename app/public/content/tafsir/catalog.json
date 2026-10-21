@@ -1,0 +1,326 @@
+[
+ {
+  "id": "muyassar",
+  "name": "التفسير الميسر",
+  "lang": "ar",
+  "author": "مجمع الملك فهد",
+  "bundled": true,
+  "builtin": true
+ },
+ {
+  "id": "jalalayn",
+  "name": "تفسير الجلالين",
+  "lang": "ar",
+  "author": "المحلي والسيوطي",
+  "bundled": true,
+  "builtin": true
+ },
+ {
+  "id": "ar-tafseer-al-saddi",
+  "name": "تيسير الكريم الرحمن (السعدي)",
+  "lang": "ar",
+  "author": "عبد الرحمن بن ناصر السعدي",
+  "bundled": true
+ },
+ {
+  "id": "ar-tafsir-al-mukhtasar",
+  "name": "المختصر في التفسير",
+  "lang": "ar",
+  "author": "مركز تفسير للدراسات القرآنية",
+  "bundled": true
+ },
+ {
+  "id": "en-tafsir-al-mukhtasar",
+  "name": "Al-Mukhtasar (English)",
+  "lang": "en",
+  "author": "Tafsir Center for Quranic Studies",
+  "bundled": true
+ },
+ {
+  "id": "ar-tafsir-al-baghawi",
+  "name": "معالم التنزيل (البغوي)",
+  "lang": "ar",
+  "author": "الحسين بن مسعود البغوي",
+  "bundled": true
+ },
+ {
+  "id": "ar-tafsir-ibn-kathir",
+  "name": "تفسير القرآن العظيم (ابن كثير)",
+  "lang": "ar",
+  "author": "إسماعيل بن عمر بن كثير",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafsir-ibn-kathir/{surah}.json"
+ },
+ {
+  "id": "ar-tafsir-al-tabari",
+  "name": "جامع البيان (الطبري)",
+  "lang": "ar",
+  "author": "محمد بن جرير الطبري",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafsir-al-tabari/{surah}.json"
+ },
+ {
+  "id": "ar-tafseer-al-qurtubi",
+  "name": "الجامع لأحكام القرآن (القرطبي)",
+  "lang": "ar",
+  "author": "محمد بن أحمد القرطبي",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafseer-al-qurtubi/{surah}.json"
+ },
+ {
+  "id": "ar-tafsir-al-wasit",
+  "name": "الوسيط (طنطاوي)",
+  "lang": "ar",
+  "author": "محمد سيد طنطاوي",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafsir-al-wasit/{surah}.json"
+ },
+ {
+  "id": "tafsir-ibn-uthaymeen",
+  "name": "تفسير ابن عثيمين",
+  "lang": "ar",
+  "author": "محمد بن صالح العثيمين",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/tafsir-ibn-uthaymeen/{surah}.json"
+ },
+ {
+  "id": "ar-tafseer-tahrir-al-tanwir",
+  "name": "التحرير والتنوير (ابن عاشور)",
+  "lang": "ar",
+  "author": "محمد الطاهر بن عاشور",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafseer-tahrir-al-tanwir/{surah}.json"
+ },
+ {
+  "id": "tafsir-ibn-al-jawzi",
+  "name": "زاد المسير (ابن الجوزي)",
+  "lang": "ar",
+  "author": "عبد الرحمن بن الجوزي",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/tafsir-ibn-al-jawzi/{surah}.json"
+ },
+ {
+  "id": "fath-al-qadir-al-shawkani",
+  "name": "فتح القدير (الشوكاني)",
+  "lang": "ar",
+  "author": "محمد بن علي الشوكاني",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/fath-al-qadir-al-shawkani/{surah}.json"
+ },
+ {
+  "id": "al-muharrar-al-wajiz-ibn-atiyyah",
+  "name": "المحرر الوجيز (ابن عطية)",
+  "lang": "ar",
+  "author": "ابن عطية الأندلسي",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/al-muharrar-al-wajiz-ibn-atiyyah/{surah}.json"
+ },
+ {
+  "id": "tafsir-al-baydawi",
+  "name": "أنوار التنزيل (البيضاوي)",
+  "lang": "ar",
+  "author": "ناصر الدين البيضاوي",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/tafsir-al-baydawi/{surah}.json"
+ },
+ {
+  "id": "al-muyassar-fi-al-gharib",
+  "name": "الميسر في غريب القرآن",
+  "lang": "ar",
+  "author": "مجمع الملك فهد",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/al-muyassar-fi-al-gharib/{surah}.json"
+ },
+ {
+  "id": "asseraj-fi-bayan-gharib-alquran",
+  "name": "السراج في بيان غريب القرآن",
+  "lang": "ar",
+  "author": "محمد الخضيري",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/asseraj-fi-bayan-gharib-alquran/{surah}.json"
+ },
+ {
+  "id": "tadabbur-wa-amal",
+  "name": "تدبر وعمل",
+  "lang": "ar",
+  "author": "مركز تدبر",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/tadabbur-wa-amal/{surah}.json"
+ },
+ {
+  "id": "en-tafisr-ibn-kathir",
+  "name": "Tafsir Ibn Kathir (English, abridged)",
+  "lang": "en",
+  "author": "Ibn Kathir",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/en-tafisr-ibn-kathir/{surah}.json"
+ },
+ {
+  "id": "en-tafsir-maarif-ul-quran",
+  "name": "Ma‘ariful Qur’an (English)",
+  "lang": "en",
+  "author": "Mufti Muhammad Shafi",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/en-tafsir-maarif-ul-quran/{surah}.json"
+ },
+ {
+  "id": "tafsir-al-jalalayn",
+  "name": "Tafsir al-Jalalayn (English)",
+  "lang": "en",
+  "author": "al-Mahalli & al-Suyuti",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/tafsir-al-jalalayn/{surah}.json"
+ },
+ {
+  "id": "ur-tafseer-ibn-e-kaseer",
+  "name": "تفسیر ابن کثیر (اردو)",
+  "lang": "ur",
+  "author": "Ibn Kathir",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ur-tafseer-ibn-e-kaseer/{surah}.json"
+ },
+ {
+  "id": "ur-tafsir-bayan-ul-quran",
+  "name": "بیان القرآن (اردو)",
+  "lang": "ur",
+  "author": "Dr. Israr Ahmad",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ur-tafsir-bayan-ul-quran/{surah}.json"
+ },
+ {
+  "id": "indonesian-mokhtasar",
+  "name": "Al-Mukhtasar (Indonesia)",
+  "lang": "id",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/indonesian-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "turkish-mokhtasar",
+  "name": "Al-Mukhtasar (Türkçe)",
+  "lang": "tr",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/turkish-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "french-mokhtasar",
+  "name": "Al-Mukhtasar (Français)",
+  "lang": "fr",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/french-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "spanish-mokhtasar",
+  "name": "Al-Mukhtasar (Español)",
+  "lang": "es",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/spanish-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "bengali-mokhtasar",
+  "name": "Al-Mukhtasar (বাংলা)",
+  "lang": "bn",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/bengali-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "russian-mokhtasar",
+  "name": "Al-Mukhtasar (Русский)",
+  "lang": "ru",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/russian-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "chinese-mokhtasar",
+  "name": "Al-Mukhtasar (中文)",
+  "lang": "zh",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/chinese-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "persian-mokhtasar",
+  "name": "Al-Mukhtasar (فارسی)",
+  "lang": "fa",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/persian-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "hindi-mokhtasar",
+  "name": "Al-Mukhtasar (हिन्दी)",
+  "lang": "hi",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/hindi-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "italian-mokhtasar",
+  "name": "Al-Mukhtasar (Italiano)",
+  "lang": "it",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/italian-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "bosnian-mokhtasar",
+  "name": "Al-Mukhtasar (Bosanski)",
+  "lang": "bs",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/bosnian-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "malayalam-mokhtasar",
+  "name": "Al-Mukhtasar (മലയാളം)",
+  "lang": "ml",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/malayalam-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "tamil-mokhtasar",
+  "name": "Al-Mukhtasar (தமிழ்)",
+  "lang": "ta",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/tamil-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "japanese-mokhtasar",
+  "name": "Al-Mukhtasar (日本語)",
+  "lang": "ja",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/japanese-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "uzbek-mokhtasar",
+  "name": "Al-Mukhtasar (Oʻzbek)",
+  "lang": "uz",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/uzbek-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "kurdish-mokhtasar",
+  "name": "Al-Mukhtasar (کوردی)",
+  "lang": "ku",
+  "author": "Tafsir Center",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/kurdish-mokhtasar/{surah}.json"
+ },
+ {
+  "id": "sq-saadi",
+  "name": "Tefsiri i Saadiut (Shqip)",
+  "lang": "sq",
+  "author": "as-Saadi",
+  "bundled": false,
+  "url": "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/sq-saadi/{surah}.json"
+ }
+]

@@ -1,16 +1,31 @@
 /** Sections 22–24, 34: hadith library, unified search, sources & rights ledger. */
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { getHadithIndex, getHadithChapter, getChapters, getSearchIndex, getAdhkar, getLedger, normalizeArabic, type LedgerEntry } from '../lib/content';
+import { getHadithIndex, getHadithChapter, getChapters, getSearchIndex, getAdhkar, getLedger, normalizeArabic, getTafsirCatalog, getTranslationCatalog, downloadTafsir, tafsirOfflineCount, type LedgerEntry } from '../lib/content';
+import { updateSettings } from '../lib/store';
 import { useStore, updateUser } from '../lib/store';
 import { t, num, isAr } from '../lib/i18n';
 import { navigate } from '../lib/router';
 import { TopBar, Icon, useAsync, Loading, shareText, copyText, Notice } from '../components/ui';
 import { ToolsGrid } from './Tools';
 
-const BOOKS = [
+export const BOOKS = [
   { id: 'bukhari', name: 'صحيح البخاري', en: 'Sahih al-Bukhari' },
   { id: 'muslim', name: 'صحيح مسلم', en: 'Sahih Muslim' },
   { id: 'nawawi40', name: 'الأربعون النووية', en: 'Forty Hadith of al-Nawawi' },
+  { id: 'abudawud', name: 'سنن أبي داود', en: 'Sunan Abi Dawud' },
+  { id: 'tirmidhi', name: 'جامع الترمذي', en: 'Jami‘ at-Tirmidhi' },
+  { id: 'nasai', name: 'سنن النسائي', en: 'Sunan an-Nasa’i' },
+  { id: 'ibnmajah', name: 'سنن ابن ماجه', en: 'Sunan Ibn Majah' },
+  { id: 'malik', name: 'موطأ مالك', en: 'Muwatta Malik' },
+  { id: 'darimi', name: 'سنن الدارمي', en: 'Sunan ad-Darimi' },
+  { id: 'ahmad', name: 'مسند أحمد (جزئي)', en: 'Musnad Ahmad (partial)' },
+  { id: 'riyad', name: 'رياض الصالحين', en: 'Riyad as-Salihin' },
+  { id: 'bulugh', name: 'بلوغ المرام', en: 'Bulugh al-Maram' },
+  { id: 'mishkat', name: 'مشكاة المصابيح', en: 'Mishkat al-Masabih' },
+  { id: 'adab', name: 'الأدب المفرد', en: 'Al-Adab al-Mufrad' },
+  { id: 'shamail', name: 'الشمائل المحمدية', en: 'Shama’il Muhammadiyah' },
+  { id: 'qudsi40', name: 'الأربعون القدسية', en: 'Forty Hadith Qudsi' },
+  { id: 'dehlawi40', name: 'أربعون الدهلوي', en: 'Forty Hadith of Shah Waliullah' },
 ];
 
 export function LibraryHome() {
@@ -21,7 +36,13 @@ export function LibraryHome() {
       <button class="input" style="text-align:start;color:var(--muted);margin-bottom:16px" onClick={() => navigate('/library/search')}>{t('searchHint')}</button>
       <h2 style="margin-bottom:8px">{isAr() ? 'الأدوات' : 'Tools'}</h2>
       <ToolsGrid />
-      <h2 style="margin:20px 0 8px">{t('hadith')}</h2>
+      <h2 style="margin:20px 0 8px">{isAr() ? 'القرآن: التفاسير والترجمات' : 'Quran: tafsirs & translations'}</h2>
+      <div class="list">
+        <button class="list-item" onClick={() => navigate('/library/tafsirs')}><Icon name="book" /><span class="grow"><span class="title">{isAr() ? 'التفاسير' : 'Tafsirs'}</span><br /><span class="sub">{isAr() ? 'الميسر، الجلالين، السعدي، المختصر، البغوي مضمّنة · ابن كثير والطبري والقرطبي وغيرها عند الطلب' : 'Bundled + on-demand (Ibn Kathir, Tabari, Qurtubi…)'}</span></span></button>
+        <button class="list-item" onClick={() => navigate('/library/translations')}><Icon name="info" /><span class="grow"><span class="title">{isAr() ? 'ترجمات المعاني' : 'Translations'}</span><br /><span class="sub">{isAr() ? '٣٣ إصدارًا بـ ٣١ لغة + كتابة لاتينية' : '33 editions in 31 languages + transliteration'}</span></span></button>
+        <button class="list-item" onClick={() => navigate(`/quran/page/${user.lastRead?.page || 1}`)}><Icon name="quran" /><span class="grow"><span class="title">{isAr() ? 'المصحف (صفحات مطابقة للمطبوع)' : 'Mushaf pages'}</span><br /><span class="sub">{isAr() ? 'مصحف المدينة ١٤٤١هـ، ٦٠٤ صفحات بخطوط مجمع الملك فهد' : 'Madani 1441 AH, 604 pages, KFGQPC fonts'}</span></span></button>
+      </div>
+      <h2 style="margin:20px 0 8px">{t('hadith')} <span class="badge">{num(BOOKS.length)}</span></h2>
       <div class="list">
         {BOOKS.map((b) => (
           <button key={b.id} class="list-item" onClick={() => navigate(`/library/hadith/${b.id}`)}>
@@ -35,7 +56,7 @@ export function LibraryHome() {
         <button class="list-item" onClick={() => navigate('/quran/reciters')}><Icon name="play" /><span class="grow"><span class="title">{isAr() ? 'مكتبة القراء والتلاوات' : 'Reciters & recitations'}</span><br /><span class="sub">{isAr() ? 'استماع، تنزيل، عمل دون إنترنت' : 'Listen, download, offline'}</span></span></button>
         <button class="list-item" onClick={() => navigate('/quran/downloads')}><Icon name="download" /><span class="grow"><span class="title">{isAr() ? 'التنزيلات' : 'Downloads'}</span></span></button>
         <button class="list-item" onClick={() => navigate('/library/sources')}><Icon name="info" /><span class="grow"><span class="title">{t('sources')}</span><br /><span class="sub">{isAr() ? 'سجل المصدر والطبعة والترخيص والمراجعة لكل مادة' : 'Source, edition, licence and review record for every pack'}</span></span></button>
-        <div class="list-item" style="opacity:.6"><Icon name="book" /><span class="grow"><span class="title">{isAr() ? 'التعلم · الفقه · السيرة · الحج · الزكاة · رمضان' : 'Learning · Fiqh · Seerah · Hajj · Zakat · Ramadan'}</span><br /><span class="sub">{isAr() ? 'المرحلة الثانية — بعد المراجعة العلمية وتأمين الحقوق' : 'Phase 2 — after scholarly review and rights clearance'}</span></span><span class="badge">{isAr() ? 'لاحقًا' : 'later'}</span></div>
+
       </div>
     </main>
   );
@@ -180,6 +201,65 @@ export function SourcesScreen() {
               {e.reviewNotes && <><dt>{isAr() ? 'ملاحظات' : 'Notes'}</dt><dd>{e.reviewNotes}</dd></>}
             </dl>
           </section>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+
+/* ------------------------------------------------------------------ Tafsir library: bundled + on-demand (jsDelivr) with offline download */
+export function TafsirLibrary() {
+  const { settings } = useStore();
+  const cat = useAsync(getTafsirCatalog, []);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+  const [prog, setProg] = useState(0);
+  useEffect(() => { if (!cat.data) return; let alive = true; (async () => { const c: Record<string, number> = {}; for (const e of cat.data!) if (!e.bundled) c[e.id] = await tafsirOfflineCount(e.id); if (alive) setCounts(c); })(); return () => { alive = false; }; }, [cat.data, busy]);
+  if (!cat.data) return <main class="screen"><TopBar title={isAr() ? 'التفاسير' : 'Tafsirs'} onBack /><Loading error={cat.error} /></main>;
+  const groups: Record<string, typeof cat.data> = {};
+  for (const e of cat.data) (groups[e.lang] ||= []).push(e);
+  const langName: Record<string, string> = { ar: 'العربية', en: 'English', ur: 'اردو', id: 'Indonesia', tr: 'Türkçe', fr: 'Français', es: 'Español', bn: 'বাংলা', ru: 'Русский', zh: '中文', fa: 'فارسی', hi: 'हिन्दी', it: 'Italiano', bs: 'Bosanski', ml: 'മലയാളം', ta: 'தமிழ்', ja: '日本語', uz: 'Oʻzbek', ku: 'کوردی', sq: 'Shqip' };
+  return (
+    <main class="screen">
+      <TopBar title={isAr() ? 'التفاسير' : 'Tafsirs'} onBack />
+      <p class="text-2 small" style="margin-bottom:12px">{isAr() ? 'المضمّنة تعمل دون إنترنت. البقية تُجلب سورةً سورة من jsDelivr (نسخة مفتوحة من quran.com/tafsir.app) وتُحفظ على جهازك؛ ويمكن تنزيلها كاملة.' : 'Bundled ones work offline; the rest are fetched per surah from jsDelivr and cached, or downloaded fully.'}</p>
+      {Object.entries(groups).map(([lang, list]) => (
+        <section key={lang} class="card" style="margin-bottom:12px">
+          <h3>{langName[lang] || lang}</h3>
+          <div class="list" style="margin-top:8px">
+            {list.map((e) => {
+              const n = e.bundled ? 114 : (counts[e.id] ?? 0);
+              return (
+                <div key={e.id} class="list-item">
+                  <span class="grow"><span class="title">{e.name}</span><br /><span class="sub">{e.author}{e.bundled ? (isAr() ? ' · مضمّن' : ' · bundled') : n === 114 ? (isAr() ? ' · منزَّل كاملًا' : ' · downloaded') : n ? ` · ${num(n)}/114` : (isAr() ? ' · عند الطلب' : ' · on demand')}</span></span>
+                  <button class={`chip ${settings.tafsirId === e.id ? '' : ''}`} aria-pressed={settings.tafsirId === e.id} onClick={() => updateSettings({ tafsirId: e.id })}>{settings.tafsirId === e.id ? (isAr() ? 'الافتراضي' : 'default') : (isAr() ? 'اختيار' : 'use')}</button>
+                  {!e.bundled && n < 114 && <button class="icon-btn" aria-label="download" disabled={busy === e.id} onClick={async () => { setBusy(e.id); setProg(0); try { await downloadTafsir(e.id, setProg); } finally { setBusy(null); } }}>{busy === e.id ? <small class="num">{num(prog)}</small> : <Icon name="download" />}</button>}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+      <p class="muted small">{isAr() ? 'التفاسير تُعرض بنصها كما نُشرت، مع اسم الطبعة الرقمية؛ لم تُراجع علميًا داخل التطبيق.' : 'Shown verbatim as published; not scholar-reviewed inside the app.'} <a href="#/library/sources">{t('sources')}</a></p>
+    </main>
+  );
+}
+
+export function TranslationsLibrary() {
+  const { settings } = useStore();
+  const cat = useAsync(getTranslationCatalog, []);
+  if (!cat.data) return <main class="screen"><TopBar title={isAr() ? 'ترجمات المعاني' : 'Translations'} onBack /><Loading error={cat.error} /></main>;
+  return (
+    <main class="screen">
+      <TopBar title={isAr() ? 'ترجمات المعاني' : 'Translations'} onBack />
+      <p class="text-2 small" style="margin-bottom:12px">{isAr() ? 'ترجمة للمعاني لا للقرآن نفسه؛ النص العربي لا يُستبدل أبدًا. كلها مضمّنة وتعمل دون إنترنت بعد أول فتح للسورة.' : 'Translations of meanings; the Arabic is never replaced. All bundled.'}</p>
+      <div class="list">
+        {cat.data.map((e) => (
+          <button key={e.id} class="list-item" aria-pressed={settings.translationId === e.id} onClick={() => updateSettings({ translationId: e.id })}>
+            <span class="grow"><span class="title">{e.name}</span><br /><span class="sub">{e.author}</span></span>
+            {settings.translationId === e.id && <span class="badge ok">✓</span>}
+          </button>
         ))}
       </div>
     </main>

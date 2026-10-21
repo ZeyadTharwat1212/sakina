@@ -1,6 +1,8 @@
 /** Sections 07–10: index, ayah mode, page mode, tafsir/translation panel, bookmarks, last position. */
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { getChapters, getMeta, getSurah, getTafsir, getTranslation, ayahDisplay, basmalaOf, pageOf, juzOf, isSajda, TAFSIRS, type Chapter, type QuranMeta, type SurahText } from '../lib/content';
+import { getChapters, getMeta, getSurah, getTafsirAny, getTranslationAny, getTafsirCatalog, getTranslationCatalog, getTajweed, ayahDisplay, basmalaOf, pageOf, juzOf, isSajda, type Chapter, type QuranMeta, type SurahText } from '../lib/content';
+import { SelectionBar, AyahMiniBar, useAyahPlayer } from './Mushaf';
+import { playAyahs, getAyahPlayer } from '../lib/audio/ayah';
 import { useStore, updateUser, updateSettings, type Bookmark } from '../lib/store';
 import { t, num, isAr } from '../lib/i18n';
 import { navigate } from '../lib/router';
@@ -65,7 +67,8 @@ export function QuranIndex() {
       )}
       {tab === 'page' && (
         <>
-          <p class="muted small" style="margin-bottom:8px">{m.mushaf.name} · {m.mushaf.riwayah} · {num(m.mushaf.pages)} {t('page')}</p>
+          <p class="muted small" style="margin-bottom:8px">{isAr() ? 'مصحف المدينة ١٤٤١هـ — صفحات مطابقة للمطبوع (٦٠٤ صفحات × ١٥ سطرًا)' : 'Madani Mushaf 1441 AH — pages as printed (604 × 15 lines)'}</p>
+          <button class="btn block" style="margin-bottom:12px" onClick={() => navigate(`/quran/page/${user.lastRead?.page || 1}`)}>{isAr() ? 'افتح المصحف' : 'Open the mushaf'}</button>
           <div class="grid-2 tablet-3">
             {chs.map((c) => <button key={c.id} class="chip" onClick={() => navigate(`/quran/page/${c.page}`)}>{c.name} · {num(c.page)}</button>)}
           </div>
@@ -104,6 +107,8 @@ export function QuranReader(props: ReaderProps) {
     return { chs, page: props.page!, p };
   }, [meta.data, props.ch, props.page]);
   const texts = useAsync(async () => span ? Promise.all(span.chs.map(getSurah)) : [], [span?.chs.join(',')]);
+  const tajweed = useAsync(async () => settings.tajweed && span ? Promise.all(span.chs.map((c) => getTajweed(c).catch(() => ({} as Record<string, [number, number, string][]>)))) : [], [span?.chs.join(','), settings.tajweed]);
+  const ap = useAyahPlayer();
   const [sel, setSel] = useState<{ ch: number; v: number } | null>(null);
   const [multi, setMulti] = useState<{ ch: number; from: number; to: number } | null>(null); // "اختر عدة آيات" mode
   const [panel, setPanel] = useState<'none' | 'tafsir' | 'translation'>('none');
@@ -147,6 +152,17 @@ export function QuranReader(props: ReaderProps) {
   const curPage = pageMode ? props.page! : (sel ? pageOf(m, sel.ch, sel.v) : pageOf(m, props.ch!, props.v!));
   const curJuz = pageMode ? juzOf(m, span!.p![1], span!.p![2]) : juzOf(m, props.ch!, props.v!);
 
+  const ayahNode = (s: SurahText, x: { v: number; t: string }) => {
+    const text = ayahDisplay(s, x);
+    const tj = settings.tajweed && tajweed.data ? tajweed.data[span!.chs.indexOf(s.ch)]?.[String(x.v)] : null;
+    if (!tj || !tj.length) return text;
+    const off = x.v === 1 ? s.basmalaPrefixLen : 0;
+    const parts: preact.JSX.Element[] = []; let pos = 0;
+    for (const [st0, en0, rule] of tj) { const st = st0 - off, en = en0 - off; if (st < pos || en > text.length) continue; if (st > pos) parts.push(<span key={pos}>{text.slice(pos, st)}</span>); parts.push(<span key={st} class={`tj-${rule}`}>{text.slice(st, en)}</span>); pos = en; }
+    if (pos < text.length) parts.push(<span key={pos}>{text.slice(pos)}</span>);
+    return parts;
+  };
+  const isPlayingAyah = (ch: number, v: number) => ap.playing && ap.ch === ch && ap.v === v;
   const renderSurah = (s: SurahText, onlyRange?: [number, number]) => {
     const c = chs[s.ch - 1];
     const verses = onlyRange ? s.verses.filter((x) => x.v >= onlyRange[0] && x.v <= onlyRange[1]) : s.verses;
@@ -159,16 +175,16 @@ export function QuranReader(props: ReaderProps) {
         {settings.quranMode === 'page' || pageMode ? (
           <p class="ayah-text">
             {verses.map((x) => (
-              <span key={x.v} id={`a-${s.ch}-${x.v}`} class={`ayah ${(sel?.ch === s.ch && sel.v === x.v) || inMulti(s.ch, x.v) ? 'selected' : ''}`} onClick={() => tapAyah(s.ch, x.v)} role="button" tabIndex={0}>
-                {ayahDisplay(s, x)} <span class="ayah-no">﴿{toArabicIndic(x.v)}﴾</span>{isSajda(m, s.ch, x.v) && <span class="badge" title="سجدة">۩</span>}{' '}
+              <span key={x.v} id={`a-${s.ch}-${x.v}`} class={`ayah ${(sel?.ch === s.ch && sel.v === x.v) || inMulti(s.ch, x.v) ? 'selected' : ''} ${isPlayingAyah(s.ch, x.v) ? 'playing' : ''}`} onClick={() => tapAyah(s.ch, x.v)} role="button" tabIndex={0}>
+                {ayahNode(s, x)} <span class="ayah-no">﴿{toArabicIndic(x.v)}﴾</span>{isSajda(m, s.ch, x.v) && <span class="badge" title="سجدة">۩</span>}{' '}
               </span>
             ))}
           </p>
         ) : (
           <div class="ayah-list">
             {verses.map((x) => (
-              <div key={x.v} id={`a-${s.ch}-${x.v}`} class={`ayah-item ${(sel?.ch === s.ch && sel.v === x.v) || inMulti(s.ch, x.v) ? 'selected' : ''}`} onClick={() => tapAyah(s.ch, x.v)} role="button" tabIndex={0}>
-                <p class="ayah-text">{ayahDisplay(s, x)} <span class="ayah-no">﴿{toArabicIndic(x.v)}﴾</span>{isSajda(m, s.ch, x.v) && <span class="badge" title="سجدة">۩</span>}</p>
+              <div key={x.v} id={`a-${s.ch}-${x.v}`} class={`ayah-item ${(sel?.ch === s.ch && sel.v === x.v) || inMulti(s.ch, x.v) ? 'selected' : ''} ${isPlayingAyah(s.ch, x.v) ? 'playing' : ''}`} onClick={() => tapAyah(s.ch, x.v)} role="button" tabIndex={0}>
+                <p class="ayah-text">{ayahNode(s, x)} <span class="ayah-no">﴿{toArabicIndic(x.v)}﴾</span>{isSajda(m, s.ch, x.v) && <span class="badge" title="سجدة">۩</span>}</p>
                 {panel !== 'none' && <PanelText kind={panel} ch={s.ch} v={x.v} tafsirId={settings.tafsir} />}
               </div>
             ))}
@@ -190,16 +206,18 @@ export function QuranReader(props: ReaderProps) {
       )}
       {!focus && !pageMode && (
         <div class="row" style="margin-bottom:12px;gap:8px;flex-wrap:wrap">
-          <Seg value={settings.quranMode} options={[{ v: 'ayah', label: t('ayahMode') }, { v: 'page', label: t('pageMode') }]} onChange={(v) => updateSettings({ quranMode: v })} />
-          <button class="chip" aria-pressed={panel === 'tafsir'} onClick={() => setPanel(panel === 'tafsir' ? 'none' : 'tafsir')}>{t('tafsir')}: {TAFSIRS.find((x) => x.id === settings.tafsir)?.name}</button>
-          <button class="chip" aria-pressed={panel === 'translation'} onClick={() => setPanel(panel === 'translation' ? 'none' : 'translation')}>{t('translation')} EN</button>
+          <Seg value={settings.quranMode} options={[{ v: 'ayah', label: t('ayahMode') }, { v: 'page', label: isAr() ? 'نص متصل' : 'Flow' }, { v: 'mushaf', label: isAr() ? 'المصحف' : 'Mushaf' }]} onChange={(v) => { if (v === 'mushaf') navigate(`/quran/page/${curPage}`); else updateSettings({ quranMode: v }); }} />
+          <button class="chip" aria-pressed={panel === 'tafsir'} onClick={() => setPanel(panel === 'tafsir' ? 'none' : 'tafsir')}>{t('tafsir')}</button>
+          <button class="chip" aria-pressed={panel === 'translation'} onClick={() => setPanel(panel === 'translation' ? 'none' : 'translation')}>{t('translation')}</button>
+          <button class="chip" aria-pressed={settings.tajweed} onClick={() => updateSettings({ tajweed: !settings.tajweed })}>{isAr() ? 'تجويد' : 'Tajweed'}</button>
           <button class="chip" onClick={() => setFocus(true)}>{isAr() ? 'تركيز' : 'Focus'}</button>
         </div>
       )}
       {focus && <button class="chip" style="position:fixed;top:calc(var(--safe-top) + 8px);inset-inline-end:16px;z-index:5" onClick={() => setFocus(false)}>{isAr() ? 'إنهاء التركيز' : 'Exit focus'}</button>}
 
+      {settings.tajweed && !focus && <div class="tj-legend">{[['ghunnah', 'غنّة'], ['idghaam_ghunnah', 'إدغام بغنّة'], ['idghaam_no_ghunnah', 'إدغام بلا غنّة'], ['ikhfa', 'إخفاء'], ['iqlab', 'إقلاب'], ['qalqalah', 'قلقلة'], ['madd_2', 'مدّ طبيعي'], ['madd_246', 'مدّ عارض/لين'], ['madd_muttasil', 'مدّ متصل/منفصل'], ['madd_6', 'مدّ لازم'], ['hamzat_wasl', 'همزة وصل/صامت']].map(([k, l]) => <span key={k} class={`tj-${k}`}>● {l}</span>)}</div>}
       <div class="quran-surface">
-        {pageMode && <p class="muted small" style="text-align:center;margin-bottom:8px">{isAr() ? 'صفحة نصية بحدود صفحات مصحف المدينة (604) — ليست صورة طبق الأصل لسطور المصحف' : 'Text page following the Madani (604) page boundaries — not a facsimile of the printed lines'}</p>}
+        {pageMode && <p class="muted small" style="text-align:center;margin-bottom:8px">{isAr() ? 'عرض نصي بحدود صفحة المصحف — ' : 'Text view of the page — '}<a href={`#/quran/page/${props.page}`}>{isAr() ? 'افتح صفحة المصحف المطابقة' : 'open the real mushaf page'}</a></p>}
         {pageMode
           ? texts.data.map((s) => {
               const p = span!.p!;
@@ -213,9 +231,9 @@ export function QuranReader(props: ReaderProps) {
       <div class="row between" style="margin-top:16px">
         {pageMode ? (
           <>
-            <button class="btn secondary sm" disabled={props.page! >= m.mushaf.pages} onClick={() => navigate(`/quran/page/${props.page! + 1}`)}>{isAr() ? 'الصفحة التالية' : 'Next page'}</button>
+            <button class="btn secondary sm" disabled={props.page! >= m.mushaf.pages} onClick={() => navigate(`/quran/text/${props.page! + 1}`)}>{isAr() ? 'الصفحة التالية' : 'Next page'}</button>
             <span class="muted num">{num(props.page!)} / {num(m.mushaf.pages)}</span>
-            <button class="btn secondary sm" disabled={props.page! <= 1} onClick={() => navigate(`/quran/page/${props.page! - 1}`)}>{isAr() ? 'السابقة' : 'Previous'}</button>
+            <button class="btn secondary sm" disabled={props.page! <= 1} onClick={() => navigate(`/quran/text/${props.page! - 1}`)}>{isAr() ? 'السابقة' : 'Previous'}</button>
           </>
         ) : (
           <>
@@ -227,28 +245,27 @@ export function QuranReader(props: ReaderProps) {
       </div>
       <p class="muted small" style="margin-top:16px;text-align:center">{isAr() ? 'النص: مشروع تنزيل (Tanzil) — رواية حفص عن عاصم، نسخة حرفية دون تعديل.' : 'Text: Tanzil Project — Hafs ʿan ʿĀṣim, verbatim.'} <a href="#/library/sources">{t('sources')}</a></p>
 
-      <AyahSheet sel={sel} onClose={() => setSel(null)} chs={chs} meta={m} texts={texts.data} tafsirId={settings.tafsir} onMulti={() => { if (sel) { setMulti({ ch: sel.ch, from: sel.v, to: sel.v }); setSel(null); } }} />
-      {multi && (() => { const st = texts.data!.find((x) => x.ch === multi.ch)!; const c = chs[multi.ch - 1]; const n = multi.to - multi.from + 1; const joined = st.verses.slice(multi.from - 1, multi.to).map((v) => `${ayahDisplay(st, v)} ﴿${toArabicIndic(v.v)}﴾`).join(' '); const ref = `﴿${joined}﴾ [${c.name}: ${multi.from}${n > 1 ? `–${multi.to}` : ''}]`; return (
-        <div class="multi-bar" role="toolbar">
-          <div class="grow"><strong>{c.name} · {n === 1 ? `${t('ayah')} ${num(multi.from)}` : `${t('ayah')} ${num(multi.from)}–${num(multi.to)}`}</strong><br /><small class="muted">{isAr() ? 'اضغط آية أخرى لتوسيع التحديد، أو الآية نفسها لإلغائه' : 'Tap another ayah to extend, the same one to clear'}</small></div>
-          <button class="btn sm" onClick={() => { void playFromReader(multi.ch, settings.reciterId, { from: multi.from, to: multi.to }); }}><Icon name="play" />{t('listen')}</button>
-          <button class="icon-btn" aria-label={t('copy')} onClick={() => void copyText(ref)}><Icon name="copy" /></button>
-          <button class="icon-btn" aria-label={t('share')} onClick={() => void shareText(`${ref}\n${isAr() ? 'المصدر: مشروع تنزيل، رواية حفص' : 'Source: Tanzil, Hafs'}`)}><Icon name="share" /></button>
-          <button class="icon-btn" aria-label={t('cancel')} onClick={() => setMulti(null)}><Icon name="close" /></button>
-        </div>); })()}
+      <AyahSheet sel={sel} onClose={() => setSel(null)} chs={chs} meta={m} texts={texts.data} tafsirId={settings.tafsirId} onMulti={() => { if (sel) { setMulti({ ch: sel.ch, from: sel.v, to: sel.v }); setSel(null); } }} />
+      {multi && <SelectionBar multi={multi} texts={texts.data} chs={chs} onClear={() => setMulti(null)} />}
+      {!multi && <AyahMiniBar />}
     </main>
   );
 }
 
 function PanelText({ kind, ch, v, tafsirId }: { kind: 'tafsir' | 'translation'; ch: number; v: number; tafsirId: string }) {
-  const d = useAsync(() => kind === 'tafsir' ? getTafsir(tafsirId, ch) : getTranslation('en-saheeh', ch), [kind, ch, tafsirId]);
+  const { settings } = useStore();
+  const trId = settings.translationId;
+  const d = useAsync(() => kind === 'tafsir' ? getTafsirAny(tafsirId, ch) : getTranslationAny(trId, ch), [kind, ch, tafsirId, trId]);
+  const tcat = useAsync(getTafsirCatalog, []); const trcat = useAsync(getTranslationCatalog, []);
   const row = d.data?.verses.find((x) => x.v === v);
-  if (!row) return null;
-  const label = kind === 'tafsir' ? TAFSIRS.find((x) => x.id === tafsirId)?.name : 'Saheeh International';
-  return <p class="tafsir-text" style={`margin-top:8px;color:var(--text-2);${kind === 'translation' ? 'direction:ltr;text-align:left;font-family:var(--font-ui)' : ''}`}><small class="badge" style="margin-inline-end:6px">{label}</small>{row.t}</p>;
+  if (!row) return d.error ? <p class="muted small" style="margin-top:8px">{isAr() ? 'يحتاج اتصالًا لأول مرة' : 'Needs internet the first time'}</p> : null;
+  const tr = trcat.data?.find((x) => x.id === trId);
+  const label = kind === 'tafsir' ? (tcat.data?.find((x) => x.id === tafsirId)?.name || tafsirId) : (tr?.name || trId);
+  const rtl = kind === 'tafsir' ? /^(ar|ur|fa|ku)/.test(tcat.data?.find((x) => x.id === tafsirId)?.lang || 'ar') : (tr?.direction === 'rtl');
+  return <p class="tafsir-text" style={`margin-top:8px;color:var(--text-2);${rtl ? '' : 'direction:ltr;text-align:left;font-family:var(--font-ui)'}`}><small class="badge" style="margin-inline-end:6px">{label}</small>{row.t}</p>;
 }
 
-function AyahSheet({ sel, onClose, chs, meta, texts, tafsirId, onMulti }: { sel: { ch: number; v: number } | null; onClose: () => void; chs: Chapter[]; meta: QuranMeta; texts: SurahText[]; tafsirId: string; onMulti: () => void }) {
+export function AyahSheet({ sel, onClose, chs, meta, texts, tafsirId, onMulti }: { sel: { ch: number; v: number } | null; onClose: () => void; chs: Chapter[]; meta: QuranMeta; texts: SurahText[]; tafsirId: string; onMulti: () => void }) {
   const { user, settings } = useStore();
   const [view, setView] = useState<'actions' | 'tafsir' | 'translation' | 'bookmark'>('actions');
   const [tid, setTid] = useState(tafsirId);
@@ -256,8 +273,11 @@ function AyahSheet({ sel, onClose, chs, meta, texts, tafsirId, onMulti }: { sel:
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState('');
   useEffect(() => { setView('actions'); setMsg(''); setNote(''); }, [sel?.ch, sel?.v]);
-  const taf = useAsync(() => sel && view === 'tafsir' ? getTafsir(tid, sel.ch) : Promise.resolve(null), [sel?.ch, tid, view]);
-  const tr = useAsync(() => sel && view === 'translation' ? getTranslation('en-saheeh', sel.ch) : Promise.resolve(null), [sel?.ch, view]);
+  const [trId, setTrId] = useState(settings.translationId);
+  const taf = useAsync(() => sel && view === 'tafsir' ? getTafsirAny(tid, sel.ch) : Promise.resolve(null), [sel?.ch, tid, view]);
+  const tr = useAsync(() => sel && view === 'translation' ? getTranslationAny(trId, sel.ch) : Promise.resolve(null), [sel?.ch, view, trId]);
+  const tcat = useAsync(getTafsirCatalog, []); const trcat = useAsync(getTranslationCatalog, []);
+  const [showAllTafsir, setShowAllTafsir] = useState(false);
   if (!sel) return null;
   const s = texts.find((x) => x.ch === sel.ch)!;
   const verse = s.verses[sel.v - 1];
@@ -274,9 +294,10 @@ function AyahSheet({ sel, onClose, chs, meta, texts, tafsirId, onMulti }: { sel:
         <>
           <p class="ayah-text" style="font-size:calc(var(--quran-size) * .85);text-align:start;text-align-last:start;margin-bottom:12px">{text}</p>
           <div class="grid-2">
-            <button class="btn secondary" onClick={() => { void playFromReader(sel.ch, settings.reciterId, { from: sel.v, to: sel.v }); onClose(); }}><Icon name="play" />{isAr() ? 'استماع لهذه الآية' : 'Listen to this ayah'}</button>
+            <button class="btn secondary" onClick={() => { void playAyahs(sel.ch, sel.v, sel.v); onClose(); }}><Icon name="play" />{isAr() ? 'استماع لهذه الآية' : 'Listen to this ayah'}</button>
             <button class="btn secondary" onClick={onMulti}><Icon name="check" />{isAr() ? 'اختيار عدة آيات' : 'Select more ayahs'}</button>
-            <button class="btn secondary" onClick={() => { void playFromReader(sel.ch, settings.reciterId); onClose(); }}><Icon name="play" />{isAr() ? 'استماع من بداية السورة' : 'Listen from surah start'}</button>
+            <button class="btn secondary" onClick={() => { void playAyahs(sel.ch, sel.v, chs[sel.ch - 1].verses); onClose(); }}><Icon name="play" />{isAr() ? 'من هنا إلى آخر السورة' : 'From here to the end'}</button>
+            <button class="btn secondary" onClick={() => { void playFromReader(sel.ch, settings.reciterId); onClose(); }}><Icon name="play" />{isAr() ? 'تلاوة السورة كاملة' : 'Whole surah (recording)'}</button>
             <button class="btn secondary" onClick={() => setView('tafsir')}><Icon name="book" />{t('tafsir')}</button>
             <button class="btn secondary" onClick={() => setView('translation')}>EN {t('translation')}</button>
             <button class="btn secondary" onClick={() => setView('bookmark')}><Icon name="star" />{existing ? (isAr() ? 'تعديل العلامة' : 'Edit bookmark') : t('bookmark')}</button>
@@ -289,21 +310,22 @@ function AyahSheet({ sel, onClose, chs, meta, texts, tafsirId, onMulti }: { sel:
       )}
       {view === 'tafsir' && (
         <>
-          <div class="chips" style="margin-bottom:12px">{TAFSIRS.map((x) => <button key={x.id} class="chip" aria-pressed={tid === x.id} onClick={() => setTid(x.id)}>{x.name}</button>)}</div>
+          <div class="chips scroll" style="margin-bottom:12px">{(tcat.data || []).filter((x) => showAllTafsir || x.bundled || x.id === tid).map((x) => <button key={x.id} class="chip" style="white-space:nowrap" aria-pressed={tid === x.id} onClick={() => setTid(x.id)}>{x.name}{x.bundled ? '' : ' ↓'}</button>)}<button class="chip" onClick={() => setShowAllTafsir(!showAllTafsir)}>{showAllTafsir ? (isAr() ? 'أقل' : 'less') : (isAr() ? `كل التفاسير (${num((tcat.data || []).length)})` : 'all')}</button></div>
           <p class="ayah-text" style="font-size:calc(var(--quran-size) * .8);text-align:start;text-align-last:start;color:var(--primary)">{text}</p>
           <hr />
-          {tafRow ? <p class="tafsir-text">{tafRow.t}</p> : <Loading error={taf.error} />}
-          <p class="muted small" style="margin-top:12px">{TAFSIRS.find((x) => x.id === tid)?.name} — {TAFSIRS.find((x) => x.id === tid)?.author} · <span class="badge warn">{t('notReviewed')}</span> · <a href="#/library/sources">{t('sources')}</a></p>
-          <div class="row" style="margin-top:12px"><button class="btn secondary sm" onClick={() => setView('actions')}>{t('back')}</button><button class="btn ghost sm" onClick={() => { updateSettings({ tafsir: tid as 'jalalayn' | 'muyassar' }); setMsg(''); }}>{isAr() ? 'اجعله الافتراضي' : 'Make default'}</button></div>
+          {tafRow ? <p class="tafsir-text" style={/^(ar|ur|fa|ku)/.test(tcat.data?.find((x) => x.id === tid)?.lang || 'ar') ? '' : 'direction:ltr;text-align:left;font-family:var(--font-ui)'}>{tafRow.t}</p> : taf.error ? <p class="notice">{isAr() ? 'هذا التفسير يُجلب عند الطلب ويحتاج اتصالًا أول مرة. يمكن تنزيله كاملًا من المكتبة ← التفاسير.' : 'This tafsir is fetched on demand (needs internet once). Download it fully from Library → Tafsirs.'}</p> : <Loading />}
+          <p class="muted small" style="margin-top:12px">{tcat.data?.find((x) => x.id === tid)?.name} — {tcat.data?.find((x) => x.id === tid)?.author} · <span class="badge warn">{t('notReviewed')}</span> · <a href="#/library/sources">{t('sources')}</a></p>
+          <div class="row" style="margin-top:12px"><button class="btn secondary sm" onClick={() => setView('actions')}>{t('back')}</button><button class="btn ghost sm" onClick={() => { updateSettings({ tafsirId: tid }); setMsg(''); }}>{isAr() ? 'اجعله الافتراضي' : 'Make default'}</button></div>
         </>
       )}
       {view === 'translation' && (
         <>
           <p class="ayah-text" style="font-size:calc(var(--quran-size) * .8);text-align:start;text-align-last:start;color:var(--primary)">{text}</p>
           <hr />
-          {trRow ? <div style="direction:ltr;text-align:left"><p class="body-text" style="font-family:var(--font-ui)">{trRow.t}</p>{trRow.fn && <p class="muted small" style="margin-top:8px;white-space:pre-wrap">{trRow.fn}</p>}</div> : <Loading error={tr.error} />}
-          <p class="muted small" style="margin-top:12px">Saheeh International — via QuranEnc.com (translation of meanings, not the Quran itself)</p>
-          <button class="btn secondary sm" style="margin-top:12px" onClick={() => setView('actions')}>{t('back')}</button>
+          <div class="chips scroll" style="margin-bottom:12px">{(trcat.data || []).map((x) => <button key={x.id} class="chip" style="white-space:nowrap" aria-pressed={trId === x.id} onClick={() => setTrId(x.id)}>{x.name}</button>)}</div>
+          {trRow ? <div style={trcat.data?.find((x) => x.id === trId)?.direction === 'rtl' ? '' : 'direction:ltr;text-align:left'}><p class="body-text" style="font-family:var(--font-ui)">{trRow.t}</p>{trRow.fn && <p class="muted small" style="margin-top:8px;white-space:pre-wrap">{trRow.fn}</p>}</div> : <Loading error={tr.error} />}
+          <p class="muted small" style="margin-top:12px">{trcat.data?.find((x) => x.id === trId)?.author} — {isAr() ? 'ترجمة للمعاني لا للقرآن نفسه' : 'translation of meanings, not the Quran itself'}</p>
+          <div class="row" style="margin-top:12px"><button class="btn secondary sm" onClick={() => setView('actions')}>{t('back')}</button><button class="btn ghost sm" onClick={() => updateSettings({ translationId: trId })}>{isAr() ? 'اجعلها الافتراضية' : 'Make default'}</button></div>
         </>
       )}
       {view === 'bookmark' && (

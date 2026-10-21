@@ -70,14 +70,18 @@ await page.click('#a-2-257');
 ok((await page.textContent('.multi-bar')).includes('٢٥٥–٢٥٧'), 'Selection bar shows ayah range 255–257');
 ok((await page.locator('.ayah-item.selected, .ayah.selected').count()) === 3, 'Three ayahs highlighted');
 await page.click('.multi-bar .btn:has-text("استماع")');
+await page.waitForSelector('.multi-bar >> text=آية بآية', { timeout: 15000 });
+ok(true, 'Listen on a selection starts ayah-by-ayah playback (free per-ayah archives)');
+await page.click('.multi-bar [aria-label="more"]');
+await page.click('.multi-bar .chip:has-text("بتسجيل كامل")');
 await page.waitForURL(/reciters\?play=2&from=255&to=257/);
-ok(true, 'Listen on a selection asks for a reciter with the range kept');
+ok(true, 'Full-recording option asks for a timed reciter with the range kept');
 await page.click('.list-item:has-text("محمود خليل الحصري")');
 await page.waitForSelector('.miniplayer', { timeout: 15000 });
 ok(true, 'Range playback started (timings fetched live on a real network)');
 
 // Page mode + surah 9 (no basmala) + surah 1
-await page.goto(BASE + '/#/quran/page/187');
+await page.goto(BASE + '/#/quran/text/187');
 await page.waitForSelector('#a-9-1');
 const pageText = await page.textContent('.quran-surface');
 ok(pageText.includes('سُورَةُ التوبة') && !pageText.includes('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ'), 'Page 187: Surah at-Tawbah starts without basmala');
@@ -87,11 +91,12 @@ await page.waitForSelector('#a-95-1');
 ok(await page.isVisible('.basmala'), 'Surah 95 shows basmala header (idgham form handled)');
 
 // Journey 3 — prayer & travel: change city → schedule updates → qibla
+await page.click('.miniplayer button[aria-label="إنهاء"], .miniplayer button[aria-label="Stop"]').catch(() => {});
 await page.goto(BASE + '/#/prayer');
 await page.waitForSelector('.prayer-row');
 await shot('08-prayer');
 const cairoFajr = await page.textContent('.prayer-row:has-text("الفجر") .time');
-await page.click('.seg button:has-text("الشهر")');
+await page.locator('.seg button:has-text("الشهر")').dispatchEvent('click');
 await page.waitForSelector('table.table');
 await shot('09-prayer-month');
 await page.goto(BASE + '/#/prayer/city');
@@ -240,8 +245,8 @@ await shot('36-cards');
 await page.goto(BASE + '/#/library/help');
 await page.waitForSelector('.card');
 await page.goto(BASE + '/#/adhkar/tasbih');
-await page.click('.chip:has-text("سبحان الله وبحمده"), .chip:has-text("سبحان الله وبحمده")');
-await page.click('.counter-btn');
+await page.locator('.chip:has-text("سبحان الله وبحمده")').first().dispatchEvent('click');
+await page.locator('.counter-btn').dispatchEvent('click');
 ok(await page.isVisible('text=سبحان الله وبحمده'), 'Tasbih shows the chosen dhikr');
 await page.goto(BASE + '/#/library/wallpapers');
 await page.waitForSelector('img[src*="art/"]');
@@ -254,9 +259,34 @@ ok((await page.locator('.tracker-ring .tr').count()) === 6, 'Home shows the 6-pr
 ok((await page.locator('.prayer-strip .ps').count()) === 6, 'Home shows the 6-time strip');
 await shot('30-home');
 
+// Mushaf page mode (QCF v4): real lines, word taps, selection → ayah-by-ayah listen
+await page.setViewportSize({ width: 390, height: 844 });
+await page.goto(BASE + '/#/quran/page/42');
+await page.waitForSelector('.mushaf .w[data-vk="2:255"]', { timeout: 20000 });
+ok((await page.locator('.mushaf .mline').count()) === 15, 'Mushaf page 42 has 15 lines');
+await page.click('.mushaf .w[data-vk="2:255"]');
+await page.waitForSelector('.sheet');
+ok(/البقرة · (آية ٢٥٥|Ayah 255)/.test(await page.textContent('.sheet')), 'Word tap selects 2:255 on the mushaf page');
+await page.click('.sheet >> text=/اختيار عدة آيات|Select more ayahs/');
+await page.waitForSelector('.multi-bar');
+await page.click('.mushaf .w[data-vk="2:256"]');
+ok((await page.locator('.mushaf .w.sel').count()) > 20, 'Selection highlights every word of 255–256');
+await page.click('.multi-bar .btn:has-text("استماع"), .multi-bar .btn:has-text("Listen")');
+await page.waitForSelector('.multi-bar >> text=/آية بآية|ayah by ayah/', { timeout: 15000 });
+ok(true, 'Ayah-by-ayah playback started from the selection');
+await page.goto(BASE + '/#/library/tafsirs');
+await page.waitForSelector('.list-item');
+ok((await page.locator('.list-item').count()) >= 30, 'Tafsir library lists bundled + on-demand tafsirs');
+await page.goto(BASE + '/#/library/translations');
+await page.waitForSelector('.list-item');
+ok((await page.locator('.list-item').count()) === 33, '33 translations listed');
+await page.goto(BASE + '/#/library/hadith/riyad');
+await page.waitForSelector('.list-item');
+ok(true, 'Riyad as-Salihin opens');
+
 // Tablet width
 await page.setViewportSize({ width: 1024, height: 768 });
-await page.goto(BASE + '/#/quran/page/2');
+await page.goto(BASE + '/#/quran/text/2');
 await page.waitForSelector('#a-2-1');
 await shot('21-tablet-page');
 

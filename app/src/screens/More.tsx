@@ -391,3 +391,47 @@ export function HelpScreen() {
     </main>
   );
 }
+
+/* ------------------------------------------------------------------ Zakat calculator (local; prices entered by the user — no price API) */
+export function ZakatScreen() {
+  const { user } = useStore();
+  const saved = user.zakat || {};
+  const [v, setV] = useState<Record<string, number>>({ cash: 0, goldG: 0, goldPrice: 0, silverG: 0, silverPrice: 0, trade: 0, receivable: 0, debts: 0, ...saved });
+  const n = (k: string) => Number(v[k]) || 0;
+  const goldValue = n('goldG') * n('goldPrice'), silverValue = n('silverG') * n('silverPrice');
+  const total = n('cash') + goldValue + silverValue + n('trade') + n('receivable') - n('debts');
+  const nisabGold = 85 * n('goldPrice'), nisabSilver = 595 * n('silverPrice');
+  const nisab = nisabGold > 0 ? nisabGold : nisabSilver;
+  const due = nisab > 0 && total >= nisab ? total * 0.025 : 0;
+  const field = (k: string, label: string, hint?: string) => (
+    <div class="field"><label>{label}{hint && <small class="muted"> — {hint}</small>}</label><input class="input num" inputMode="decimal" value={v[k] || ''} onInput={(e) => { const nv = { ...v, [k]: Number((e.target as HTMLInputElement).value) || 0 }; setV(nv); updateUser({ zakat: nv }); }} /></div>
+  );
+  return (
+    <main class="screen">
+      <TopBar title={ar() ? 'حاسبة الزكاة' : 'Zakat calculator'} onBack />
+      <section class="card">
+        <p class="text-2 small">{ar() ? 'زكاة المال ٢٫٥٪ إذا بلغ المال النصاب وحال عليه الحول. النصاب = ٨٥ غرام ذهب (أو ٥٩٥ غرام فضة). أدخل سعر الغرام بعملتك؛ لا يُجلب من الإنترنت.' : 'Zakat is 2.5% when wealth reaches the nisab (85 g gold or 595 g silver) and a lunar year passes. Enter the gram price yourself.'}</p>
+      </section>
+      <section class="card" style="margin-top:12px">
+        {field('goldPrice', ar() ? 'سعر غرام الذهب (عيار ٢٤)' : 'Gold price per gram (24k)')}
+        {field('cash', ar() ? 'النقد (نقد، حسابات، مدخرات)' : 'Cash and bank balances')}
+        {field('goldG', ar() ? 'الذهب (غرام)' : 'Gold (grams)', ar() ? 'الادخاري؛ الحلي المستعمل محل خلاف' : '')}
+        {field('silverG', ar() ? 'الفضة (غرام)' : 'Silver (grams)')}
+        {field('silverPrice', ar() ? 'سعر غرام الفضة' : 'Silver price per gram')}
+        {field('trade', ar() ? 'عروض التجارة بقيمتها الحالية' : 'Trade goods at current value')}
+        {field('receivable', ar() ? 'ديون لك مرجوّة السداد' : 'Money owed to you (expected)')}
+        {field('debts', ar() ? 'ديون عليك حالّة' : 'Debts due now')}
+      </section>
+      <section class="card primary" style="margin-top:12px;text-align:center">
+        <div class="muted">{ar() ? 'إجمالي المال الزكوي' : 'Zakatable wealth'}</div>
+        <div class="num" style="font-size:1.4em;font-weight:700">{num(total.toLocaleString('en-US', { maximumFractionDigits: 2 }))}</div>
+        <div class="muted small">{ar() ? `النصاب: ${num(nisab.toLocaleString('en-US', { maximumFractionDigits: 0 }))}` : `Nisab: ${nisab.toLocaleString('en-US', { maximumFractionDigits: 0 })}`}</div>
+        <hr style="opacity:.3" />
+        <div class="muted">{ar() ? 'الزكاة المستحقة (٢٫٥٪)' : 'Zakat due (2.5%)'}</div>
+        <div class="num" style="font-size:2em;font-weight:700">{nisab > 0 ? num(due.toLocaleString('en-US', { maximumFractionDigits: 2 })) : '—'}</div>
+        {nisab > 0 && total < nisab && <small class="muted">{ar() ? 'لم يبلغ النصاب — لا زكاة واجبة' : 'Below nisab — no zakat due'}</small>}
+      </section>
+      <p class="muted small" style="margin-top:12px">{ar() ? 'حساب تقريبي للتذكير؛ تفاصيل الحلي والديون والأصول الاستثمارية تُسأل عنها أهل العلم. يُحفظ على جهازك فقط.' : 'An aid, not a ruling; ask scholars about jewellery, debts and investments. Saved on your device only.'}</p>
+    </main>
+  );
+}

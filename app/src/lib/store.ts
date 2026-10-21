@@ -88,6 +88,7 @@ export interface UserData {
   tracker?: Record<string, { fajr?: boolean; dhuhr?: boolean; asr?: boolean; maghrib?: boolean; isha?: boolean; duha?: boolean; witr?: boolean; qiyam?: boolean; fast?: boolean; skipped?: string[] }>; // yyyy-mm-dd → private log
   khatma?: { startDate: string; days: number; startPage: number; createdAt: number } | null;
   myDuas?: { id: string; text: string; at: number }[];
+  zakat?: Record<string, number>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

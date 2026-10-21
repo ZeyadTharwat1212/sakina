@@ -23,6 +23,8 @@ export const TOOLS = [
   { id: 'qiyam', ar: 'قيام الليل', en: 'Qiyam al-layl', icon: 'star', go: '/library/qiyam' },
   { id: 'fajrAlarm', ar: 'منبه الفجر', en: 'Fajr alarm', icon: 'bell', go: '/library/fajr-alarm' },
   { id: 'teach', ar: 'التعليم الإسلامي', en: 'Islamic basics', icon: 'info', go: '/library/teach' },
+  { id: 'zakat', ar: 'حاسبة الزكاة', en: 'Zakat calculator', icon: 'check', go: '/library/zakat' },
+  { id: 'tafsirs', ar: 'التفاسير', en: 'Tafsirs', icon: 'book', go: '/library/tafsirs' },
   { id: 'cards', ar: 'كروت التهنئة', en: 'Greeting cards', icon: 'share', go: '/library/cards' },
   { id: 'duas', ar: 'أدعيتي', en: 'My duas', icon: 'info', go: '/library/duas' },
   { id: 'wallpapers', ar: 'خلفيات وحالات', en: 'Wallpapers', icon: 'sun', go: '/library/wallpapers' },

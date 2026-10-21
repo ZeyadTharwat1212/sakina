@@ -49,7 +49,9 @@ export const getHadithBooks = () => load<{ id: string; title: string; author: st
 /** KFGQPC official Hafs text (v18) with page/line per ayah. */
 export const getHafs = (ch: number) => load<{ ch: number; verses: { v: number; t: string; page: number; l1: number; l2: number }[] }>(`quran/hafs/${ch}.json`);
 export const getTajweed = (ch: number) => load<Record<string, [number, number, string][]>>(`quran/tajweed/${ch}.json`);
-export const getAyahAudioSources = () => load<{ templates: { everyayah: string; islamicnet: string }; reciters: { id: string; ar: string; en: string; in: string | null; ea: string }[] }>('audio/ayah-sources.json');
+export const getAyahAudioSources = () => load<{ templates: { everyayah: string; islamicnet: string }; reciters: { id: string; ar: string; en: string; in: string | null; ea: string; lite: string; tm?: string; kbps: number; liteKbps: number; riwayah?: string }[] }>('audio/ayah-sources.json');
+/** Word timings (quran-align): { [ayah]: [[w0, w1, startMs, endMs], ...] } — w indices are 0-based Tanzil words = QCF position-1. */
+export const getWordTimings = (tm: string, ch: number) => load<Record<string, [number, number, number, number][]>>(`audio/word-timings/${tm}/${ch}.json`);
 
 const OFFLINE_CACHE = 'sakina-text-v1';
 /** Any tafsir by id: built-in (quran/tafsir), bundled (tafsir/<id>) or on-demand from jsDelivr (cached on device once fetched). */
@@ -83,7 +85,7 @@ export async function tafsirOfflineCount(id: string): Promise<number> {
 export const getTranslationAny = (id: string, ch: number) => id === 'en-saheeh' ? getTranslation(id, ch) : load<PerVerse>(`translations/${id}/${ch}.json`);
 
 /* ---------- Mushaf pages (QCF v4) ---------- */
-export type MushafWord = [string, 'w' | 'e' | 'h' | 'b' | 'q', string | number | null, 'B' | undefined];
+export type MushafWord = [string, 'w' | 'e' | 'h' | 'b' | 'q', string | number | null, 'B' | 0 | undefined, number];
 export interface MushafPage { p: number; font: string; surahs: [number, number, number][]; lines: { n: number; w: MushafWord[] }[] }
 export const getMushafPage = (p: number) => { const key = `mushaf/pages/${p}`; if (!cache.has(key)) cache.set(key, fetch(`mushaf/pages/${p}.json`).then((r) => { if (!r.ok) throw new Error(`page ${p}: ${r.status}`); return r.json(); })); return cache.get(key) as Promise<MushafPage>; };
 export const getMushafVerses = () => { const key = 'mushaf/verses'; if (!cache.has(key)) cache.set(key, fetch('mushaf/verses.json').then((r) => r.json())); return cache.get(key) as Promise<Record<string, { page: number; lines: { line: number; word_start: number; word_end: number }[] }>>; };

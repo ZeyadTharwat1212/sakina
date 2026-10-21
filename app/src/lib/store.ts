@@ -70,6 +70,8 @@ export interface Settings {
   mushafSize: number;          // px, page mode
   ayahReciter: string;         // per-ayah audio reciter id (audio/ayah-sources.json)
   ayahRepeat: number;          // repeat each ayah N times in ayah-by-ayah playback
+  audioQuality: 'hq' | 'lite'; // lite = smallest copy of the same recording (½–⅛ size)
+  followMode: 'word' | 'ayah'; // how the mushaf follows the recitation
 }
 
 export interface ReadingPosition { ch: number; v: number; page: number; at: number; kind: 'read' | 'listen' }
@@ -109,7 +111,7 @@ export const DEFAULT_SETTINGS: Settings = {
   qiyam: { third: 'off', beforeFajrMin: 0, witr: false },
   fajrAlarm: { on: false, offsetMin: 0, repeatMin: 5 },
   ramadan: { iftar: false, suhoor: false, suhoorMin: 45, qadr: false, chime: true },
-  uiFont: 'readex', quranFont: 'kfgqpc', quranLine: 2.15, tajweed: false, translationId: 'en-saheeh', tafsirId: 'muyassar', mushafSize: 0, ayahReciter: 'alafasy', ayahRepeat: 1,
+  uiFont: 'readex', quranFont: 'kfgqpc', quranLine: 2.15, tajweed: false, translationId: 'en-saheeh', tafsirId: 'muyassar', mushafSize: 0, ayahReciter: 'alafasy', ayahRepeat: 1, audioQuality: 'lite', followMode: 'word',
 };
 export const DEFAULT_USER: UserData = {
   lastRead: null, lastListen: null, bookmarks: [], favAdhkar: [], favHadith: [], sessions: {},

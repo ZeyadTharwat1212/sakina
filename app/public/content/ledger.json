@@ -554,6 +554,18 @@
   },
   {
    "builtOn": "2026-10-21",
+   "id": "audio-word-timings",
+   "kind": "timing",
+   "title": "توقيتات الكلمات لـ ١٢ تلاوة (تتبّع القراءة كلمة بكلمة في المصحف)",
+   "source": "github.com/cpfair/quran-align — release 2016-11-24 (aligned to EveryAyah recordings)",
+   "licence": "CC BY 4.0 (attribution: Collin Fair, quran-align)",
+   "licenceStatus": "granted",
+   "offlineBundling": "allowed",
+   "reviewStatus": "cross-checked",
+   "reviewNotes": "926132 word segments; word indices match the QCF v4 page layout 1:1 (Tanzil word split). Average error vs ElMohafez reference < 73 ms per the author."
+  },
+  {
+   "builtOn": "2026-10-21",
    "id": "audio-per-ayah",
    "kind": "audio",
    "title": "تلاوات آية بآية — بث من everyayah.com و cdn.islamic.network (بلا إعادة استضافة)",

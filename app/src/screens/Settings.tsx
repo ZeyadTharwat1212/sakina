@@ -3,7 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { useStore, updateSettings, wipeAll, exportAll } from '../lib/store';
 import { t, num, isAr } from '../lib/i18n';
 import { navigate } from '../lib/router';
-import { TopBar, Seg, Toggle, Sheet, shareText, useAsync } from '../components/ui';
+import { TopBar, Seg, Toggle, Sheet, shareText, useAsync, Icon } from '../components/ui';
 import { toHijri, formatHijri } from '../lib/hijri';
 import { reschedule } from '../lib/notify';
 import { getAyahAudioSources, downloadAllMushafFonts, mushafFontsCached } from '../lib/content';
@@ -20,6 +20,11 @@ function AyahAudioSettings() {
       <select class="input" value={settings.ayahReciter} onChange={(e) => updateSettings({ ayahReciter: (e.target as HTMLSelectElement).value })}>
         {(src.data?.reciters || []).map((r) => <option key={r.id} value={r.id}>{isAr() ? r.ar : r.en}</option>)}
       </select>
+      <div class="field" style="margin-top:10px"><label>{isAr() ? 'جودة الصوت' : 'Audio quality'}</label>
+        <Seg value={settings.audioQuality} options={[{ v: 'lite', label: isAr() ? 'مضغوطة (أصغر)' : 'Compact' }, { v: 'hq', label: isAr() ? 'عالية' : 'High' }]} onChange={(v) => updateSettings({ audioQuality: v })} /></div>
+      <div class="field"><label>{isAr() ? 'متابعة المصحف أثناء الاستماع' : 'Mushaf follow while listening'}</label>
+        <Seg value={settings.followMode} options={[{ v: 'word', label: isAr() ? 'كلمة بكلمة' : 'Word by word' }, { v: 'ayah', label: isAr() ? 'آية بآية' : 'Ayah' }]} onChange={(v) => updateSettings({ followMode: v })} /></div>
+      <button class="btn ghost sm" onClick={() => navigate('/quran/compact')}><Icon name="download" />{isAr() ? 'تنزيل مضغوط' : 'Compact downloads'}</button>
       <div class="row between" style="margin-top:8px"><span class="small">{isAr() ? 'تكرار كل آية' : 'Repeat each ayah'}</span><div class="chips">{[1, 2, 3, 5, 10].map((n) => <button key={n} class="chip" aria-pressed={settings.ayahRepeat === n} onClick={() => updateSettings({ ayahRepeat: n })}>×{num(n)}</button>)}</div></div>
       <hr />
       <div class="row between"><span class="small">{isAr() ? 'خطوط صفحات المصحف (QCF v4)' : 'Mushaf page fonts'}<br /><small class="muted">{cached == null ? '' : isAr() ? `${num(cached)}/48 محفوظة على الجهاز` : `${cached}/48 cached`}</small></span>
@@ -56,7 +61,7 @@ export function SettingsScreen() {
           <div class="field" style="margin-top:12px"><label>{isAr() ? 'خط الواجهة' : 'UI font'}</label>
             <Seg value={settings.uiFont} options={[{ v: 'readex', label: 'Readex Pro' }, { v: 'plex', label: 'IBM Plex' }, { v: 'noto', label: 'Noto' }]} onChange={(v) => updateSettings({ uiFont: v })} /></div>
           <div class="field" style="margin-top:12px"><label>{isAr() ? 'خط المصحف (وضع الآيات)' : 'Quran font (ayah mode)'}</label>
-            <Seg value={settings.quranFont} options={[{ v: 'kfgqpc', label: isAr() ? 'مجمع الملك فهد' : 'KFGQPC' }, { v: 'hafs', label: isAr() ? 'حفص (مصحف)' : 'KFGQPC Hafs' }, { v: 'amiri', label: 'Amiri' }]} onChange={(v) => updateSettings({ quranFont: v })} /></div>
+            <Seg value={settings.quranFont} options={[{ v: 'kfgqpc', label: isAr() ? 'خط مجمع الملك فهد' : 'KFGQPC Hafs' }, { v: 'amiri', label: isAr() ? 'خط أميري' : 'Amiri' }]} onChange={(v) => updateSettings({ quranFont: v })} /></div>
           <Range label={t('textSize')} value={settings.uiScale} min={0.9} max={1.4} step={0.05} onChange={(v) => updateSettings({ uiScale: v })} />
           <Range label={t('quranSize')} value={settings.quranSize} min={20} max={48} step={1} onChange={(v) => updateSettings({ quranSize: v })} preview={<p class="ayah-text" style="text-align:start;text-align-last:start">ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ</p>} />
           <Range label={isAr() ? 'تباعد أسطر المصحف' : 'Quran line spacing'} value={settings.quranLine} min={1.7} max={2.8} step={0.05} onChange={(v) => updateSettings({ quranLine: v })} />

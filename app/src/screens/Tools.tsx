@@ -4,40 +4,41 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { useStore, updateUser, todayKey } from '../lib/store';
 import { t, num, isAr, fmtTime } from '../lib/i18n';
 import { navigate } from '../lib/router';
-import { TopBar, Icon, Seg, Toggle, useAsync, Loading, Notice, shareText, Sheet } from '../components/ui';
+import { TopBar, Icon, TabIcon, Seg, Toggle, useAsync, Loading, Notice, shareText, Sheet } from '../components/ui';
 import { toHijri, formatHijri, HIJRI_MONTHS, hijriFlags } from '../lib/hijri';
 import { getMeta, getChapters, getAsma, pageOf } from '../lib/content';
 import { computeDay, civilDate } from '../lib/prayer';
 
 export const TOOLS = [
-  { id: 'reciters', ar: 'القراء والتلاوات', en: 'Reciters', icon: 'play', go: '/quran/reciters' },
-  { id: 'tracker', ar: 'متتبع الصلوات والصيام', en: 'Prayer & fasting tracker', icon: 'check', go: '/library/tracker' },
-  { id: 'hijri', ar: 'التقويم الهجري', en: 'Hijri calendar', icon: 'today', go: '/library/hijri' },
-  { id: 'khatma', ar: 'خطة الختمة', en: 'Khatma plan', icon: 'book', go: '/library/khatma' },
+  { id: 'reciters', ar: 'القراء والتلاوات', en: 'Reciters', icon: 'headphones', go: '/quran/reciters' },
+  { id: 'tracker', ar: 'متتبع الصلوات والصيام', en: 'Prayer & fasting tracker', icon: 'checklist', go: '/library/tracker' },
+  { id: 'hijri', ar: 'التقويم الهجري', en: 'Hijri calendar', icon: 'calmonth', go: '/library/hijri' },
+  { id: 'khatma', ar: 'خطة الختمة', en: 'Khatma plan', icon: 'book2', go: '/library/khatma' },
   { id: 'qibla', ar: 'اتجاه القبلة', en: 'Qibla', icon: 'compass', go: '/prayer/qibla' },
-  { id: 'tasbih', ar: 'السبحة الإلكترونية', en: 'Tasbih', icon: 'adhkar', go: '/adhkar/tasbih' },
-  { id: 'asma', ar: 'أسماء الله الحسنى', en: 'Names of Allah', icon: 'star', go: '/library/asma' },
-  { id: 'mosques', ar: 'المساجد القريبة', en: 'Nearby mosques', icon: 'pin', go: '/library/mosques' },
-  { id: 'ramadan', ar: 'رمضان', en: 'Ramadan', icon: 'moon', go: '/library/ramadan' },
-  { id: 'fasting', ar: 'صائمون', en: 'Fasting days', icon: 'sun', go: '/library/fasting' },
-  { id: 'qiyam', ar: 'قيام الليل', en: 'Qiyam al-layl', icon: 'star', go: '/library/qiyam' },
-  { id: 'fajrAlarm', ar: 'منبه الفجر', en: 'Fajr alarm', icon: 'bell', go: '/library/fajr-alarm' },
-  { id: 'teach', ar: 'التعليم الإسلامي', en: 'Islamic basics', icon: 'info', go: '/library/teach' },
-  { id: 'zakat', ar: 'حاسبة الزكاة', en: 'Zakat calculator', icon: 'check', go: '/library/zakat' },
-  { id: 'tafsirs', ar: 'التفاسير', en: 'Tafsirs', icon: 'book', go: '/library/tafsirs' },
-  { id: 'cards', ar: 'كروت التهنئة', en: 'Greeting cards', icon: 'share', go: '/library/cards' },
-  { id: 'duas', ar: 'أدعيتي', en: 'My duas', icon: 'info', go: '/library/duas' },
-  { id: 'wallpapers', ar: 'خلفيات وحالات', en: 'Wallpapers', icon: 'sun', go: '/library/wallpapers' },
-  { id: 'hadith', ar: 'المكتبة (الحديث)', en: 'Hadith', icon: 'library', go: '/library/hadith/bukhari' },
-  { id: 'nawafil', ar: 'النوافل والأوقات', en: 'Nawafil', icon: 'sun', go: '/prayer/nawafil' },
-  { id: 'help', ar: 'هل لا تعمل التنبيهات؟', en: 'Alerts not working?', icon: 'bell', go: '/library/help' },
+  { id: 'tasbih', ar: 'السبحة الإلكترونية', en: 'Tasbih', icon: 'tasbih', go: '/adhkar/tasbih' },
+  { id: 'asma', ar: 'أسماء الله الحسنى', en: 'Names of Allah', icon: 'sparkles', go: '/library/asma' },
+  { id: 'mosques', ar: 'المساجد القريبة', en: 'Nearby mosques', icon: 'mosque', go: '/library/mosques' },
+  { id: 'ramadan', ar: 'رمضان', en: 'Ramadan', icon: 'moonstars', go: '/library/ramadan' },
+  { id: 'fasting', ar: 'صائمون', en: 'Fasting days', icon: 'calheart', go: '/library/fasting' },
+  { id: 'qiyam', ar: 'قيام الليل', en: 'Qiyam al-layl', icon: 'moon2', go: '/library/qiyam' },
+  { id: 'fajrAlarm', ar: 'منبه الفجر', en: 'Fajr alarm', icon: 'alarm', go: '/library/fajr-alarm' },
+  { id: 'teach', ar: 'التعليم الإسلامي', en: 'Islamic basics', icon: 'school', go: '/library/teach' },
+  { id: 'zakat', ar: 'حاسبة الزكاة', en: 'Zakat calculator', icon: 'coins', go: '/library/zakat' },
+  { id: 'tafsirs', ar: 'التفاسير', en: 'Tafsirs', icon: 'notebook', go: '/library/tafsirs' },
+  { id: 'cards', ar: 'كروت التهنئة', en: 'Greeting cards', icon: 'gift', go: '/library/cards' },
+  { id: 'duas', ar: 'أدعيتي', en: 'My duas', icon: 'duas', go: '/library/duas' },
+  { id: 'wallpapers', ar: 'خلفيات وحالات', en: 'Wallpapers', icon: 'photo', go: '/library/wallpapers' },
+  { id: 'hadith', ar: 'المكتبة (الحديث)', en: 'Hadith', icon: 'books', go: '/library/hadith/bukhari' },
+  { id: 'nawafil', ar: 'النوافل والأوقات', en: 'Nawafil', icon: 'sunrise', go: '/prayer/nawafil' },
+  { id: 'help', ar: 'هل لا تعمل التنبيهات؟', en: 'Alerts not working?', icon: 'help', go: '/library/help' },
 ];
+const HUES: Record<string, string> = { reciters: 'teal', tracker: 'sage', hijri: 'sand', khatma: 'teal', qibla: 'blue', tasbih: 'sage', asma: 'gold', mosques: 'blue', ramadan: 'plum', fasting: 'sand', qiyam: 'night', fajrAlarm: 'night', teach: 'sage', zakat: 'gold', tafsirs: 'teal', cards: 'rose', duas: 'rose', wallpapers: 'plum', hadith: 'sand', nawafil: 'gold', help: 'blue' };
 export function ToolsGrid({ ids }: { ids?: string[] }) {
   const list = ids ? TOOLS.filter((x) => ids.includes(x.id)) : TOOLS;
   return (
     <div class="tools-grid">
       {list.map((x) => (
-        <button key={x.id} class="tool" onClick={() => navigate(x.go)}><span class="tool-ic"><Icon name={x.icon} /></span><span>{isAr() ? x.ar : x.en}</span></button>
+        <button key={x.id} class={`tool hue-${HUES[x.id] || 'sage'}`} onClick={() => navigate(x.go)}><span class="tool-ic">{x.icon === 'tasbih' ? <TabIcon name="adhkar" active /> : <Icon name={x.icon} />}</span><span>{isAr() ? x.ar : x.en}</span></button>
       ))}
     </div>
   );

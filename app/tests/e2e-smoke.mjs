@@ -107,7 +107,7 @@ const londonFajr = await page.textContent('.prayer-row:has-text("الفجر") .t
 ok(cairoFajr !== londonFajr, `Schedule recomputed for London (${cairoFajr} → ${londonFajr})`);
 ok((await page.locator('text=لجنة رؤية الهلال').count()) > 0, 'Method suggestion switched for GB');
 await page.goto(BASE + '/#/prayer/qibla');
-await page.waitForSelector('.compass');
+await page.waitForSelector('.compass-rose');
 await shot('10-qibla');
 await page.goto(BASE + '/#/prayer/nawafil');
 await page.waitForSelector('text=الثلث الأخير');
@@ -129,7 +129,7 @@ await page.goto(BASE + '/#/adhkar');
 await page.click('.card:has-text("أذكار الصباح")');
 await page.waitForSelector('.counter-btn');
 const resumed = await page.textContent('.counter-btn');
-ok(resumed.startsWith('١'), 'Counter resumed after leaving (' + resumed + ')');
+ok(resumed.trim().startsWith('١'), 'Counter resumed after leaving (' + resumed + ')');
 await shot('14-dhikr-session');
 
 // Journey 5 — hadith & search

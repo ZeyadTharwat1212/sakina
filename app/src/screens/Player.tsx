@@ -1,5 +1,6 @@
 /** Mini player (fixed above the tab bar) that expands into the full player sheet. */
 import { useEffect, useState } from 'preact/hooks';
+import { getMeta, pageOf } from '../lib/content';
 import { getPlayer, subscribePlayer, toggle, next, prev, seekTo, seekBy, setRate, setRepeat, setSleep, setOpen, stop, setAyahRange, removeFromQueue, playQueue } from '../lib/audio/player';
 import { getCatalog, recordingById, displayName, STYLE_AR, type Catalog } from '../lib/audio/catalog';
 import { getChapters, type Chapter } from '../lib/content';
@@ -66,12 +67,12 @@ export function MiniPlayer() {
           <div>
             <p class="small text-2">{isAr() ? 'توقيتات الآيات متاحة لهذا التسجيل من المصدر.' : 'Ayah timings are available for this recording.'} {p.currentAyah ? `${t('ayah')} ${num(p.currentAyah)}` : ''}</p>
             <div class="row" style="margin-top:6px;gap:8px">
-              <button class="btn secondary sm" onClick={() => navigate(`/quran/read/${tr.surah}/${p.currentAyah || 1}`)}>{isAr() ? 'افتح الآية في المصحف' : 'Open ayah'}</button>
+              <button class="btn sm" onClick={async () => { const m = await getMeta(); setOpen('mini'); navigate(`/quran/page/${pageOf(m, tr.surah, p.currentAyah || 1)}?follow=1`); }}><Icon name="quran" />{isAr() ? 'تابع في المصحف' : 'Follow in mushaf'}</button>
               {p.currentAyah && <button class="btn secondary sm" aria-pressed={!!p.ayahRange} onClick={() => setAyahRange(p.ayahRange ? null : { from: p.currentAyah!, to: p.currentAyah! })}>{p.ayahRange ? (isAr() ? 'إيقاف تكرار الآية' : 'Stop ayah loop') : (isAr() ? 'تكرار هذه الآية' : 'Loop this ayah')}</button>}
               {p.ayahRange && <button class="btn ghost sm" onClick={() => setAyahRange({ from: p.ayahRange!.from, to: p.ayahRange!.to + 1 })}>{isAr() ? 'وسّع النطاق +١' : 'Extend +1'}</button>}
             </div>
           </div>
-        ) : <p class="muted small">{t('noSync')}</p>}
+        ) : <p class="muted small">{t('noSync')} {isAr() ? 'للمتابعة في المصحف كلمة بكلمة استخدم «استمع مع المتابعة» من صفحة المصحف.' : 'For word-by-word following use “Listen & follow” on a mushaf page.'}</p>}
         <hr />
         <div class="row between">
           <span class="small">{downloaded ? <span class="badge ok">{isAr() ? 'منزّلة — تعمل دون إنترنت' : 'downloaded'}</span> : dl?.status === 'downloading' ? <span class="badge">{isAr() ? 'جارٍ التنزيل' : 'downloading'}</span> : <button class="btn ghost sm" onClick={() => rec && DL.enqueue(rec, [tr.surah])}>{isAr() ? 'تنزيل هذه السورة' : 'Download this surah'}</button>}</span>

@@ -1,6 +1,6 @@
 /** Sections 07–10: index, ayah mode, page mode, tafsir/translation panel, bookmarks, last position. */
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { getChapters, getMeta, getSurah, getTafsirAny, getTranslationAny, getTafsirCatalog, getTranslationCatalog, getTajweed, ayahDisplay, basmalaOf, pageOf, juzOf, isSajda, type Chapter, type QuranMeta, type SurahText } from '../lib/content';
+import { getChapters, getMeta, getSurah, getHafs, getTafsirAny, getTranslationAny, getTafsirCatalog, getTranslationCatalog, getTajweed, ayahDisplay, basmalaOf, pageOf, juzOf, isSajda, type Chapter, type QuranMeta, type SurahText } from '../lib/content';
 import { SelectionBar, AyahMiniBar, useAyahPlayer } from './Mushaf';
 import { playAyahs, getAyahPlayer } from '../lib/audio/ayah';
 import { useStore, updateUser, updateSettings, type Bookmark } from '../lib/store';
@@ -107,6 +107,9 @@ export function QuranReader(props: ReaderProps) {
     return { chs, page: props.page!, p };
   }, [meta.data, props.ch, props.page]);
   const texts = useAsync(async () => span ? Promise.all(span.chs.map(getSurah)) : [], [span?.chs.join(',')]);
+  // KFGQPC fonts need the Complex's own text encoding (Tanzil marks such as U+06DF render as dotted circles there)
+  const useHafs = settings.quranFont !== 'amiri' && !settings.tajweed;
+  const hafs = useAsync(async () => useHafs && span ? Promise.all(span.chs.map((c) => getHafs(c).catch(() => null))) : [], [span?.chs.join(','), useHafs]);
   const tajweed = useAsync(async () => settings.tajweed && span ? Promise.all(span.chs.map((c) => getTajweed(c).catch(() => ({} as Record<string, [number, number, string][]>)))) : [], [span?.chs.join(','), settings.tajweed]);
   const ap = useAyahPlayer();
   const [sel, setSel] = useState<{ ch: number; v: number } | null>(null);
@@ -153,6 +156,7 @@ export function QuranReader(props: ReaderProps) {
   const curJuz = pageMode ? juzOf(m, span!.p![1], span!.p![2]) : juzOf(m, props.ch!, props.v!);
 
   const ayahNode = (s: SurahText, x: { v: number; t: string }) => {
+    if (useHafs && hafs.data) { const h = hafs.data[span!.chs.indexOf(s.ch)]; const hv = h?.verses[x.v - 1]; if (hv) return hv.t; }
     const text = ayahDisplay(s, x);
     const tj = settings.tajweed && tajweed.data ? tajweed.data[span!.chs.indexOf(s.ch)]?.[String(x.v)] : null;
     if (!tj || !tj.length) return text;
@@ -176,7 +180,7 @@ export function QuranReader(props: ReaderProps) {
           <p class="ayah-text">
             {verses.map((x) => (
               <span key={x.v} id={`a-${s.ch}-${x.v}`} class={`ayah ${(sel?.ch === s.ch && sel.v === x.v) || inMulti(s.ch, x.v) ? 'selected' : ''} ${isPlayingAyah(s.ch, x.v) ? 'playing' : ''}`} onClick={() => tapAyah(s.ch, x.v)} role="button" tabIndex={0}>
-                {ayahNode(s, x)} <span class="ayah-no">﴿{toArabicIndic(x.v)}﴾</span>{isSajda(m, s.ch, x.v) && <span class="badge" title="سجدة">۩</span>}{' '}
+                {ayahNode(s, x)} <AyahNo v={x.v} kfgqpc={useHafs} />{isSajda(m, s.ch, x.v) && <span class="badge" title="سجدة">۩</span>}{' '}
               </span>
             ))}
           </p>
@@ -184,7 +188,7 @@ export function QuranReader(props: ReaderProps) {
           <div class="ayah-list">
             {verses.map((x) => (
               <div key={x.v} id={`a-${s.ch}-${x.v}`} class={`ayah-item ${(sel?.ch === s.ch && sel.v === x.v) || inMulti(s.ch, x.v) ? 'selected' : ''} ${isPlayingAyah(s.ch, x.v) ? 'playing' : ''}`} onClick={() => tapAyah(s.ch, x.v)} role="button" tabIndex={0}>
-                <p class="ayah-text">{ayahNode(s, x)} <span class="ayah-no">﴿{toArabicIndic(x.v)}﴾</span>{isSajda(m, s.ch, x.v) && <span class="badge" title="سجدة">۩</span>}</p>
+                <p class="ayah-text">{ayahNode(s, x)} <AyahNo v={x.v} kfgqpc={useHafs} />{isSajda(m, s.ch, x.v) && <span class="badge" title="سجدة">۩</span>}</p>
                 {panel !== 'none' && <PanelText kind={panel} ch={s.ch} v={x.v} tafsirId={settings.tafsir} />}
               </div>
             ))}
@@ -216,7 +220,7 @@ export function QuranReader(props: ReaderProps) {
       {focus && <button class="chip" style="position:fixed;top:calc(var(--safe-top) + 8px);inset-inline-end:16px;z-index:5" onClick={() => setFocus(false)}>{isAr() ? 'إنهاء التركيز' : 'Exit focus'}</button>}
 
       {settings.tajweed && !focus && <div class="tj-legend">{[['ghunnah', 'غنّة'], ['idghaam_ghunnah', 'إدغام بغنّة'], ['idghaam_no_ghunnah', 'إدغام بلا غنّة'], ['ikhfa', 'إخفاء'], ['iqlab', 'إقلاب'], ['qalqalah', 'قلقلة'], ['madd_2', 'مدّ طبيعي'], ['madd_246', 'مدّ عارض/لين'], ['madd_muttasil', 'مدّ متصل/منفصل'], ['madd_6', 'مدّ لازم'], ['hamzat_wasl', 'همزة وصل/صامت']].map(([k, l]) => <span key={k} class={`tj-${k}`}>● {l}</span>)}</div>}
-      <div class="quran-surface">
+      <div class={`quran-surface ${useHafs ? 'k' : 'amiri'}`}>
         {pageMode && <p class="muted small" style="text-align:center;margin-bottom:8px">{isAr() ? 'عرض نصي بحدود صفحة المصحف — ' : 'Text view of the page — '}<a href={`#/quran/page/${props.page}`}>{isAr() ? 'افتح صفحة المصحف المطابقة' : 'open the real mushaf page'}</a></p>}
         {pageMode
           ? texts.data.map((s) => {
@@ -344,4 +348,9 @@ export function AyahSheet({ sel, onClose, chs, meta, texts, tafsirId, onMulti }:
       <div style="display:none">{settings.showTranslation}</div>
     </Sheet>
   );
+}
+
+/** Ayah end mark: the KFGQPC fonts draw the ornament around plain Arabic-Indic digits; other fonts get ﴿ ﴾. */
+function AyahNo({ v, kfgqpc }: { v: number; kfgqpc: boolean }) {
+  return kfgqpc ? <span class="ayah-no k">{'\u00A0' + toArabicIndic(v)}</span> : <span class="ayah-no">﴿{toArabicIndic(v)}﴾</span>;
 }

@@ -63,7 +63,7 @@ for src, dst in zip(sys.argv[1::2], sys.argv[2::2]):
   let words = 0;
   for (let p = 1; p <= 604; p++) {
     const pg = rj(path.join(q, 'pages', String(p).padStart(3, '0') + '.json'));
-    const lines = pg.lines.map((l) => ({ n: l.line, w: l.words.map((w) => { words++; return [w.char, w.type === 'word' ? 'w' : w.type === 'end' ? 'e' : w.type === 'surah_header' ? 'h' : w.type === 'bismillah' ? 'b' : 'q', w.verse_key || w.sura || null, w.font === 'QCF4_QBSML' ? 'B' : undefined]; }) }));
+    const lines = pg.lines.map((l) => ({ n: l.line, w: l.words.map((w) => { words++; return [w.char, w.type === 'word' ? 'w' : w.type === 'end' ? 'e' : w.type === 'surah_header' ? 'h' : w.type === 'bismillah' ? 'b' : 'q', w.verse_key || w.sura || null, w.font === 'QCF4_QBSML' ? 'B' : 0, w.type === 'word' ? w.position : 0]; }) }));
     fs.writeFileSync(path.join(md, 'pages', `${p}.json`), JSON.stringify({ p, font: pg.font, surahs: pg.surahs.map((s) => [s.id, s.verse_start, s.verse_end]), lines }));
   }
   fs.copyFileSync(path.join(q, 'verses.json'), path.join(md, 'verses.json'));
@@ -298,34 +298,58 @@ const EDITIONS = [
 {
   const everyayah = 'https://everyayah.com/data/{folder}/{sss}{aaa}.mp3';
   const islamicnet = 'https://cdn.islamic.network/quran/audio/{bitrate}/{edition}/{n}.mp3';
+  // hq = best quality folder, lite = smallest folder of the SAME recording (verified on everyayah 2026-10-21), tm = quran-align word timings file
   const reciters = [
-    { id: 'alafasy', ar: 'مشاري راشد العفاسي', en: 'Mishary Alafasy', in: 'ar.alafasy', ea: 'Alafasy_128kbps' },
-    { id: 'husary', ar: 'محمود خليل الحصري', en: 'Mahmoud Khalil Al-Husary', in: 'ar.husary', ea: 'Husary_128kbps' },
-    { id: 'husarymujawwad', ar: 'الحصري — مجوَّد', en: 'Al-Husary (Mujawwad)', in: 'ar.husarymujawwad', ea: 'Husary_Mujawwad_64kbps' },
-    { id: 'husarymuallim', ar: 'الحصري — المصحف المعلم', en: 'Al-Husary (Muallim)', in: null, ea: 'Husary_Muallim_128kbps' },
-    { id: 'abdulbasit', ar: 'عبد الباسط عبد الصمد — مرتل', en: 'Abdul Basit (Murattal)', in: 'ar.abdulbasitmurattal', ea: 'Abdul_Basit_Murattal_192kbps' },
-    { id: 'abdulbasitmujawwad', ar: 'عبد الباسط — مجوَّد', en: 'Abdul Basit (Mujawwad)', in: 'ar.abdulsamad', ea: 'Abdul_Basit_Mujawwad_128kbps' },
-    { id: 'minshawi', ar: 'محمد صديق المنشاوي — مرتل', en: 'Al-Minshawi (Murattal)', in: 'ar.minshawi', ea: 'Minshawy_Murattal_128kbps' },
-    { id: 'minshawimujawwad', ar: 'المنشاوي — مجوَّد', en: 'Al-Minshawi (Mujawwad)', in: 'ar.minshawimujawwad', ea: 'Minshawy_Mujawwad_192kbps' },
-    { id: 'sudais', ar: 'عبد الرحمن السديس', en: 'Abdurrahman As-Sudais', in: 'ar.abdurrahmaansudais', ea: 'Abdurrahmaan_As-Sudais_192kbps' },
-    { id: 'shuraym', ar: 'سعود الشريم', en: 'Saud Ash-Shuraym', in: 'ar.saoodshuraym', ea: 'Saood_ash-Shuraym_128kbps' },
-    { id: 'ghamdi', ar: 'سعد الغامدي', en: 'Saad Al-Ghamdi', in: null, ea: 'Ghamadi_40kbps' },
-    { id: 'hudhaify', ar: 'علي الحذيفي', en: 'Ali Al-Hudhaify', in: 'ar.hudhaify', ea: 'Hudhaify_128kbps' },
-    { id: 'ayyoub', ar: 'محمد أيوب', en: 'Muhammad Ayyoub', in: 'ar.muhammadayyoub', ea: 'Muhammad_Ayyoub_128kbps' },
-    { id: 'ajamy', ar: 'أحمد بن علي العجمي', en: 'Ahmed Al-Ajamy', in: 'ar.ahmedajamy', ea: 'Ahmed_ibn_Ali_al-Ajamy_128kbps' },
-    { id: 'tablawi', ar: 'محمد محمود الطبلاوي', en: 'Mohammad Al-Tablawi', in: null, ea: 'Mohammad_al_Tablaway_128kbps' },
-    { id: 'muaiqly', ar: 'ماهر المعيقلي', en: 'Maher Al-Muaiqly', in: 'ar.mahermuaiqly', ea: 'Maher_AlMuaiqly_64kbps' },
-    { id: 'shaatree', ar: 'أبو بكر الشاطري', en: 'Abu Bakr Ash-Shaatree', in: 'ar.shaatree', ea: 'Abu_Bakr_Ash-Shaatree_128kbps' },
-    { id: 'rifai', ar: 'هاني الرفاعي', en: 'Hani Ar-Rifai', in: 'ar.hanirifai', ea: 'Hani_Rifai_192kbps' },
-    { id: 'dussary', ar: 'ياسر الدوسري', en: 'Yasser Ad-Dussary', in: null, ea: 'Yasser_Ad-Dussary_128kbps' },
-    { id: 'qatami', ar: 'ناصر القطامي', en: 'Nasser Al-Qatami', in: null, ea: 'Nasser_Alqatami_128kbps' },
-    { id: 'jibreel', ar: 'محمد جبريل', en: 'Muhammad Jibreel', in: 'ar.muhammadjibreel', ea: 'Muhammad_Jibreel_128kbps' },
-    { id: 'basfar', ar: 'عبد الله بصفر', en: 'Abdullah Basfar', in: null, ea: 'Abdullah_Basfar_192kbps' },
-    { id: 'qahtani', ar: 'خالد القحطاني', en: 'Khalid Al-Qahtani', in: null, ea: 'Khaalid_Abdullaah_al-Qahtaanee_192kbps' },
-    { id: 'abbad', ar: 'فارس عباد', en: 'Fares Abbad', in: null, ea: 'Fares_Abbad_64kbps' },
-    { id: 'sowaid', ar: 'أيمن سويد', en: 'Ayman Sowaid', in: 'ar.aymanswoaid', ea: 'Ayman_Sowaid_64kbps' },
-    { id: 'akhdar', ar: 'إبراهيم الأخضر', en: 'Ibrahim Al-Akhdar', in: 'ar.ibrahimakhbar', ea: 'Ibrahim_Akhdar_32kbps' },
-  ];
+    { id: 'alafasy', ar: 'مشاري راشد العفاسي', en: 'Mishary Alafasy', in: 'ar.alafasy', ea: 'Alafasy_128kbps', lite: 'Alafasy_64kbps', tm: 'Alafasy_128kbps' },
+    { id: 'husary', ar: 'محمود خليل الحصري', en: 'Mahmoud Khalil Al-Husary', in: 'ar.husary', ea: 'Husary_128kbps', lite: 'Husary_64kbps', tm: 'Husary_64kbps' },
+    { id: 'husarymujawwad', ar: 'الحصري — مجوَّد', en: 'Al-Husary (Mujawwad)', in: 'ar.husarymujawwad', ea: 'Husary_Mujawwad_64kbps', lite: 'Husary_Mujawwad_64kbps' },
+    { id: 'husarymuallim', ar: 'الحصري — المصحف المعلم', en: 'Al-Husary (Muallim)', in: null, ea: 'Husary_Muallim_128kbps', lite: 'Husary_Muallim_128kbps', tm: 'Husary_Muallim_128kbps' },
+    { id: 'abdulbasit', ar: 'عبد الباسط عبد الصمد — مرتل', en: 'Abdul Basit (Murattal)', in: 'ar.abdulbasitmurattal', ea: 'Abdul_Basit_Murattal_192kbps', lite: 'Abdul_Basit_Murattal_64kbps', tm: 'Abdul_Basit_Murattal_64kbps' },
+    { id: 'abdulbasitmujawwad', ar: 'عبد الباسط — مجوَّد', en: 'Abdul Basit (Mujawwad)', in: 'ar.abdulsamad', ea: 'Abdul_Basit_Mujawwad_128kbps', lite: 'Abdul_Basit_Mujawwad_128kbps', tm: 'Abdul_Basit_Mujawwad_128kbps' },
+    { id: 'minshawi', ar: 'محمد صديق المنشاوي — مرتل', en: 'Al-Minshawi (Murattal)', in: 'ar.minshawi', ea: 'Minshawy_Murattal_128kbps', lite: 'Menshawi_16kbps', tm: 'Minshawy_Murattal_128kbps' },
+    { id: 'minshawimujawwad', ar: 'المنشاوي — مجوَّد', en: 'Al-Minshawi (Mujawwad)', in: 'ar.minshawimujawwad', ea: 'Minshawy_Mujawwad_192kbps', lite: 'Minshawy_Mujawwad_64kbps', tm: 'Minshawy_Mujawwad_192kbps' },
+    { id: 'minshawiteacher', ar: 'المنشاوي — المعلم', en: 'Al-Minshawi (Teacher)', in: null, ea: 'Minshawy_Teacher_128kbps', lite: 'Minshawy_Teacher_128kbps' },
+    { id: 'sudais', ar: 'عبد الرحمن السديس', en: 'Abdurrahman As-Sudais', in: 'ar.abdurrahmaansudais', ea: 'Abdurrahmaan_As-Sudais_192kbps', lite: 'Abdurrahmaan_As-Sudais_64kbps', tm: 'Abdurrahmaan_As-Sudais_192kbps' },
+    { id: 'shuraym', ar: 'سعود الشريم', en: 'Saud Ash-Shuraym', in: 'ar.saoodshuraym', ea: 'Saood_ash-Shuraym_128kbps', lite: 'Saood_ash-Shuraym_64kbps', tm: 'Saood_ash-Shuraym_128kbps' },
+    { id: 'shaatree', ar: 'أبو بكر الشاطري', en: 'Abu Bakr Ash-Shaatree', in: 'ar.shaatree', ea: 'Abu_Bakr_Ash-Shaatree_128kbps', lite: 'Abu_Bakr_Ash-Shaatree_64kbps', tm: 'Abu_Bakr_Ash-Shaatree_128kbps' },
+    { id: 'rifai', ar: 'هاني الرفاعي', en: 'Hani Ar-Rifai', in: 'ar.hanirifai', ea: 'Hani_Rifai_192kbps', lite: 'Hani_Rifai_64kbps', tm: 'Hani_Rifai_192kbps' },
+    { id: 'tablawi', ar: 'محمد محمود الطبلاوي', en: 'Mohammad Al-Tablawi', in: null, ea: 'Mohammad_al_Tablaway_128kbps', lite: 'Mohammad_al_Tablaway_64kbps', tm: 'Mohammad_al_Tablaway_128kbps' },
+    { id: 'hudhaify', ar: 'علي الحذيفي', en: 'Ali Al-Hudhaify', in: 'ar.hudhaify', ea: 'Hudhaify_128kbps', lite: 'Hudhaify_32kbps' },
+    { id: 'ayyoub', ar: 'محمد أيوب', en: 'Muhammad Ayyoub', in: 'ar.muhammadayyoub', ea: 'Muhammad_Ayyoub_128kbps', lite: 'Muhammad_Ayyoub_32kbps' },
+    { id: 'basfar', ar: 'عبد الله بصفر', en: 'Abdullah Basfar', in: null, ea: 'Abdullah_Basfar_192kbps', lite: 'Abdullah_Basfar_32kbps' },
+    { id: 'jibreel', ar: 'محمد جبريل', en: 'Muhammad Jibreel', in: 'ar.muhammadjibreel', ea: 'Muhammad_Jibreel_128kbps', lite: 'Muhammad_Jibreel_64kbps' },
+    { id: 'ghamdi', ar: 'سعد الغامدي', en: 'Saad Al-Ghamdi', in: null, ea: 'Ghamadi_40kbps', lite: 'Ghamadi_40kbps' },
+    { id: 'muaiqly', ar: 'ماهر المعيقلي', en: 'Maher Al-Muaiqly', in: 'ar.mahermuaiqly', ea: 'Maher_AlMuaiqly_64kbps', lite: 'Maher_AlMuaiqly_64kbps' },
+    { id: 'ajamy', ar: 'أحمد بن علي العجمي', en: 'Ahmed Al-Ajamy', in: 'ar.ahmedajamy', ea: 'Ahmed_ibn_Ali_al-Ajamy_64kbps_QuranExplorer.Com', lite: 'Ahmed_ibn_Ali_al-Ajamy_64kbps_QuranExplorer.Com' },
+    { id: 'dussary', ar: 'ياسر الدوسري', en: 'Yasser Ad-Dussary', in: null, ea: 'Yasser_Ad-Dussary_128kbps', lite: 'Yasser_Ad-Dussary_128kbps' },
+    { id: 'qatami', ar: 'ناصر القطامي', en: 'Nasser Al-Qatami', in: null, ea: 'Nasser_Alqatami_128kbps', lite: 'Nasser_Alqatami_128kbps' },
+    { id: 'qahtani', ar: 'خالد القحطاني', en: 'Khalid Al-Qahtani', in: null, ea: 'Khaalid_Abdullaah_al-Qahtaanee_192kbps', lite: 'Khaalid_Abdullaah_al-Qahtaanee_192kbps' },
+    { id: 'abbad', ar: 'فارس عباد', en: 'Fares Abbad', in: null, ea: 'Fares_Abbad_64kbps', lite: 'Fares_Abbad_64kbps' },
+    { id: 'sowaid', ar: 'أيمن سويد', en: 'Ayman Sowaid', in: 'ar.aymanswoaid', ea: 'Ayman_Sowaid_64kbps', lite: 'Ayman_Sowaid_64kbps' },
+    { id: 'akhdar', ar: 'إبراهيم الأخضر', en: 'Ibrahim Al-Akhdar', in: 'ar.ibrahimakhbar', ea: 'Ibrahim_Akhdar_32kbps', lite: 'Ibrahim_Akhdar_32kbps' },
+    { id: 'alijaber', ar: 'علي جابر', en: 'Ali Jaber', in: null, ea: 'Ali_Jaber_64kbps', lite: 'Ali_Jaber_64kbps' },
+    { id: 'budair', ar: 'صلاح البدير', en: 'Salah Al-Budair', in: null, ea: 'Salah_Al_Budair_128kbps', lite: 'Salah_Al_Budair_128kbps' },
+    { id: 'juhany', ar: 'عبد الله عواد الجهني', en: 'Abdullah Al-Juhany', in: null, ea: 'Abdullaah_3awwaad_Al-Juhaynee_128kbps', lite: 'Abdullaah_3awwaad_Al-Juhaynee_128kbps' },
+    { id: 'bukhatir', ar: 'صلاح بو خاطر', en: 'Salah Bukhatir', in: null, ea: 'Salaah_AbdulRahman_Bukhatir_128kbps', lite: 'Salaah_AbdulRahman_Bukhatir_128kbps' },
+    { id: 'mustafaismail', ar: 'مصطفى إسماعيل', en: 'Mustafa Ismail', in: null, ea: 'Mustafa_Ismail_48kbps', lite: 'Mustafa_Ismail_48kbps' },
+    { id: 'banna', ar: 'محمود علي البنا', en: 'Mahmoud Ali Al-Banna', in: null, ea: 'Mahmoud_Ali_Al_Banna_32kbps', lite: 'Mahmoud_Ali_Al_Banna_32kbps' },
+    { id: 'qasim', ar: 'محسن القاسم', en: 'Muhsin Al-Qasim', in: null, ea: 'Muhsin_Al_Qasim_192kbps', lite: 'Muhsin_Al_Qasim_192kbps' },
+    { id: 'matroud', ar: 'عبد الله المطرود', en: 'Abdullah Al-Matroud', in: null, ea: 'Abdullah_Matroud_128kbps', lite: 'Abdullah_Matroud_128kbps' },
+    { id: 'alili', ar: 'عزيز عليلي', en: 'Aziz Alili', in: null, ea: 'Aziz_Alili_128kbps', lite: 'Aziz_Alili_128kbps' },
+    { id: 'warsh-basit', ar: 'عبد الباسط — ورش عن نافع', en: 'Abdul Basit (Warsh)', in: null, ea: 'warsh/warsh_Abdul_Basit_128kbps', lite: 'warsh/warsh_Abdul_Basit_128kbps', riwayah: 'warsh' },
+    { id: 'warsh-dosary', ar: 'إبراهيم الدوسري — ورش', en: 'Ibrahim Ad-Dosary (Warsh)', in: null, ea: 'warsh/warsh_ibrahim_aldosary_128kbps', lite: 'warsh/warsh_ibrahim_aldosary_128kbps', riwayah: 'warsh' },
+    { id: 'warsh-jazairi', ar: 'ياسين الجزائري — ورش', en: 'Yassin Al-Jazairi (Warsh)', in: null, ea: 'warsh/warsh_yassin_al_jazaery_64kbps', lite: 'warsh/warsh_yassin_al_jazaery_64kbps', riwayah: 'warsh' },
+  ].map((r) => ({ ...r, kbps: Number((r.ea.match(/(\d+)kbps/) || [])[1] || 64), liteKbps: Number((r.lite.match(/(\d+)kbps/) || [])[1] || 64) }));
+  // Word-level timings (cpfair/quran-align, CC BY 4.0) → audio/word-timings/{tm}/{surah}.json  { ayah: [[w0, w1, startMs, endMs], ...] }
+  const TD = path.join(SRC, 'quran-align-data');
+  let wcount = 0;
+  if (fs.existsSync(TD)) for (const r of reciters) if (r.tm) {
+    const rows = rj(path.join(TD, `${r.tm}.json`));
+    const by = {};
+    for (const a of rows) { if (!a.segments) continue; (by[a.surah] ||= {})[a.ayah] = a.segments.map((x) => x.slice(0, 4)); wcount += a.segments.length; }
+    for (const [sura, o] of Object.entries(by)) wj(`audio/word-timings/${r.tm}/${sura}.json`, o);
+  }
+  if (wcount) addLedger({ id: 'audio-word-timings', kind: 'timing', title: 'توقيتات الكلمات لـ ١٢ تلاوة (تتبّع القراءة كلمة بكلمة في المصحف)', source: 'github.com/cpfair/quran-align — release 2016-11-24 (aligned to EveryAyah recordings)', licence: 'CC BY 4.0 (attribution: Collin Fair, quran-align)', licenceStatus: 'granted', offlineBundling: 'allowed', reviewStatus: 'cross-checked', reviewNotes: `${wcount} word segments; word indices match the QCF v4 page layout 1:1 (Tanzil word split). Average error vs ElMohafez reference < 73 ms per the author.` });
   wj('audio/ayah-sources.json', { templates: { everyayah, islamicnet }, reciters }, true);
   addLedger({ id: 'audio-per-ayah', kind: 'audio', title: 'تلاوات آية بآية — بث من everyayah.com و cdn.islamic.network (بلا إعادة استضافة)', source: 'everyayah.com (free ayah-by-ayah archive) · cdn.islamic.network (alquran.cloud, Islamic Network — free, no key)', licence: 'Both archives publish the files for free use in apps; recordings belong to the reciters/publishers. No files are copied into the app; streaming + user-initiated caching only.', licenceStatus: 'needs-confirmation', offlineBundling: 'cache on device only when the user asks', reviewStatus: 'n/a', reviewNotes: 'Used for: listen to selected ayahs with any reciter (no timing data needed), repeat for memorisation, ayah-by-ayah highlighting.' });
 }

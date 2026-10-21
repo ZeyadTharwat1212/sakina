@@ -2,17 +2,17 @@ import { useEffect } from 'preact/hooks';
 import { useRoute, goTab, TABS, type Tab } from './lib/router';
 import { useStore, applyTheme } from './lib/store';
 import { t } from './lib/i18n';
-import { Icon } from './components/ui';
+import { Icon, TabIcon } from './components/ui';
 import { Onboarding } from './screens/Onboarding';
 import { Today } from './screens/Today';
 import { QuranIndex, QuranReader } from './screens/Quran';
-import { MushafScreen } from './screens/Mushaf';
+import { MushafScreen, AyahDock } from './screens/Mushaf';
 import { PrayerHome, PrayerSettingsScreen, QiblaScreen, DiagnosticsScreen, NawafilScreen, CityScreen } from './screens/Prayer';
 import { AdhkarHome, DhikrSession, Tasbih } from './screens/Adhkar';
 import { LibraryHome, HadithBook, HadithChapterScreen, SearchScreen, SourcesScreen, TafsirLibrary, TranslationsLibrary } from './screens/Library';
 import { SettingsScreen } from './screens/Settings';
 import { MiniPlayer } from './screens/Player';
-import { ReciterLibrary, ReciterPage, DownloadsManager } from './screens/Audio';
+import { ReciterLibrary, ReciterPage, DownloadsManager, AyahDownloads } from './screens/Audio';
 import { TrackerScreen, HijriScreen, KhatmaScreen, AsmaScreen, MosquesScreen, WallpapersScreen, DuasScreen } from './screens/Tools';
 import { RamadanScreen, FastingScreen, QiyamScreen, FajrAlarmScreen, TeachScreen, CardsScreen, HelpScreen, ZakatScreen } from './screens/More';
 import { FloatingDhikr } from './components/FloatingDhikr';
@@ -35,11 +35,12 @@ export function App() {
   switch (route.tab) {
     case 'quran':
       screen = p[1] === 'read' ? <QuranReader ch={Number(p[2]) || 1} v={Number(p[3]) || 1} />
-        : p[1] === 'page' ? <MushafScreen page={Math.min(604, Math.max(1, Number(p[2]) || 1))} />
+        : p[1] === 'page' ? <MushafScreen page={Math.min(604, Math.max(1, Number(p[2]) || 1))} follow={route.query.get('follow') === '0' ? false : undefined} />
         : p[1] === 'text' ? <QuranReader page={Number(p[2]) || 1} />
         : p[1] === 'reciters' && p[2] ? <ReciterPage id={p[2]} playAfter={route.query.get('play') ? Number(route.query.get('play')) : undefined} range={route.query.get('from') ? { from: Number(route.query.get('from')), to: Number(route.query.get('to') || route.query.get('from')) } : undefined} />
         : p[1] === 'reciters' ? <ReciterLibrary playSurahAfter={route.query.get('play') ? Number(route.query.get('play')) : undefined} range={route.query.get('from') ? { from: Number(route.query.get('from')), to: Number(route.query.get('to') || route.query.get('from')) } : undefined} />
         : p[1] === 'downloads' ? <DownloadsManager />
+        : p[1] === 'compact' ? <AyahDownloads reciter={p[2]} />
         : <QuranIndex />;
       break;
     case 'prayer':
@@ -69,13 +70,13 @@ export function App() {
     <div class="app">
       {screen}
       <FloatingDhikr />
+      <AyahDock onMushaf={route.tab === 'quran' && p[1] === 'page'} />
       <MiniPlayer />
       <nav class="tabbar" aria-label="التنقل الرئيسي">
-        {TABS.map((tb) => (
-          <button key={tb} aria-current={tab === tb && route.tab !== 'settings' ? 'page' : undefined} onClick={() => goTab(tb)}>
-            <Icon name={icons[tb]} /><span>{t(tb)}</span>
-          </button>
-        ))}
+        {TABS.map((tb) => { const on = tab === tb && route.tab !== 'settings'; return (
+          <button key={tb} aria-current={on ? 'page' : undefined} onClick={() => goTab(tb)}>
+            <span class="tab-pill"><TabIcon name={icons[tb]} active={on} /></span><span class="tab-label">{t(tb)}</span>
+          </button>); })}
       </nav>
     </div>
   );

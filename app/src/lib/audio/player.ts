@@ -148,3 +148,8 @@ export function setSleep(minutes: number | null) { set({ sleepAt: minutes ? Date
 export function setOpen(o: PlayerState['open']) { set({ open: o }); }
 export function stop() { if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load(); } if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; } set({ playing: false, open: 'none', queue: [], index: -1, pos: 0, dur: 0, timings: null, currentAyah: null, sleepAt: null }); }
 export function removeFromQueue(i: number) { const q = s.queue.filter((_, k) => k !== i); set({ queue: q, index: i < s.index ? s.index - 1 : Math.min(s.index, q.length - 1) }); }
+/** For the mushaf follow view: precise position of the full-surah recording (ms) with its ayah timings. */
+export function mainClock(): { surah: number; ms: number; playing: boolean; timings: AyahTiming[] | null } | null {
+  const t = current(); if (!t || !audio || !audio.src) return null;
+  return { surah: t.surah, ms: audio.currentTime * 1000, playing: !audio.paused, timings: s.timings };
+}

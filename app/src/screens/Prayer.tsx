@@ -241,11 +241,7 @@ export function QiblaScreen() {
         <p class="muted">{t('qiblaBearing')}</p>
         <div class="countdown num">{num(bearing.toFixed(1))}°</div>
         <small class="muted">{loc.name} · {isAr() ? 'محسوب من الإحداثيات (دائرة عظمى) — يعمل دون إنترنت' : 'computed from coordinates (great circle) — works offline'}</small>
-        <div class="compass" role="img" aria-label={`${t('qiblaBearing')} ${bearing.toFixed(0)}`}>
-          <span class="n" style={`transform:translateX(-50%) rotate(${rel != null ? -heading! : 0}deg);transform-origin:50% calc(min(280px,70vw)/2 - 8px)`}>N</span>
-          <div class="needle" style={`transform:rotate(${rel ?? bearing}deg) translateX(-50%);background:${aligned ? 'var(--copper)' : 'var(--primary)'}`} />
-          <span class="kaaba">🕋</span>
-        </div>
+        <QiblaRose bearing={bearing} heading={rel != null ? heading! : null} aligned={aligned} label={`${t('qiblaBearing')} ${bearing.toFixed(0)}`} />
         {status === 'ok' ? <p class={aligned ? 'badge ok' : 'muted small'}>{aligned ? (isAr() ? 'أنت متجه إلى القبلة' : 'Facing the qibla') : (isAr() ? `أدر الهاتف ${rel! < 180 ? 'يمينًا' : 'يسارًا'} ${num(Math.round(rel! < 180 ? rel! : 360 - rel!))}°` : `Turn ${rel! < 180 ? 'right' : 'left'} ${Math.round(rel! < 180 ? rel! : 360 - rel!)}°`)}</p>
           : <p class="notice" style="margin-top:8px">{t('compassUnavailable')}</p>}
         <p class="muted small" style="margin-top:12px">{isAr() ? 'دقة البوصلة تتأثر بالمعادن والمغناطيس والأغطية. حرّك الهاتف على شكل ٨ للمعايرة.' : 'Compass accuracy is affected by metal, magnets and cases. Move the phone in a figure-8 to calibrate.'}</p>
@@ -322,5 +318,28 @@ export function NawafilScreen() {
         <span class="badge warn">{t('notReviewed')}</span>
       </section>
     </main>
+  );
+}
+
+/** Compass rose: ticks every 5°, Arabic cardinals, Kaaba marker on the qibla bearing; rotates with the device heading. */
+function QiblaRose({ bearing, heading, aligned, label }: { bearing: number; heading: number | null; aligned: boolean; label: string }) {
+  const rot = heading != null ? -heading : 0;
+  const pt = (deg: number, r: number) => { const a = ((deg - 90) * Math.PI) / 180; return [100 + r * Math.cos(a), 100 + r * Math.sin(a)]; };
+  const ticks = Array.from({ length: 72 }, (_, i) => { const d = i * 5; const len = i % 18 === 0 ? 12 : i % 2 === 0 ? 7 : 4; const [x1, y1] = pt(d, 90); const [x2, y2] = pt(d, 90 - len); return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={i % 18 === 0 ? 'var(--text)' : 'var(--muted)'} stroke-width={i % 18 === 0 ? 2 : 1} stroke-linecap="round" />; });
+  const card = [['ش', 0], ['ق', 90], ['ج', 180], ['غ', 270]] as const;
+  const [kx, ky] = pt(bearing, 66); const [nx, ny] = pt(bearing, 54);
+  return (
+    <svg class="compass-rose" viewBox="0 0 200 200" role="img" aria-label={label}>
+      <circle cx="100" cy="100" r="97" fill="var(--surface)" stroke="var(--line)" stroke-width="2" />
+      <circle cx="100" cy="100" r="76" fill="none" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 4" />
+      <g style={`transform:rotate(${rot}deg);transform-origin:100px 100px;transition:transform 300ms ease-out`}>
+        {ticks}
+        {card.map(([l, d]) => { const [x, y] = pt(d, 62); return <text key={l} x={x} y={y + 5} text-anchor="middle" font-size="15" font-weight="700" fill={d === 0 ? 'var(--danger)' : 'var(--text-2)'} style="font-family:var(--font-ui)">{l}</text>; })}
+        <line x1="100" y1="100" x2={nx} y2={ny} stroke={aligned ? 'var(--copper)' : 'var(--primary)'} stroke-width="5" stroke-linecap="round" />
+        <g transform={`translate(${kx - 9} ${ky - 9}) rotate(${bearing} 9 9)`}><rect width="18" height="18" rx="2" fill="#1E1E1E" /><rect y="4" width="18" height="3" fill="#C9A24D" /></g>
+      </g>
+      <path d="M100 6 l7 12 h-14z" fill={aligned ? 'var(--copper)' : 'var(--primary)'} />
+      <circle cx="100" cy="100" r="7" fill="var(--primary)" /><circle cx="100" cy="100" r="3" fill="var(--surface)" />
+    </svg>
   );
 }

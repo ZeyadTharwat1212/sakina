@@ -2,13 +2,15 @@
  *  QCF v4 page fonts (loaded on demand). Word-level taps select an ayah; selection, tafsir, bookmarks and listening
  *  reuse the reader's ayah sheet. The text itself is never modified — glyph codes come straight from the layout data. */
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { getChapters, getMeta, getSurah, getMushafPage, ensureMushafFont, pageOf, juzOf, ayahDisplay, type MushafPage as PageData, type SurahText } from '../lib/content';
+import { getChapters, getMeta, getSurah, getMushafPage, getMushafVerses, ensureMushafFont, pageOf, juzOf, ayahDisplay, type MushafPage as PageData, type SurahText } from '../lib/content';
+import { followTick } from '../lib/audio/follow';
+import { getPlayer, subscribePlayer } from '../lib/audio/player';
 import { useStore, updateUser, updateSettings } from '../lib/store';
 import { t, num, isAr } from '../lib/i18n';
 import { navigate } from '../lib/router';
 import { TopBar, Icon, useAsync, Loading, shareText, copyText } from '../components/ui';
 import { AyahSheet } from './Quran';
-import { getAyahPlayer, subscribeAyahPlayer, playAyahs, stopAyahs } from '../lib/audio/ayah';
+import { getAyahPlayer, subscribeAyahPlayer, playAyahs, stopAyahs, playFrom, skip, toggleAyahs } from '../lib/audio/ayah';
 import { playFromReader } from './Audio';
 
 const toArabicIndic = (n: number) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[Number(d)]);
@@ -19,7 +21,13 @@ export function useAyahPlayer() {
   return getAyahPlayer();
 }
 
-export function MushafScreen({ page }: { page: number }) {
+export function usePlayerState() {
+  const [, force] = useState(0);
+  useEffect(() => subscribePlayer(() => force((n) => n + 1)), []);
+  return getPlayer();
+}
+
+export function MushafScreen({ page, follow: followParam }: { page: number; follow?: boolean }) {
   const { settings } = useStore();
   const chapters = useAsync(getChapters, []);
   const meta = useAsync(getMeta, []);
@@ -31,6 +39,43 @@ export function MushafScreen({ page }: { page: number }) {
   const [size, setSize] = useState(0);
   const host = useRef<HTMLDivElement | null>(null);
   const ap = useAyahPlayer();
+  const mp = usePlayerState();
+  const reciting = ap.active || (mp.playing && !!mp.timings);
+  const [follow, setFollow] = useState(followParam !== false);
+  const versesIdx = useAsync(getMushafVerses, []);
+
+  // ---- Follow the recitation: ayah highlight, word highlight with a letter-by-letter sweep, auto page turn ----
+  useEffect(() => {
+    if (!follow || !fontReady || !reciting) return;
+    let raf = 0, curKey = '', wordEl: HTMLElement | null = null, lastTurn = 0;
+    const loop = () => {
+      const root = host.current; const tk = followTick();
+      if (root && tk) {
+        const key = `${tk.ch}:${tk.v}`;
+        if (key !== curKey) {
+          root.querySelectorAll('.w.cur').forEach((e) => e.classList.remove('cur'));
+          const els = root.querySelectorAll<HTMLElement>(`.w[data-vk="${key}"]`);
+          els.forEach((e) => e.classList.add('cur'));
+          curKey = key;
+          if (els.length) { const r = els[0].getBoundingClientRect(); if (r.top < 70 || r.bottom > window.innerHeight - 150) els[0].scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+        }
+        const target = settings.followMode === 'word' && tk.word >= 0 ? root.querySelector<HTMLElement>(`.w[data-vk="${key}"][data-wi="${tk.word + 1}"]`) : null;
+        if (target !== wordEl) { wordEl?.classList.remove('now'); wordEl?.style.removeProperty('--p'); target?.classList.add('now'); wordEl = target; }
+        if (wordEl) wordEl.style.setProperty('--p', String(Math.min(1, Math.max(0, tk.p))));
+        // turn the page when the recitation leaves it
+        const onPage = !!root.querySelector(`.w[data-vk="${key}"]`);
+        const wordMissing = settings.followMode === 'word' && tk.word >= 0 && onPage && !target;
+        if (tk.playing && (!onPage || wordMissing) && Date.now() - lastTurn > 1500 && versesIdx.data) {
+          lastTurn = Date.now();
+          const vp = versesIdx.data[key]?.page; const next = wordMissing ? page + 1 : vp;
+          if (next && next !== page && next >= 1 && next <= 604) { navigate(`/quran/page/${next}?follow=1`, true); return; }
+        }
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => { cancelAnimationFrame(raf); host.current?.querySelectorAll('.w.cur, .w.now').forEach((e) => { e.classList.remove('cur', 'now'); (e as HTMLElement).style.removeProperty('--p'); }); };
+  }, [follow, fontReady, reciting, page, settings.followMode, versesIdx.data]);
 
   useEffect(() => { setFontReady(false); if (!pg.data) return; let alive = true; Promise.all([ensureMushafFont(pg.data.font), pg.data.lines.some((l) => l.w.some((w) => w[3] === 'B')) ? ensureMushafFont('QCF4_QBSML') : Promise.resolve()]).then(() => alive && setFontReady(true)).catch(() => alive && setFontReady(true)); return () => { alive = false; }; }, [pg.data?.p]);
   // Fit: start from the width-based size (or the user's), then shrink until no line overflows.
@@ -69,7 +114,7 @@ export function MushafScreen({ page }: { page: number }) {
   const chs = chapters.data, m = meta.data, data: PageData = pg.data;
   const vk = (w: PageData['lines'][number]['w'][number]) => (w[1] === 'w' || w[1] === 'e') ? String(w[2]) : null;
   const inSel = (key: string | null) => { if (!key) return false; const [c, v] = key.split(':').map(Number); if (multi) return multi.ch === c && v >= multi.from && v <= multi.to; return !!sel && sel.ch === c && sel.v === v; };
-  const isCur = (key: string | null) => { if (!key || !ap.playing) return false; const [c, v] = key.split(':').map(Number); return ap.ch === c && ap.v === v; };
+
   const tap = (key: string | null) => {
     if (!key) return; const [c, v] = key.split(':').map(Number);
     if (!multi) { setSel({ ch: c, v }); return; }
@@ -99,7 +144,7 @@ export function MushafScreen({ page }: { page: number }) {
                 const key = vk(w);
                 if (w[1] === 'h') return <span key={i} class="hdr" style={`font-family:'QCF4_QBSML'`}>{w[0]}</span>;
                 if (w[1] === 'b') return <span key={i} class="bsm" style={`font-family:'${data.font}'`}>{w[0]}</span>;
-                return <span key={i} class={`w ${inSel(key) ? 'sel' : ''} ${isCur(key) ? 'cur' : ''}`} style={`font-family:'${data.font}'`} data-vk={key || undefined} onClick={() => tap(key)}>{w[0]}</span>;
+                return <span key={i} class={`w ${inSel(key) ? 'sel' : ''}`} style={`font-family:'${data.font}'`} data-vk={key || undefined} data-wi={w[1] === 'w' ? w[4] : undefined} onClick={() => tap(key)}>{w[0]}</span>;
               })}
             </div>
           );
@@ -112,17 +157,23 @@ export function MushafScreen({ page }: { page: number }) {
         <button class="btn secondary sm" disabled={page <= 1} onClick={() => navigate(`/quran/page/${page - 1}`)}>{isAr() ? 'السابقة' : 'Previous'}<Icon name="next" /></button>
       </div>
       {!fontReady && <p class="muted small" style="text-align:center">{isAr() ? 'يتم تحميل خط الصفحة من مجمع الملك فهد (مرة واحدة لكل ١٣ صفحة تقريبًا)…' : 'Loading the page font (once per ~13 pages)…'}</p>}
+      <div class="listen-row">
+        {!reciting
+          ? <button class="btn" onClick={() => { setFollow(true); void playFrom(fc, fv); }}><Icon name="play" />{isAr() ? 'استمع مع المتابعة في المصحف' : 'Listen & follow along'}</button>
+          : <button class={`chip ${follow ? 'on' : ''}`} aria-pressed={follow} onClick={() => setFollow(!follow)}><Icon name="book" />{follow ? (isAr() ? 'المتابعة مفعّلة' : 'Following') : (isAr() ? 'تفعيل المتابعة' : 'Follow')}</button>}
+        {reciting && <div class="seg mini"><button aria-pressed={settings.followMode === 'word'} onClick={() => updateSettings({ followMode: 'word' })}>{isAr() ? 'كلمة بكلمة' : 'Word'}</button><button aria-pressed={settings.followMode === 'ayah'} onClick={() => updateSettings({ followMode: 'ayah' })}>{isAr() ? 'آية' : 'Ayah'}</button></div>}
+      </div>
       <div class="row" style="justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap">
         <button class="chip" onClick={() => updateSettings({ mushafSize: Math.max(14, (size || 22) - 1) })}>A−</button>
         <button class="chip" onClick={() => updateSettings({ mushafSize: 0 })}>{isAr() ? 'تلقائي' : 'Auto'}</button>
         <button class="chip" onClick={() => updateSettings({ mushafSize: Math.min(40, (size || 22) + 1) })}>A+</button>
-        <button class="chip" onClick={() => void playFromReader(fc, settings.reciterId)}><Icon name="play" />{isAr() ? 'تلاوة السورة' : 'Surah audio'}</button>
+        <button class="chip" onClick={() => void playFromReader(fc, settings.reciterId)}><Icon name="play" />{isAr() ? 'تسجيل السورة كاملًا' : 'Full surah recording'}</button>
       </div>
       <p class="muted small" style="margin-top:12px;text-align:center">{isAr() ? 'مصحف المدينة ١٤٤١هـ — خط عثمان طه، خطوط وتخطيط مجمع الملك فهد (QCF v4)' : 'Madani Mushaf 1441 AH — Uthman Taha script, KFGQPC page fonts (QCF v4)'} · <a href="#/library/sources">{t('sources')}</a></p>
 
       <AyahSheet sel={sel} onClose={() => setSel(null)} chs={chs} meta={m} texts={texts.data} tafsirId={settings.tafsirId} onMulti={() => { if (sel) { setMulti({ ch: sel.ch, from: sel.v, to: sel.v }); setSel(null); } }} />
       {multi && <SelectionBar multi={multi} texts={texts.data} chs={chs} onClear={() => setMulti(null)} />}
-      {ap.playing && !multi && <AyahMiniBar />}
+
     </main>
   );
 }
@@ -154,16 +205,33 @@ export function SelectionBar({ multi, texts, chs, onClear }: { multi: { ch: numb
   );
 }
 
-/** Small status bar while ayah-by-ayah audio plays. */
-export function AyahMiniBar() {
+/** Global dock for ayah-by-ayah audio: reciter, position, prev / play-pause / next, open the mushaf in follow mode. */
+export function AyahMiniBar() { return null; }
+export function AyahDock({ onMushaf }: { onMushaf: boolean }) {
   const ap = useAyahPlayer();
   const chapters = useAsync(getChapters, []);
-  if (!ap.playing && !ap.error) return null;
+  const src = useAsync(getAyahAudioSourcesSafe, []);
+  const meta = useAsync(getMeta, []);
+  const [exact, setExact] = useState<boolean | null>(null);
+  useEffect(() => { if (!ap.active) return; const id = window.setInterval(() => { const tk = followTick(); setExact(tk ? tk.exact : null); }, 700); return () => clearInterval(id); }, [ap.active]);
+  if (!ap.active) return null;
+  const rec = src.data?.reciters.find((r) => r.id === ap.reciter);
+  const page = meta.data ? pageOf(meta.data, ap.ch, ap.v) : 1;
   return (
-    <div class="multi-bar" role="status">
-      <div class="grow"><strong>{chapters.data ? chapters.data[ap.ch - 1].name : ''} · {t('ayah')} {num(ap.v)}</strong><br /><small class="muted">{ap.error ? ap.error : ap.loading ? '…' : (isAr() ? `آية بآية · ${num(ap.from)}–${num(ap.to)}${ap.rep > 1 ? ` · تكرار ×${num(ap.rep)}` : ''}` : `ayah by ayah ${ap.from}–${ap.to}`)}</small></div>
-      <button class="icon-btn" aria-label={t('stop')} onClick={stopAyahs}><Icon name="close" /></button>
+    <div class={`ayah-dock ${onMushaf ? 'on-mushaf' : ''}`} role="region" aria-label={t('listen')}>
+      <div class="ad-info">
+        <strong>{chapters.data ? chapters.data[ap.ch - 1]?.name : ''} · {num(ap.v)}</strong>
+        <small class="muted">{ap.error ? ap.error : ap.loading ? (isAr() ? 'جارٍ التحميل…' : 'Loading…') : `${rec ? (isAr() ? rec.ar : rec.en) : ''}${exact === true ? (isAr() ? ' · متابعة دقيقة' : ' · exact follow') : exact === false ? (isAr() ? ' · متابعة تقريبية' : ' · approx. follow') : ''}${ap.rep > 1 ? ` · ×${num(ap.rep)}` : ''}`}</small>
+      </div>
+      <div class="ad-ctrl">
+        <button class="icon-btn" aria-label={isAr() ? 'الآية التالية' : 'Next ayah'} onClick={() => void skip(1)}><Icon name="back" /></button>
+        <button class="ad-play" aria-label={ap.playing ? t('pause') : t('play')} onClick={toggleAyahs}><Icon name={ap.playing ? 'pause' : 'play'} /></button>
+        <button class="icon-btn" aria-label={isAr() ? 'الآية السابقة' : 'Previous ayah'} onClick={() => void skip(-1)}><Icon name="next" /></button>
+        {!onMushaf && <button class="icon-btn" aria-label={isAr() ? 'المصحف' : 'Mushaf'} onClick={() => navigate(`/quran/page/${page}?follow=1`)}><Icon name="quran" /></button>}
+        <button class="icon-btn" aria-label={t('stop')} onClick={stopAyahs}><Icon name="close" /></button>
+      </div>
     </div>
   );
 }
+const getAyahAudioSourcesSafe = () => import('../lib/content').then((m) => m.getAyahAudioSources());
 export { pageOf };

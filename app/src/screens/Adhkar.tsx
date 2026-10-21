@@ -104,7 +104,7 @@ export function DhikrSession({ catId }: { catId: number }) {
               {item.ref ? <span class="badge ok">{item.ref}</span> : <span class="badge warn">{isAr() ? 'المرجع قيد المراجعة' : 'reference pending'}</span>}
             </div>
           </section>
-          <button class="counter-btn" onClick={inc} aria-label={`${t('counter')} ${done} / ${item.count}`}>{num(done)}<span style="font-size:.4em;opacity:.8">/{num(item.count)}</span></button>
+          <button class="counter-btn" style={`--pct:${Math.min(1, done / Math.max(1, item.count))}`} onClick={inc} aria-label={`${t('counter')} ${done} / ${item.count}`}><span>{num(done)}<span style="font-size:.38em;opacity:.85;display:block;margin-top:-.2em">{isAr() ? `من ${num(item.count)}` : `of ${item.count}`}</span></span></button>
           <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap">
             <button class="btn secondary sm" disabled={!done} onClick={dec}><Icon name="undo" />{t('undo')}</button>
             <button class="btn secondary sm" onClick={() => setSrc(item)}><Icon name="info" />{t('source')}</button>
@@ -153,7 +153,7 @@ export function Tasbih() {
         <div class="chips" style="justify-content:center;margin-bottom:8px">{[33, 99, 100, 1000].map((x) => <button key={x} class="chip" aria-pressed={target === x} onClick={() => set({ target: x })}>{num(x)}</button>)}</div>
         <small class="muted">{t('target')} — {isAr() ? 'اختيار شخصي، ليس عددًا مسنونًا بذاته' : 'your own choice, not a prescribed count'}</small>
         {label && <p class="dhikr-text" style="margin:8px 0 0;font-size:1.3em">{label}</p>}
-        <button class="counter-btn" onClick={() => { if (hapt) tap(); set({ count: count + 1 >= target ? 0 : count + 1, total: (user.tasbih.total || 0) + 1 }); if (count + 1 >= target && hapt) tap(); }}>{num(count)}<span style="font-size:.4em;opacity:.8">/{num(target)}</span></button>
+        <button class="counter-btn" style={`--pct:${count / Math.max(1, target)}`} onClick={() => { if (hapt) tap(); set({ count: count + 1 >= target ? 0 : count + 1, total: (user.tasbih.total || 0) + 1 }); if (count + 1 >= target && hapt) tap(); }}><span>{num(count)}<span style="font-size:.38em;opacity:.85;display:block;margin-top:-.2em">{isAr() ? `من ${num(target)}` : `of ${target}`}</span></span></button>
         <small class="muted">{isAr() ? `الإجمالي: ${num(user.tasbih.total || 0)}` : `Total: ${user.tasbih.total || 0}`}</small>
         <div class="row" style="justify-content:center;gap:8px">
           <button class="btn secondary sm" disabled={!count} onClick={() => set({ count: count - 1 })}><Icon name="undo" />{t('undo')}</button>

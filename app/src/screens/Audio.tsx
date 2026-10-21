@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { getCatalog, refreshCatalog, recordingsOf, displayName, hasSurah, STYLE_AR, fileUrl, hasTimings, timedRecordingFor, type Catalog, type Recording } from '../lib/audio/catalog';
 import * as DL from '../lib/audio/downloads';
 import { playSurah, playAyahRange, getPlayer, subscribePlayer } from '../lib/audio/player';
-import { getChapters, type Chapter } from '../lib/content';
+import { getChapters, getAyahAudioSources, type Chapter } from '../lib/content';
+import { ayahUrls, cacheAyahs, cachedCount, deleteCached, type AyahReciter } from '../lib/audio/ayah';
 import { useStore, updateSettings } from '../lib/store';
 import { t, num, isAr } from '../lib/i18n';
 import { navigate } from '../lib/router';
@@ -41,7 +42,7 @@ export function ReciterLibrary({ playSurahAfter, range }: { playSurahAfter?: num
     const dl = recs.reduce((a, x) => a + Object.values(DL.getState().items).filter((i) => i.recId === x.id && i.status === 'done').length, 0);
     return (
       <button class="list-item" onClick={() => navigate(`/quran/reciters/${r.id}${playSurahAfter ? `?play=${playSurahAfter}${range ? `&from=${range.from}&to=${range.to}` : ''}` : ''}`)}>
-        <span class="icon-btn" style="background:var(--primary-soft);color:var(--primary);border-radius:12px"><Icon name="play" /></span>
+        <Avatar name={displayName(r)} id={r.id} />
         <span class="grow"><span class="title">{displayName(r)}</span>{r.nameAr && <span class="sub"> · {r.name}</span>}<br />
           <span class="sub">{num(recs.length)} {isAr() ? 'تسجيل' : 'recordings'} · {num(complete)} {isAr() ? 'مصحف كامل' : 'complete'}{dl ? ` · ${num(dl)} ${isAr() ? 'سورة منزّلة' : 'downloaded'}` : ''}</span></span>
         {recs.some(hasTimings) && <span class="badge" title={isAr() ? 'توقيتات آيات' : 'ayah timings'}>{isAr() ? 'آيات' : 'ayahs'}</span>}
@@ -119,6 +120,7 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
   return (
     <main class="screen">
       <TopBar title={displayName(reciter)} onBack />
+      <CompactBanner nameAr={reciter.nameAr} />
       {recs.length > 1 && (
         <div class="chips scroll" style="margin-bottom:12px">
           {recs.map((r) => <button key={r.id} class="chip" style="white-space:nowrap" aria-pressed={r.id === rec.id} onClick={() => setRecId(r.id)}>{STYLE_AR[r.style]} · {r.riwayahAr.split(' ')[0]}{r.complete ? '' : ` · ${num(r.surahTotal)}/114`}{hasTimings(r) ? ' · ⏱' : ''}</button>)}
@@ -187,6 +189,7 @@ export function DownloadsManager() {
   return (
     <main class="screen">
       <TopBar title={isAr() ? 'التنزيلات' : 'Downloads'} onBack />
+      <button class="card soft" style="width:100%;text-align:start;margin-bottom:12px" onClick={() => navigate('/quran/compact')}><strong>{isAr() ? 'تنزيل مضغوط (أصغر حتى ٨ مرات)' : 'Compact downloads (up to 8× smaller)'}</strong><br /><small class="muted">{isAr() ? '٤٠ قارئًا آية بآية بجودة مختارة — مع متابعة المصحف' : '40 reciters ayah-by-ayah — with mushaf follow'}</small></button>
       <section class="card">
         <dl class="kv">
           <dt>{isAr() ? 'المساحة المستخدمة' : 'Storage used'}</dt><dd>{DL.fmtBytes(DL.usageBytes())}</dd>
@@ -233,3 +236,93 @@ export async function playFromReader(surah: number, reciterId: string | null, ra
 }
 export type { Catalog, Chapter };
 export { Seg };
+
+/* ------------------------------------------------------------------ Compact (ayah-by-ayah) downloads: same recordings, ½–⅛ the size */
+const mbPerHour = (kbps: number) => Math.round((kbps * 1000 / 8) * 3600 / 1048576);
+const lastWord = (s: string) => s.split(' —')[0].trim().split(/\s+/).pop()!.replace(/^ال/, '');
+/** Best ayah-by-ayah reciter matching an MP3Quran reciter (by family name + first name). */
+export function matchAyahReciter(list: AyahReciter[], nameAr: string | null): AyahReciter | null {
+  if (!nameAr) return null;
+  const n = nameAr.replace(/[ـ]/g, ''); const first = n.split(/\s+/)[0];
+  return list.find((r) => { const base = r.ar.split(' —')[0]; return n.includes(lastWord(base)) && base.startsWith(first) && !r.riwayah; }) || null;
+}
+export function AyahDownloads({ reciter: initial }: { reciter?: string }) {
+  const { settings } = useStore();
+  const src = useAsync(getAyahAudioSources, []);
+  const chapters = useAsync(getChapters, []);
+  const [rid, setRid] = useState(initial || settings.ayahReciter);
+  const [counts, setCounts] = useState<Record<number, number>>({});
+  const [job, setJob] = useState<{ label: string; done: number; total: number; bytes: number } | null>(null);
+  const [est, setEst] = useState<number | null>(null);
+  const [usage, setUsage] = useState<string>('');
+  const signal = useState({ cancel: false })[0];
+  const refresh = async () => { if (!chapters.data) return; const c: Record<number, number> = {}; for (const ch of chapters.data) c[ch.id] = await cachedCount(rid, ch.id); setCounts(c); try { const e = await navigator.storage.estimate(); setUsage(`${Math.round((e.usage || 0) / 1048576)} MB`); } catch { /* ignore */ } };
+  useEffect(() => { void refresh(); }, [rid, chapters.data, settings.audioQuality]);
+  // whole-Quran size estimate: HEAD 12 ayahs spread over the mushaf
+  useEffect(() => { let alive = true; setEst(null); (async () => { const sample: [number, number][] = [[1, 1], [2, 255], [3, 190], [6, 59], [12, 4], [18, 10], [24, 35], [36, 1], [55, 13], [67, 2], [78, 40], [112, 1]]; let tot = 0, n = 0; for (const [c, v] of sample) { try { const u = (await ayahUrls(c, v, rid))[0]; const r = await fetch(u, { method: 'HEAD' }); const l = Number(r.headers.get('content-length')); if (l) { tot += l; n++; } } catch { /* offline */ } } if (alive && n) setEst((tot / n) * 6236); })(); return () => { alive = false; }; }, [rid, settings.audioQuality]);
+  if (!src.data || !chapters.data) return <main class="screen"><TopBar title={isAr() ? 'تنزيل مضغوط' : 'Compact downloads'} onBack /><Loading /></main>;
+  const list = src.data.reciters as unknown as AyahReciter[];
+  const r = list.find((x) => x.id === rid) || list[0];
+  const chs = chapters.data;
+  const run = async (label: string, items: number[]) => {
+    signal.cancel = false; let bytes = 0;
+    try {
+      for (const ch of items) { const total = chs[ch - 1].verses; await cacheAyahs(ch, 1, total, r.id, (d, tt, b) => setJob({ label: `${label} · ${chs[ch - 1].name}`, done: d, total: tt, bytes: bytes + b }), signal).then((b) => { bytes += b; }); }
+    } catch { /* cancelled or offline */ } finally { setJob(null); void refresh(); }
+  };
+  const doneSurahs = chs.filter((c) => counts[c.id] === c.verses).length;
+  return (
+    <main class="screen">
+      <TopBar title={isAr() ? 'تنزيل مضغوط (آية بآية)' : 'Compact downloads'} onBack />
+      <section class="card">
+        <label class="small">{t('reciter')}</label>
+        <select class="input" value={rid} onChange={(e) => setRid((e.target as HTMLSelectElement).value)}>
+          {list.map((x) => <option key={x.id} value={x.id}>{isAr() ? x.ar : x.en}{x.tm ? (isAr() ? ' · كلمة بكلمة' : ' · word follow') : ''}</option>)}
+        </select>
+        <div class="field" style="margin-top:12px"><label>{isAr() ? 'الجودة' : 'Quality'}</label>
+          <Seg value={settings.audioQuality} options={[{ v: 'lite', label: isAr() ? `مضغوطة · ${num(r.liteKbps)} ك.ب/ث` : `Compact · ${r.liteKbps} kbps` }, { v: 'hq', label: isAr() ? `عالية · ${num(r.kbps)} ك.ب/ث` : `High · ${r.kbps} kbps` }]} onChange={(v) => updateSettings({ audioQuality: v })} /></div>
+        <p class="muted small">{isAr() ? `≈ ${num(mbPerHour(settings.audioQuality === 'lite' ? r.liteKbps : r.kbps))} م.ب لكل ساعة تلاوة` : `≈ ${mbPerHour(settings.audioQuality === 'lite' ? r.liteKbps : r.kbps)} MB per hour`}{r.lite === r.ea ? (isAr() ? ' · لهذا القارئ نسخة واحدة فقط' : ' · single quality for this reciter') : (isAr() ? ` · المضغوطة أصغر ${num(Math.round(r.kbps / r.liteKbps))}× بنفس التلاوة` : ` · compact is ${Math.round(r.kbps / r.liteKbps)}× smaller, same recording`)}</p>
+        <p class="small" style="margin-top:6px">{isAr() ? 'المصحف كاملًا بهذه الجودة: ' : 'Whole Quran at this quality: '}<strong class="num">{est ? `≈ ${num(Math.round(est / 1048576))} ${isAr() ? 'م.ب' : 'MB'}` : '…'}</strong> · {isAr() ? `منزَّل: ${num(doneSurahs)}/١١٤ سورة` : `${doneSurahs}/114 downloaded`}{usage ? ` · ${isAr() ? 'المستخدم على الجهاز' : 'used'} ${usage}` : ''}</p>
+        {r.tm && <p class="small" style="margin-top:6px"><span class="badge ok">{isAr() ? 'متابعة كلمة بكلمة دقيقة' : 'Exact word follow'}</span> {isAr() ? 'لهذا القارئ توقيتات لكل كلمة (quran-align)' : 'word timings available'}</p>}
+        <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap">
+          {!job ? <button class="btn" onClick={() => void run(isAr() ? 'المصحف كاملًا' : 'Whole Quran', chs.map((c) => c.id).filter((id) => counts[id] !== chs[id - 1].verses))}><Icon name="download" />{isAr() ? 'تنزيل المصحف كاملًا' : 'Download whole Quran'}</button>
+            : <button class="btn secondary" onClick={() => { signal.cancel = true; }}>{isAr() ? 'إيقاف' : 'Stop'}</button>}
+          <button class="btn ghost" onClick={() => updateSettings({ ayahReciter: r.id })} disabled={settings.ayahReciter === r.id}>{settings.ayahReciter === r.id ? (isAr() ? 'القارئ الافتراضي ✓' : 'Default ✓') : (isAr() ? 'اجعله الافتراضي' : 'Make default')}</button>
+        </div>
+        {job && <div style="margin-top:10px"><small>{job.label} — {num(job.done)}/{num(job.total)} · {num(Math.round(job.bytes / 1048576 * 10) / 10)} {isAr() ? 'م.ب' : 'MB'}</small><div class="progress"><div style={`width:${(job.done / job.total) * 100}%`} /></div></div>}
+      </section>
+      <div class="list" style="margin-top:12px">
+        {chs.map((c) => { const n = counts[c.id] || 0; const full = n === c.verses; return (
+          <div key={c.id} class="list-item">
+            <span class="badge num">{num(c.id)}</span>
+            <span class="grow"><span class="title">{c.name}</span><br /><span class="sub">{full ? (isAr() ? 'منزّلة — تعمل دون إنترنت' : 'downloaded') : n ? `${num(n)}/${num(c.verses)}` : `${num(c.verses)} ${t('ayah')}`}</span></span>
+            {full ? <button class="icon-btn" aria-label={isAr() ? 'حذف' : 'Delete'} onClick={async () => { await deleteCached(r.id, c.id); void refresh(); }}><Icon name="close" /></button>
+              : <button class="icon-btn" aria-label={isAr() ? 'تنزيل' : 'Download'} disabled={!!job} onClick={() => void run(c.name, [c.id])}><Icon name="download" /></button>}
+          </div>); })}
+      </div>
+      <p class="muted small" style="margin-top:12px">{isAr() ? 'الملفات من everyayah.com (أرشيف مجاني) وتُحفظ داخل التطبيق فقط. التلاوة آية بآية تتيح التكرار ومتابعة المصحف.' : 'Files from everyayah.com, stored inside the app only.'}</p>
+    </main>
+  );
+}
+
+function CompactBanner({ nameAr }: { nameAr: string | null }) {
+  const src = useAsync(getAyahAudioSources, []);
+  const m = src.data ? matchAyahReciter(src.data.reciters as unknown as AyahReciter[], nameAr) : null;
+  if (!m) return null;
+  return (
+    <button class="card soft" style="width:100%;text-align:start;margin-bottom:12px;display:flex;gap:10px;align-items:center" onClick={() => navigate(`/quran/compact/${m.id}`)}>
+      <span class="tool-ic" style="width:42px;height:42px;flex:none"><Icon name="download" /></span>
+      <span class="grow"><strong>{isAr() ? 'نسخة مضغوطة متاحة لهذا القارئ' : 'Compact copy available'}</strong><br /><small class="muted">{isAr() ? `آية بآية بـ ${num(m.liteKbps)} ك.ب/ث (≈ ${num(mbPerHour(m.liteKbps))} م.ب/ساعة)${m.tm ? ' · متابعة كلمة بكلمة في المصحف' : ' · متابعة الآيات في المصحف'}` : `${m.liteKbps} kbps ayah-by-ayah${m.tm ? ' · word follow' : ''}`}</small></span>
+    </button>
+  );
+}
+
+/** Monogram avatar for reciters (no photo download; colour derived from the id). */
+const AV = ['#2F6A59', '#7D5F22', '#3E5C76', '#6B4E71', '#4F6B3A', '#8A4B3A', '#2E6470', '#5B5F2A'];
+export function Avatar({ name, id, size = 44 }: { name: string; id: string; size?: number }) {
+  const words = name.replace(/^(الشيخ|الشيخ\s)/, '').split(/\s+/).filter((w) => w.length > 1);
+  const a = (words[0] || '?')[0]; const b = words.length > 1 ? words[words.length - 1].replace(/^ال/, '')[0] : '';
+  let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const col = AV[h % AV.length];
+  return <span class="avatar" style={`width:${size}px;height:${size}px;--av:${col}`} aria-hidden="true"><span>{a}{b ? '‌' + b : ''}</span></span>;
+}

@@ -65,11 +65,15 @@ export function MushafScreen({ page, follow: followParam }: { page: number; foll
         if (wordEl) wordEl.style.setProperty('--p', String(Math.min(1, Math.max(0, tk.p))));
         // turn the page when the recitation leaves it
         const onPage = !!root.querySelector(`.w[data-vk="${key}"]`);
-        const wordMissing = settings.followMode === 'word' && tk.word >= 0 && onPage && !target;
+        const hasPositions = !!root.querySelector('.w[data-wi]');
+        const wordMissing = hasPositions && settings.followMode === 'word' && tk.word >= 0 && onPage && !target;
         if (tk.playing && (!onPage || wordMissing) && Date.now() - lastTurn > 1500 && versesIdx.data) {
           lastTurn = Date.now();
           const vp = versesIdx.data[key]?.page; const next = wordMissing ? page + 1 : vp;
-          if (next && next !== page && next >= 1 && next <= 604) { dead = true; navigate(`/quran/page/${next}?follow=1`, true); return; }
+          // never bounce back to the page we just turned from for the same ayah
+          let from: { key: string; page: number } | null = null; try { from = JSON.parse(sessionStorage.getItem('sakina.turnFrom') || 'null'); } catch { /* ignore */ }
+          const bounce = !!from && from.key === key && from.page === next;
+          if (next && next !== page && next >= 1 && next <= 604 && !bounce) { try { sessionStorage.setItem('sakina.turnFrom', JSON.stringify({ key, page })); } catch { /* ignore */ } dead = true; navigate(`/quran/page/${next}?follow=1`, true); return; }
         }
       }
       raf = requestAnimationFrame(loop);

@@ -17,5 +17,5 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   // cache-first for content, fonts and hashed assets
-  e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request).then((r) => { if (r.ok) { const copy = r.clone(); caches.open(VERSION).then((c) => c.put(e.request, copy)); } return r; })));
+  e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request, { cache: 'no-cache' }).then((r) => {  // revalidate with the server (ETag) so a stale HTTP-cache copy never gets pinned if (r.ok) { const copy = r.clone(); caches.open(VERSION).then((c) => c.put(e.request, copy)); } return r; })));
 });

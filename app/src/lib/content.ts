@@ -85,9 +85,11 @@ export async function tafsirOfflineCount(id: string): Promise<number> {
 export const getTranslationAny = (id: string, ch: number) => id === 'en-saheeh' ? getTranslation(id, ch) : load<PerVerse>(`translations/${id}/${ch}.json`);
 
 /* ---------- Mushaf pages (QCF v4) ---------- */
+/** Bump when the page JSON format changes, so phones never mix old cached pages with new code. */
+export const MUSHAF_V = '2';
 export type MushafWord = [string, 'w' | 'e' | 'h' | 'b' | 'q', string | number | null, 'B' | 0 | undefined, number];
 export interface MushafPage { p: number; font: string; surahs: [number, number, number][]; lines: { n: number; w: MushafWord[] }[] }
-export const getMushafPage = (p: number) => { const key = `mushaf/pages/${p}`; if (!cache.has(key)) cache.set(key, fetch(`mushaf/pages/${p}.json`).then((r) => { if (!r.ok) throw new Error(`page ${p}: ${r.status}`); return r.json(); })); return cache.get(key) as Promise<MushafPage>; };
+export const getMushafPage = (p: number) => { const key = `mushaf/pages/${p}`; if (!cache.has(key)) cache.set(key, fetch(`mushaf/pages/${p}.json?v=${MUSHAF_V}`).then((r) => { if (!r.ok) throw new Error(`page ${p}: ${r.status}`); return r.json(); })); return cache.get(key) as Promise<MushafPage>; };
 export const getMushafVerses = () => { const key = 'mushaf/verses'; if (!cache.has(key)) cache.set(key, fetch('mushaf/verses.json').then((r) => r.json())); return cache.get(key) as Promise<Record<string, { page: number; lines: { line: number; word_start: number; word_end: number }[] }>>; };
 const loadedFonts = new Set<string>();
 /** Load one QCF4 page font (≈0.8 MB, covers ~13 pages) through the FontFace API; cached by the service worker afterwards. */

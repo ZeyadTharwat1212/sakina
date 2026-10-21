@@ -329,8 +329,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--space-3) 0; }
 .prayer-strip .ps .num { font-size: .72em; letter-spacing: -.01em; }
 
 /* ---------- Follow-along (listen with the mushaf) ---------- */
-:root { --follow-ink: #B5822E; --follow-soft: rgba(181,130,46,.14); --now-bg: rgba(47,106,89,.10); }
-:root[data-theme="dark"] { --follow-ink: #E3B567; --follow-soft: rgba(227,181,103,.14); --now-bg: rgba(140,198,176,.12); }
+:root { --follow-ink: #B5822E; --follow-soft: rgba(181,130,46,.2); --now-bg: rgba(47,106,89,.10); }
+:root[data-theme="dark"] { --follow-ink: #E3B567; --follow-soft: rgba(227,181,103,.18); --now-bg: rgba(140,198,176,.12); }
 .mushaf .mline .w { position: relative; transition: background-color 180ms; }
 .mushaf .mline .w.cur { background: var(--follow-soft); border-radius: 4px; }
 .mushaf .mline .w.now { isolation: isolate; color: transparent;

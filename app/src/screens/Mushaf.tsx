@@ -47,8 +47,9 @@ export function MushafScreen({ page, follow: followParam }: { page: number; foll
   // ---- Follow the recitation: ayah highlight, word highlight with a letter-by-letter sweep, auto page turn ----
   useEffect(() => {
     if (!follow || !fontReady || !reciting) return;
-    let raf = 0, curKey = '', wordEl: HTMLElement | null = null, lastTurn = 0;
+    let raf = 0, curKey = '', wordEl: HTMLElement | null = null, lastTurn = 0, lastRun = 0, dead = false;
     const loop = () => {
+      if (dead) return; lastRun = performance.now(); cancelAnimationFrame(raf);
       const root = host.current; const tk = followTick();
       if (root && tk) {
         const key = `${tk.ch}:${tk.v}`;
@@ -68,13 +69,15 @@ export function MushafScreen({ page, follow: followParam }: { page: number; foll
         if (tk.playing && (!onPage || wordMissing) && Date.now() - lastTurn > 1500 && versesIdx.data) {
           lastTurn = Date.now();
           const vp = versesIdx.data[key]?.page; const next = wordMissing ? page + 1 : vp;
-          if (next && next !== page && next >= 1 && next <= 604) { navigate(`/quran/page/${next}?follow=1`, true); return; }
+          if (next && next !== page && next >= 1 && next <= 604) { dead = true; navigate(`/quran/page/${next}?follow=1`, true); return; }
         }
       }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-    return () => { cancelAnimationFrame(raf); host.current?.querySelectorAll('.w.cur, .w.now').forEach((e) => { e.classList.remove('cur', 'now'); (e as HTMLElement).style.removeProperty('--p'); }); };
+    // watchdog: animation frames pause in hidden/low-power webviews — keep following with a timer there
+    const wd = window.setInterval(() => { if (performance.now() - lastRun > 160) loop(); }, 120);
+    return () => { dead = true; cancelAnimationFrame(raf); clearInterval(wd); host.current?.querySelectorAll('.w.cur, .w.now').forEach((e) => { e.classList.remove('cur', 'now'); (e as HTMLElement).style.removeProperty('--p'); }); };
   }, [follow, fontReady, reciting, page, settings.followMode, versesIdx.data]);
 
   useEffect(() => { setFontReady(false); if (!pg.data) return; let alive = true; Promise.all([ensureMushafFont(pg.data.font), pg.data.lines.some((l) => l.w.some((w) => w[3] === 'B')) ? ensureMushafFont('QCF4_QBSML') : Promise.resolve()]).then(() => alive && setFontReady(true)).catch(() => alive && setFontReady(true)); return () => { alive = false; }; }, [pg.data?.p]);

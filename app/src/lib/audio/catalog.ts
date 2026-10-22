@@ -7,12 +7,14 @@ import { Preferences } from '@capacitor/preferences';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
 export interface Recording {
-  id: string; source: 'mp3quran' | 'quranicaudio'; reciterId: string; moshafId: string;
+  id: string; source: 'mp3quran' | 'quranicaudio' | 'archive'; reciterId: string; moshafId: string;
   name: string; nameAr: string | null; recitation: string; recitationAr?: string;
   server: string; surahTotal: number; complete: boolean; surahList: number[] | null;
   riwayah: string; riwayahAr: string; style: 'murattal' | 'mujawwad' | 'muallim' | 'taraweeh';
   /** QuranicAudio extras: median bitrate, whole-set size, taraweeh year (Hijri) */
   kbps?: number | null; sizeMB?: number | null; year?: string | null;
+  /** Recordings outside the catalogues: explicit per-surah URLs (only complete surahs are listed). */
+  files?: Record<string, string>; rights?: 'needs-permission'; sourceNote?: string;
 }
 export interface ReciterEntry { id: string; name: string; nameAr: string | null; famous: boolean; recordings: string[]; kind?: 'taraweeh' }
 export interface Catalog {
@@ -42,16 +44,27 @@ export async function getCatalog(): Promise<Catalog> {
   const stored = await readCache();
   // A stored refresh wins only if it is newer than the bundle and has the same source
   // …and only if it was made from the same catalogue version (v2 added QuranicAudio + Arabic names + exact surah lists)
-  cached = stored && stored.source === bundled.source && stored.refreshedAt && (stored.version || 1) === (bundled.version || 1) ? stored : bundled;
+  const base = stored && stored.source === bundled.source && stored.refreshedAt && (stored.version || 1) === (bundled.version || 1) ? stored : bundled;
+  cached = await withExtras(base);
   return cached;
+}
+
+/** Reciters not on MP3Quran (content/audio/extra-recordings.json) — merged on every load so a stored refresh never hides them. */
+async function withExtras(c: Catalog): Promise<Catalog> {
+  try {
+    const x = (await fetch('content/audio/extra-recordings.json').then((r) => r.json())) as { recordings: Recording[]; reciters: ReciterEntry[] };
+    const ids = new Set(x.recordings.map((r) => r.id)), rids = new Set(x.reciters.map((r) => r.id));
+    return { ...c, recordings: [...c.recordings.filter((r) => !ids.has(r.id)), ...x.recordings], reciters: [...c.reciters.filter((r) => !rids.has(r.id)), ...x.reciters],
+      famousOrder: [...c.famousOrder.filter((id) => !rids.has(id)), ...x.reciters.filter((r) => r.famous).map((r) => r.id)] };
+  } catch { return c; }
 }
 
 export const recordingById = (c: Catalog, id: string) => c.recordings.find((r) => r.id === id) || null;
 export const recordingsOf = (c: Catalog, reciterId: string) => c.recordings.filter((r) => r.reciterId === reciterId);
-export const fileUrl = (rec: Recording, surah: number) => `${rec.server}${String(surah).padStart(3, '0')}.mp3`;
+export const fileUrl = (rec: Recording, surah: number) => rec.files?.[String(surah)] || `${rec.server}${String(surah).padStart(3, '0')}.mp3`;
 export const displayName = (r: { name: string; nameAr: string | null }) => r.nameAr || r.name;
 export const STYLE_AR: Record<string, string> = { murattal: 'مرتّل', mujawwad: 'مجوّد', muallim: 'معلّم', taraweeh: 'تراويح' };
-export const SOURCE_AR: Record<string, string> = { mp3quran: 'MP3Quran', quranicaudio: 'QuranicAudio' };
+export const SOURCE_AR: Record<string, string> = { mp3quran: 'MP3Quran', quranicaudio: 'QuranicAudio', archive: 'archive.org' };
 
 /** Which surahs a recording provides. null surahList + complete → all 114; partial without list → unknown (shown honestly). */
 export function surahStatusKnown(rec: Recording): boolean { return rec.complete || !!rec.surahList; }

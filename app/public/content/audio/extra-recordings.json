@@ -1,0 +1,73 @@
+{
+ "recordings": [
+  {
+   "id": "archive:abdulrahman-mosaad:hafs",
+   "source": "archive",
+   "reciterId": "x-abdulrahman-mosaad",
+   "moshafId": "0",
+   "name": "Abdul Rahman Mosaad",
+   "nameAr": "عبد الرحمن مسعد",
+   "recitation": "Rewayat Hafs - Murattal (selected complete surahs)",
+   "recitationAr": "حفص عن عاصم — مرتل (سور مختارة كاملة)",
+   "server": "",
+   "surahTotal": 18,
+   "complete": false,
+   "surahList": [
+    1,
+    2,
+    15,
+    18,
+    25,
+    29,
+    32,
+    49,
+    67,
+    73,
+    78,
+    87,
+    88,
+    100,
+    107,
+    108,
+    110,
+    112
+   ],
+   "riwayah": "hafs",
+   "riwayahAr": "حفص عن عاصم",
+   "style": "murattal",
+   "files": {
+    "1": "https://archive.org/download/1_20250825_202508/1.mp3",
+    "2": "https://archive.org/download/onlymp-3.to-sourate-al-baqarah-abdulrhman-mosad-u-vqp-d-ta-g-98-192k-1707128147/onlymp3.to%20-%20sourate_al_baqarah__abdulrhman_mosad_%D8%B3%D9%88%D8%B1%D8%A9_%D8%A7%D9%84%D8%A8%D9%82%D8%B1%D8%A9_%D9%83%D8%A7%D9%85%D9%84%D8%A9___%D8%B7%D8%A7%D8%B1%D8%AF%D8%A9_%D8%A7%D9%84%D8%B4%D9%8A%D8%A7%D8%B7%D9%8A%D9%86___%D8%B9%D8%A8%D8%AF%D8%A7%D9%84%D8%B1%D8%AD%D9%85%D9%86_%D9%85%D8%B3%D8%B9%D8%AF__%D8%AC%D9%88%D8%AF%D8%A9_%D8%B9%D8%A7%D9%84%D9%8A%D8%A9-uVqp_dTaG98-192k-1707128147.mp3",
+    "15": "https://archive.org/download/15_20250825/15.mp3",
+    "18": "https://archive.org/download/onlymp-3.to-f-lpi-zt-1e-af-4-192k-1707050604/onlymp3.to%20-%20%D8%B3%D9%88%D8%B1%D8%A9%20%D8%A7%D9%84%D9%83%D9%87%D9%81%20%D8%A8%D8%B5%D9%88%D8%AA%20%D8%A7%D9%84%D8%B4%D9%8A%D8%AE%20%D8%BA%D8%A8%D8%AF%20%D8%A7%D9%84%D8%B1%D8%AD%D9%85%D9%86%20%D9%85%D8%B3%D8%B9%D8%AF-fLPiZT1eAf4-192k-1707050604.mp3",
+    "25": "https://archive.org/download/AMusad/2025%20Surah%20Al%20Furqan.mp3",
+    "29": "https://archive.org/download/AbdulrahmanMassaad/029.mp3",
+    "32": "https://archive.org/download/AbdulrahmanMassaad/032.mp3",
+    "49": "https://archive.org/download/a2025112aaaaa5/049%20-%20%D8%A7%D9%84%D8%AD%D8%AC%D8%B1%D8%A7%D8%AA.mp3",
+    "67": "https://archive.org/download/a2025112aaaaa5/067%20-%20%D8%A7%D9%84%D9%85%D9%84%D9%83.mp3",
+    "73": "https://archive.org/download/AbdulrahmanMassaad/073.mp3",
+    "78": "https://archive.org/download/AbdulrahmanMassaad/078.mp3",
+    "87": "https://archive.org/download/AbdulrahmanMassaad/087.mp3",
+    "88": "https://archive.org/download/AbdulrahmanMassaad/088.mp3",
+    "100": "https://archive.org/download/AbdulrahmanMassaad/100.mp3",
+    "107": "https://archive.org/download/AbdulrahmanMassaad/107.mp3",
+    "108": "https://archive.org/download/108_20250825/108.mp3",
+    "110": "https://archive.org/download/110_20250825/110.mp3",
+    "112": "https://archive.org/download/112_20250825/112.mp3"
+   },
+   "rights": "needs-permission",
+   "sourceNote": "archive.org — رفعها محبّو الشيخ دون ترخيص صريح؛ لا تُعاد استضافتها، تُشغَّل وتُنزَّل من archive.org مباشرة."
+  }
+ ],
+ "reciters": [
+  {
+   "id": "x-abdulrahman-mosaad",
+   "name": "Abdul Rahman Mosaad",
+   "nameAr": "عبد الرحمن مسعد",
+   "famous": true,
+   "recordings": [
+    "archive:abdulrahman-mosaad:hafs"
+   ]
+  }
+ ]
+}

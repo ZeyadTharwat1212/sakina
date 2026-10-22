@@ -586,6 +586,18 @@
    "offlineBundling": "not bundled — streamed; user-initiated download to the device only",
    "reviewStatus": "metadata-checked",
    "reviewNotes": "Snapshot 2026-10-22: 129 recordings (translation recordings excluded). Same-person matches with MP3Quran checked by hand; surah lists from the files API."
+   },
+   {
+   "builtOn": "2026-10-22",
+   "id": "audio-abdulrahman-mosaad",
+   "kind": "audio",
+   "title": "عبد الرحمن مسعد — ١٨ سورة كاملة (حفص، مرتل) من archive.org",
+   "source": "archive.org items uploaded by listeners: AbdulrahmanMassaad, a2025112aaaaa5, AMusad, 1_/15_/108_/110_/112_20250825, onlymp-3.to (البقرة، الكهف)",
+   "licence": "No licence stated by uploaders; recordings belong to the reciter. Streamed/downloaded from archive.org by the user; nothing re-hosted.",
+   "licenceStatus": "needs-permission",
+   "offlineBundling": "cache on device only when the user asks",
+   "reviewStatus": "cross-checked",
+   "reviewNotes": "Only complete surahs kept (duration vs letter count 280–590 ms/letter; excerpts titled «من سورة/تلاوة من/أواخر» and the 10/19/23 files at 100–165 ms/letter were dropped). Surahs: 1, 2, 15, 18, 25, 29, 32, 49, 67, 73, 78, 87, 88, 100, 107, 108, 110, 112. Written permission from the sheikh needed before an App Store release."
   }
  ]
 }

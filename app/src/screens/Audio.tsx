@@ -171,8 +171,10 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
           <div><strong>{STYLE_AR[rec.style]}</strong> · {rec.riwayahAr}<br /><small class="muted">{reciter.nameAr ? `${reciter.name} · ` : ''}{rec.recitationAr || rec.recitation} · {rec.id}</small></div>
           <span class={`badge ${rec.complete ? 'ok' : 'warn'}`}>{rec.complete ? t('complete114') : `${num(rec.surahTotal)}/114 ${t('incomplete')}`}</span>
         </div>
+        {rec.rights === 'needs-permission' && <p class="small" style="margin:8px 0 0;padding:8px 10px;border-radius:10px;background:var(--surface-2,rgba(0,0,0,.04))">{isAr() ? 'تلاوات مختارة كاملة السور، جمعناها من أرشيف الإنترنت (archive.org) مرتبة حسب ترتيب المصحف. لم يصدر بعد إذن صريح من الشيخ؛ تُشغَّل من مصدرها دون إعادة استضافة.' : 'Selected complete surahs gathered from archive.org in mushaf order. No explicit permission from the reciter yet; streamed from the source, never re-hosted.'}</p>}
         <button class="chip" style="margin-top:8px" aria-pressed={settings.reciterId === rec.id} onClick={() => updateSettings({ reciterId: rec.id })}>{settings.reciterId === rec.id ? (isAr() ? 'القارئ الافتراضي ✓' : 'Default reciter ✓') : (isAr() ? 'اجعله القارئ الافتراضي' : 'Set as default reciter')}</button>
-        {missing && missing.length > 0 && <p class="muted small" style="margin-top:6px">{isAr() ? 'السور الناقصة:' : 'Missing:'} {missing.map((n) => chs[n - 1].name).join('، ')}</p>}
+        {rec.files && <p class="muted small" style="margin-top:6px">{isAr() ? `السور المتاحة (${num(rec.surahTotal)}):` : 'Available:'} {(rec.surahList || []).map((n) => chs[n - 1].name).join('، ')}</p>}
+        {!rec.files && missing && missing.length > 0 && <p class="muted small" style="margin-top:6px">{isAr() ? 'السور الناقصة:' : 'Missing:'} {missing.map((n) => chs[n - 1].name).join('، ')}</p>}
         {missing === null && <p class="muted small" style="margin-top:6px">{isAr() ? 'قائمة السور المتاحة لهذا التسجيل الجزئي غير معروفة في النسخة المضمّنة — حدّث الفهرس من شاشة القراء.' : 'Surah list for this partial set is unknown in the bundled catalogue — refresh the catalogue.'}</p>}
         <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
           <button class="btn sm" onClick={() => playNow(availableList[0] || 1)}><Icon name="play" />{isAr() ? 'تشغيل من البداية' : 'Play from start'}</button>
@@ -183,7 +185,7 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
         {selecting && <div class="row" style="margin-top:8px"><button class="btn sm" disabled={!sel.size} onClick={() => askDownload([...sel])}>{isAr() ? `تنزيل المحدد (${num(sel.size)})` : `Download selected (${sel.size})`}</button></div>}
       </section>
       <div class="list" style="margin-top:12px">
-        {chs.map((ch) => {
+        {chs.filter((ch) => !rec.files || hasSurah(rec, ch.id)).map((ch) => {
           const st = status(ch.id); const it = DL.itemOf(rec.id, ch.id);
           const badge = st === 'downloaded' ? <span class="badge ok">{isAr() ? 'منزّلة' : 'offline'}</span> : st === 'downloading' ? <span class="badge">{it?.total ? `${Math.round((it.received / it.total) * 100)}٪` : '…'}</span> : st === 'queued' ? <span class="badge">{isAr() ? 'في الطابور' : 'queued'}</span> : st === 'unavailable' ? <span class="badge warn">{isAr() ? 'غير متاحة' : 'n/a'}</span> : st === 'unknown' ? <span class="badge">?</span> : null;
           return (

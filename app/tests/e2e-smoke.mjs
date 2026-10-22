@@ -182,7 +182,7 @@ ok((await page.locator('.list-item:has-text("محمود خليل الحصري")'
 await shot('22-reciters');
 await page.click('.list-item:has-text("محمود خليل الحصري")');
 await page.waitForSelector('text=mp3quran:118');
-ok((await page.locator('.chips.scroll .chip').count()) >= 4, 'Hussary page shows multiple recordings (hafs/warsh/qalun/duri/mujawwad)');
+ok((await page.locator('.rec-card').count()) >= 4, 'Hussary page shows multiple recordings (hafs/warsh/qalun/duri/mujawwad)');
 ok((await page.locator('.list .list-item').count()) === 114, '114 surah rows with status');
 await shot('23-reciter-page');
 await page.click('.list .list-item:nth-child(1) button.grow');

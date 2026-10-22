@@ -376,3 +376,37 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--space-3) 0; }
 .counter-btn { flex-direction: column; line-height: 1; position: relative; background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--primary) 82%, #fff) 0%, var(--primary) 68%); box-shadow: 0 12px 30px color-mix(in srgb, var(--primary) 30%, transparent), inset 0 -6px 18px rgba(0,0,0,.12); }
 .counter-btn::before { content: ''; position: absolute; inset: -12px; border-radius: 50%; background: conic-gradient(var(--copper) calc(var(--pct, 0) * 1turn), var(--primary-soft) 0);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px)); mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px)); transition: background 200ms; }
+
+/* ---------- reciter library filters v3 (riwayah strip, style seg, recording cards) ---------- */
+.flt-label { font-size: .78em; font-weight: 700; color: var(--muted); letter-spacing: .02em; margin: 14px 2px 6px; }
+.riw-strip { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 1px 8px; -webkit-overflow-scrolling: touch; }
+.riw-strip::-webkit-scrollbar { display: none; }
+.riw { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding-inline: 14px 6px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--line); color: var(--text); font-weight: 600; font-size: .95em; white-space: nowrap;
+  transition: background-color var(--motion, 160ms), border-color var(--motion, 160ms), color var(--motion, 160ms); }
+.riw .rc { min-width: 28px; height: 28px; padding: 0 8px; border-radius: 9px; background: var(--surface-2); color: var(--text-2); font-size: .78em; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; }
+.riw svg { width: 16px; height: 16px; margin-inline-end: 4px; color: var(--muted); }
+.riw[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 25%, transparent); }
+.riw[aria-pressed="true"] .rc { background: color-mix(in srgb, var(--on-primary) 22%, transparent); color: inherit; }
+.riw.more { border-style: dashed; color: var(--text-2); }
+.flt-row { display: flex; gap: 8px; align-items: center; margin: 2px 0 14px; }
+.flt-row .seg { flex: 1; min-width: 0; }
+.flt-row .seg button { min-height: 36px; font-size: .85em; }
+.pill-toggle { flex: none; display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--text-2); font-size: .85em; font-weight: 600; white-space: nowrap; }
+.pill-toggle svg { width: 16px; height: 16px; }
+.pill-toggle[aria-pressed="true"] { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+.list-item.selected { background: var(--primary-soft); }
+.rec-grid { display: grid; gap: 8px; margin-bottom: 14px; }
+.rec-grid.two { grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); }
+.rec-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: start; padding: 11px 12px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--line); min-height: 64px; }
+.rec-card .rt { font-weight: 700; font-size: .95em; padding-inline-end: 22px; }
+.rec-card .rs { font-weight: 500; color: var(--text-2); }
+.rec-card .rm { font-size: .78em; color: var(--text-2); line-height: 1.35; }
+.rec-card .rb { font-size: .72em; color: var(--muted); }
+.rec-card[aria-checked="true"] { border-color: var(--primary); background: var(--primary-soft); box-shadow: inset 0 0 0 1px var(--primary); }
+.rec-card .ck { position: absolute; top: 9px; inset-inline-end: 9px; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: var(--on-primary);
+  display: inline-flex; align-items: center; justify-content: center; }
+.rec-card .ck svg { width: 13px; height: 13px; stroke-width: 2.5; }

@@ -110,12 +110,17 @@ test('ledger: every pack has source, licence, status; hadith flagged needs-confi
   assert.equal(l.entries.find((e) => e.id === 'quran-text-uthmani-hafs').licenceStatus, 'granted');
 });
 
-test('audio catalogue: 33 famous reciters resolve, ids are unique, hafs/warsh/qalun parsed, complete only when 114', () => {
+test('audio catalogue: 33 famous reciters resolve, MP3Quran + QuranicAudio merged, every riwayah named, ids are unique, hafs/warsh/qalun parsed, complete only when 114', () => {
   const c = rj('audio/catalog.json');
   assert.equal(c.famousMissing.length, 0);
   assert.equal(c.famousOrder.length, 33);
   const ids = new Set(c.recordings.map((r) => r.id)); assert.equal(ids.size, c.recordings.length);
-  for (const r of c.recordings) { assert.equal(r.complete, r.surahTotal === 114); assert.ok(r.server.startsWith('https://')); assert.ok(['murattal', 'mujawwad', 'muallim'].includes(r.style)); }
+  for (const r of c.recordings) { assert.equal(r.complete, r.surahTotal === 114); assert.ok(r.server.startsWith('https://')); assert.ok(['murattal', 'mujawwad', 'muallim', 'taraweeh'].includes(r.style)); assert.notEqual(r.riwayah, 'unknown', r.id); assert.ok(!r.surahList || r.surahList.length === r.surahTotal, r.id); }
+  // v2: QuranicAudio recordings join the MP3Quran ones; Haramain taraweeh grouped by mosque; every reciter has an Arabic name
+  assert.ok(c.recordings.filter((r) => r.source === 'quranicaudio').length >= 120);
+  assert.ok(c.reciters.find((r) => r.id === 'qa-makkah')?.recordings.length >= 10);
+  for (const r of c.reciters) assert.ok(r.nameAr, `arabic name for reciter ${r.id}`);
+  for (const r of c.reciters) for (const id of r.recordings) assert.ok(ids.has(id), id);
   const hussary = c.recordings.filter((r) => r.reciterId === '118');
   assert.ok(hussary.some((r) => r.riwayah === 'hafs') && hussary.some((r) => r.riwayah === 'warsh') && hussary.some((r) => r.riwayah === 'qalun') && hussary.some((r) => r.riwayah === 'duri'));
   for (const id of c.famousOrder) assert.ok(c.reciters.find((r) => r.id === id)?.nameAr, `arabic name for ${id}`);

@@ -575,6 +575,17 @@
    "offlineBundling": "cache on device only when the user asks",
    "reviewStatus": "n/a",
    "reviewNotes": "Used for: listen to selected ayahs with any reciter (no timing data needed), repeat for memorisation, ayah-by-ayah highlighting."
+  },
+  {
+   "id": "audio-quranicaudio-catalogue",
+   "kind": "audio-catalogue",
+   "title": "تسجيلات QuranicAudio (قراء إضافيون، تراويح الحرمين بالسنوات، روايات غير حفص)",
+   "source": "quranicaudio.com/api/qaris + download.quranicaudio.com (Quran.Foundation)",
+   "licence": "Free streaming/download site for Muslims; recordings belong to reciters/publishers. Not re-hosted.",
+   "licenceStatus": "needs-confirmation",
+   "offlineBundling": "not bundled — streamed; user-initiated download to the device only",
+   "reviewStatus": "metadata-checked",
+   "reviewNotes": "Snapshot 2026-10-22: 129 recordings (translation recordings excluded). Same-person matches with MP3Quran checked by hand; surah lists from the files API."
   }
  ]
 }

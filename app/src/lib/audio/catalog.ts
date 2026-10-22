@@ -7,16 +7,18 @@ import { Preferences } from '@capacitor/preferences';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
 export interface Recording {
-  id: string; source: 'mp3quran'; reciterId: string; moshafId: string;
+  id: string; source: 'mp3quran' | 'quranicaudio'; reciterId: string; moshafId: string;
   name: string; nameAr: string | null; recitation: string; recitationAr?: string;
   server: string; surahTotal: number; complete: boolean; surahList: number[] | null;
-  riwayah: string; riwayahAr: string; style: 'murattal' | 'mujawwad' | 'muallim';
+  riwayah: string; riwayahAr: string; style: 'murattal' | 'mujawwad' | 'muallim' | 'taraweeh';
+  /** QuranicAudio extras: median bitrate, whole-set size, taraweeh year (Hijri) */
+  kbps?: number | null; sizeMB?: number | null; year?: string | null;
 }
-export interface ReciterEntry { id: string; name: string; nameAr: string | null; famous: boolean; recordings: string[] }
+export interface ReciterEntry { id: string; name: string; nameAr: string | null; famous: boolean; recordings: string[]; kind?: 'taraweeh' }
 export interface Catalog {
   source: string; fileUrl: string; liveApi: { reciters: string; timing: string };
   recordings: Recording[]; reciters: ReciterEntry[]; famousOrder: string[]; famousMissing: string[];
-  refreshedAt?: number; refreshedFrom?: string;
+  refreshedAt?: number; refreshedFrom?: string; version?: number; sources?: string[];
 }
 
 const KEY = 'sakina.catalog';
@@ -39,7 +41,8 @@ export async function getCatalog(): Promise<Catalog> {
   const bundled = (await fetch('content/audio/catalog.json').then((r) => r.json())) as Catalog;
   const stored = await readCache();
   // A stored refresh wins only if it is newer than the bundle and has the same source
-  cached = stored && stored.source === bundled.source && stored.refreshedAt ? stored : bundled;
+  // …and only if it was made from the same catalogue version (v2 added QuranicAudio + Arabic names + exact surah lists)
+  cached = stored && stored.source === bundled.source && stored.refreshedAt && (stored.version || 1) === (bundled.version || 1) ? stored : bundled;
   return cached;
 }
 
@@ -47,7 +50,8 @@ export const recordingById = (c: Catalog, id: string) => c.recordings.find((r) =
 export const recordingsOf = (c: Catalog, reciterId: string) => c.recordings.filter((r) => r.reciterId === reciterId);
 export const fileUrl = (rec: Recording, surah: number) => `${rec.server}${String(surah).padStart(3, '0')}.mp3`;
 export const displayName = (r: { name: string; nameAr: string | null }) => r.nameAr || r.name;
-export const STYLE_AR: Record<string, string> = { murattal: 'مرتّل', mujawwad: 'مجوّد', muallim: 'معلّم' };
+export const STYLE_AR: Record<string, string> = { murattal: 'مرتّل', mujawwad: 'مجوّد', muallim: 'معلّم', taraweeh: 'تراويح' };
+export const SOURCE_AR: Record<string, string> = { mp3quran: 'MP3Quran', quranicaudio: 'QuranicAudio' };
 
 /** Which surahs a recording provides. null surahList + complete → all 114; partial without list → unknown (shown honestly). */
 export function surahStatusKnown(rec: Recording): boolean { return rec.complete || !!rec.surahList; }
@@ -110,12 +114,50 @@ export async function refreshCatalog(): Promise<{ ok: boolean; added: number; up
   }
 }
 
-const RIWAYAH_AR: Record<string, string> = { hafs: 'حفص عن عاصم', warsh: 'ورش عن نافع', qalun: 'قالون عن نافع', duri: 'الدوري عن أبي عمرو', bazzi: 'البزي عن ابن كثير', qunbul: 'قنبل عن ابن كثير', shubah: 'شعبة عن عاصم', khalaf: 'خلف عن حمزة', khallad: 'خلاد عن حمزة', susi: 'السوسي عن أبي عمرو', 'ibn-dhakwan': 'ابن ذكوان عن ابن عامر', hisham: 'هشام عن ابن عامر', unknown: 'غير محددة في المصدر' };
+export const RIWAYAH_AR: Record<string, string> = {
+  hafs: 'حفص عن عاصم', shubah: 'شعبة عن عاصم', warsh: 'ورش عن نافع', qalun: 'قالون عن نافع',
+  duri: 'الدوري عن أبي عمرو', susi: 'السوسي عن أبي عمرو', 'duri-kisai': 'الدوري عن الكسائي', 'abul-harith': 'أبو الحارث عن الكسائي',
+  bazzi: 'البزي عن ابن كثير', qunbul: 'قنبل عن ابن كثير', 'bazzi-qunbul': 'البزي وقنبل عن ابن كثير',
+  'ibn-dhakwan': 'ابن ذكوان عن ابن عامر', hisham: 'هشام عن ابن عامر', khalaf: 'خلف عن حمزة', khallad: 'خلاد عن حمزة',
+  yaqub: 'رويس وروح عن يعقوب', 'ibn-jammaz': 'ابن جماز عن أبي جعفر', unknown: 'غير محددة في المصدر',
+};
+/** Short label for filter pills (the reader's name only). */
+export const RIWAYAH_SHORT: Record<string, string> = {
+  hafs: 'حفص', shubah: 'شعبة', warsh: 'ورش', qalun: 'قالون', duri: 'الدوري', susi: 'السوسي', 'duri-kisai': 'الدوري (الكسائي)', 'abul-harith': 'أبو الحارث',
+  bazzi: 'البزي', qunbul: 'قنبل', 'bazzi-qunbul': 'البزي وقنبل', 'ibn-dhakwan': 'ابن ذكوان', hisham: 'هشام', khalaf: 'خلف', khallad: 'خلاد',
+  yaqub: 'يعقوب', 'ibn-jammaz': 'ابن جماز', unknown: 'غير محددة',
+};
+export const RIWAYAH_EN: Record<string, string> = {
+  hafs: 'Hafs', shubah: "Shu'bah", warsh: 'Warsh', qalun: 'Qalun', duri: 'Al-Duri', susi: 'Al-Susi', 'duri-kisai': 'Al-Duri (Kisai)', 'abul-harith': 'Abul-Harith',
+  bazzi: 'Al-Bazzi', qunbul: 'Qunbul', 'bazzi-qunbul': 'Bazzi & Qunbul', 'ibn-dhakwan': 'Ibn Dhakwan', hisham: 'Hisham', khalaf: 'Khalaf', khallad: 'Khallad',
+  yaqub: "Ya'qub", 'ibn-jammaz': 'Ibn Jammaz', unknown: 'Unspecified',
+};
+/** Same rules as scripts/enrich-audio.mjs (keep in sync). */
+export function riwayahOf(text: string): string {
+  const r = text.toLowerCase();
+  if (/mojawwad|mujawwad|mo'?lim|muallim|مجود|معلم|almusshaf/.test(r) && !/warsh|qalon|ورش|قالون/.test(r)) return 'hafs';
+  if (/albizi and qunbol|البزي وقنبل/.test(r)) return 'bazzi-qunbul';
+  if (/dora?i a'n al-kisa|الدوري عن الكسائي/.test(r)) return 'duri-kisai';
+  if (/abi al-?haarith|أبو الحارث/.test(r)) return 'abul-harith';
+  if (/rowis|rawh|yakoob|يعقوب|رويس/.test(r)) return 'yaqub';
+  if (/jammaz|جماز/.test(r)) return 'ibn-jammaz';
+  if (/hafs|حفص/.test(r)) return 'hafs';
+  if (/warsh|ورش/.test(r)) return 'warsh';
+  if (/qalon|qaloon|qalun|قالون/.test(r)) return 'qalun';
+  if (/sho'?bah|shu'?bah|شعبة/.test(r)) return 'shubah';
+  if (/assosi|soosi|susi|السوسي/.test(r)) return 'susi';
+  if (/aldori|al-dori|doori|duri|الدوري/.test(r)) return 'duri';
+  if (/albizi|bazzi|البزي/.test(r)) return 'bazzi';
+  if (/qunbol|qunbul|قنبل/.test(r)) return 'qunbul';
+  if (/thakwan|ذكوان/.test(r)) return 'ibn-dhakwan';
+  if (/hesham|hisham|هشام/.test(r)) return 'hisham';
+  if (/khallad|خلاد/.test(r)) return 'khallad';
+  if (/khalaf|خلف عن/.test(r)) return 'khalaf';
+  return 'unknown';
+}
 function parseRecitationClient(rec: string): { riwayah: string; style: Recording['style'] } {
-  const r = rec.toLowerCase();
-  const riwayah = /hafs|حفص/.test(r) ? 'hafs' : /warsh|ورش/.test(r) ? 'warsh' : /qalon|qaloon|qalun|قالون/.test(r) ? 'qalun' : /aldori|al-dori|douri|duri|الدوري/.test(r) ? 'duri' : /bazzi|البزي/.test(r) ? 'bazzi' : /qunbul|قنبل/.test(r) ? 'qunbul' : /shu'?bah|shoba|شعبة/.test(r) ? 'shubah' : /khallad|خلاد/.test(r) ? 'khallad' : /khalaf|خلف/.test(r) ? 'khalaf' : /soosi|susi|السوسي/.test(r) ? 'susi' : /thakwan|ذكوان/.test(r) ? 'ibn-dhakwan' : /hisham|هشام/.test(r) ? 'hisham' : 'unknown';
-  const style: Recording['style'] = /mojawwad|mujawwad|مجود|مجوّد/.test(r) ? 'mujawwad' : /mo'?lim|moalim|muallim|معلم|معلّم/.test(r) ? 'muallim' : 'murattal';
-  return { riwayah, style };
+  const style: Recording['style'] = /mojawwad|mujawwad|مجود|مجوّد/i.test(rec) ? 'mujawwad' : /mo'?lim|moalim|muallim|معلم|معلّم/i.test(rec) ? 'muallim' : 'murattal';
+  return { riwayah: riwayahOf(rec), style };
 }
 
 /** Which MP3Quran "reads" (moshaf ids) publish ayah timings — fetched live from /ayat_timing/reads and cached;
@@ -134,7 +176,7 @@ export async function refreshTimedReads(): Promise<Set<string>> {
   } catch { /* keep fallback */ }
   return timedReadsSync();
 }
-export const hasTimings = (rec: Recording) => timedReadsSync().has(String(rec.moshafId));
+export const hasTimings = (rec: Recording) => rec.source === 'mp3quran' && timedReadsSync().has(String(rec.moshafId));
 /** Best recording with ayah timings for a reciter (prefer the same riwayah/style as `like`, then Hafs murattal). */
 export function timedRecordingFor(c: Catalog, reciterId: string, like?: Recording | null): Recording | null {
   const list = recordingsOf(c, reciterId).filter(hasTimings);

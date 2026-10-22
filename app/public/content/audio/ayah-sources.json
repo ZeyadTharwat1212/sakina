@@ -377,6 +377,96 @@
    "liteKbps": 128
   },
   {
+   "id": "tunaiji",
+   "ar": "خليفة الطنيجي",
+   "en": "Khalifa Al-Tunaiji",
+   "in": null,
+   "ea": "khalefa_al_tunaiji_64kbps",
+   "lite": "khalefa_al_tunaiji_64kbps",
+   "kbps": 64,
+   "liteKbps": 64
+  },
+  {
+   "id": "nauina",
+   "ar": "أحمد نعينع",
+   "en": "Ahmed Neana",
+   "in": null,
+   "ea": "Ahmed_Neana_128kbps",
+   "lite": "Ahmed_Neana_128kbps",
+   "kbps": 128,
+   "liteKbps": 128
+  },
+  {
+   "id": "abdulkareem",
+   "ar": "محمد عبد الكريم",
+   "en": "Muhammad AbdulKareem",
+   "in": null,
+   "ea": "Muhammad_AbdulKareem_128kbps",
+   "lite": "Muhammad_AbdulKareem_128kbps",
+   "kbps": 128,
+   "liteKbps": 128
+  },
+  {
+   "id": "suesy",
+   "ar": "علي حجاج السويسي",
+   "en": "Ali Hajjaj Al-Suesy",
+   "in": null,
+   "ea": "Ali_Hajjaj_AlSuesy_128kbps",
+   "lite": "Ali_Hajjaj_AlSuesy_128kbps",
+   "kbps": 128,
+   "liteKbps": 128
+  },
+  {
+   "id": "sahlyassin",
+   "ar": "سهل ياسين",
+   "en": "Sahl Yassin",
+   "in": null,
+   "ea": "Sahl_Yassin_128kbps",
+   "lite": "Sahl_Yassin_128kbps",
+   "kbps": 128,
+   "liteKbps": 128
+  },
+  {
+   "id": "yasersalamah",
+   "ar": "ياسر سلامة",
+   "en": "Yaser Salamah",
+   "in": null,
+   "ea": "Yaser_Salamah_128kbps",
+   "lite": "Yaser_Salamah_128kbps",
+   "kbps": 128,
+   "liteKbps": 128
+  },
+  {
+   "id": "alaqimy",
+   "ar": "أكرم العلاقمي",
+   "en": "Akram Al-Alaqimy",
+   "in": null,
+   "ea": "Akram_AlAlaqimy_128kbps",
+   "lite": "Akram_AlAlaqimy_128kbps",
+   "kbps": 128,
+   "liteKbps": 128
+  },
+  {
+   "id": "parhizgar",
+   "ar": "شهريار برهيزكار",
+   "en": "Shahriar Parhizgar",
+   "in": null,
+   "ea": "Parhizgar_48kbps",
+   "lite": "Parhizgar_48kbps",
+   "kbps": 48,
+   "liteKbps": 48
+  },
+  {
+   "id": "mansoori",
+   "ar": "كريم منصوري",
+   "en": "Karim Mansoori",
+   "in": null,
+   "ea": "Karim_Mansoori_40kbps",
+   "lite": "Karim_Mansoori_40kbps",
+   "kbps": 40,
+   "liteKbps": 40
+  },
+  {
    "id": "warsh-basit",
    "ar": "عبد الباسط — ورش عن نافع",
    "en": "Abdul Basit (Warsh)",

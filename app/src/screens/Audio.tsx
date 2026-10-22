@@ -1,6 +1,6 @@
 /** Sections 11–12 UI: reciter library (famous + all), reciter page with recordings and 114-surah status, downloads manager. */
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { getCatalog, refreshCatalog, recordingsOf, displayName, hasSurah, STYLE_AR, fileUrl, hasTimings, timedRecordingFor, type Catalog, type Recording } from '../lib/audio/catalog';
+import { getCatalog, refreshCatalog, recordingsOf, displayName, hasSurah, STYLE_AR, SOURCE_AR, RIWAYAH_SHORT, RIWAYAH_EN, RIWAYAH_AR, fileUrl, hasTimings, timedRecordingFor, type Catalog, type Recording } from '../lib/audio/catalog';
 import * as DL from '../lib/audio/downloads';
 import { playSurah, playAyahRange, getPlayer, subscribePlayer } from '../lib/audio/player';
 import { getChapters, getAyahAudioSources, type Chapter } from '../lib/content';
@@ -18,18 +18,30 @@ export function ReciterLibrary({ playSurahAfter, range }: { playSurahAfter?: num
   const { settings } = useStore();
   const cat = useAsync(getCatalog, []);
   const [q, setQ] = useState('');
-  const [riw, setRiw] = useState<'all' | 'hafs' | 'warsh' | 'qalun' | 'other'>('all');
+  const [riw, setRiw] = useState<string>('all');
+  const [sty, setSty] = useState<'all' | Recording['style']>('all');
   const [onlyComplete, setOnlyComplete] = useState(false);
+  const [moreRiw, setMoreRiw] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [msg, setMsg] = useState('');
   const [tick, setTick] = useState(0);
   if (!cat.data) return <main class="screen"><TopBar title={isAr() ? 'القراء' : 'Reciters'} onBack /><Loading error={cat.error} /></main>;
   const c = cat.data;
   const matches = (r: { name: string; nameAr: string | null }) => !q || r.name.toLowerCase().includes(q.toLowerCase()) || (r.nameAr || '').includes(q);
-  const recFilter = (rec: Recording) => (riw === 'all' || (riw === 'other' ? !['hafs', 'warsh', 'qalun'].includes(rec.riwayah) : rec.riwayah === riw)) && (!onlyComplete || rec.complete);
+  const recFilter = (rec: Recording) => (riw === 'all' || rec.riwayah === riw) && (sty === 'all' || rec.style === sty) && (!onlyComplete || rec.complete);
+  // riwayah counts (recordings), most common first — drives the filter strip
+  const riwCount = new Map<string, number>();
+  for (const r of c.recordings) if ((sty === 'all' || r.style === sty) && (!onlyComplete || r.complete)) riwCount.set(r.riwayah, (riwCount.get(r.riwayah) || 0) + 1);
+  const riwOrder = [...riwCount.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k);
+  const MAIN = ['hafs', 'warsh', 'qalun'];
+  const shown = [...MAIN.filter((k) => riwCount.has(k)), ...(riw !== 'all' && !MAIN.includes(riw) ? [riw] : [])];
+  const extra = riwOrder.filter((k) => !MAIN.includes(k));
+  const rLabel = (k: string) => (isAr() ? RIWAYAH_SHORT[k] : RIWAYAH_EN[k]) || k;
+  const total = c.recordings.filter((r) => (sty === 'all' || r.style === sty) && (!onlyComplete || r.complete)).length;
   const reciterOk = (id: string) => recordingsOf(c, id).some(recFilter) && (!range || recordingsOf(c, id).some(hasTimings));
   const famous = c.famousOrder.map((id) => c.reciters.find((r) => r.id === id)).filter((r): r is NonNullable<typeof r> => !!r && matches(r) && reciterOk(r.id));
-  const others = c.reciters.filter((r) => !r.famous && matches(r) && reciterOk(r.id)).sort((a, b) => displayName(a).localeCompare(displayName(b), 'ar'));
+  const taraweeh = c.reciters.filter((r) => r.kind === 'taraweeh' && matches(r) && reciterOk(r.id));
+  const others = c.reciters.filter((r) => !r.famous && r.kind !== 'taraweeh' && matches(r) && reciterOk(r.id)).sort((a, b) => displayName(a).localeCompare(displayName(b), 'ar'));
   const doRefresh = async () => {
     setRefreshing(true);
     const r = await refreshCatalog();
@@ -43,7 +55,7 @@ export function ReciterLibrary({ playSurahAfter, range }: { playSurahAfter?: num
     return (
       <button class="list-item" onClick={() => navigate(`/quran/reciters/${r.id}${playSurahAfter ? `?play=${playSurahAfter}${range ? `&from=${range.from}&to=${range.to}` : ''}` : ''}`)}>
         <Avatar name={displayName(r)} id={r.id} />
-        <span class="grow"><span class="title">{displayName(r)}</span>{r.nameAr && <span class="sub"> · {r.name}</span>}<br />
+        <span class="grow"><span class="title">{displayName(r)}</span>{r.nameAr && r.name !== r.nameAr && <span class="sub"> · {r.name}</span>}<br />
           <span class="sub">{num(recs.length)} {isAr() ? 'تسجيل' : 'recordings'} · {num(complete)} {isAr() ? 'مصحف كامل' : 'complete'}{dl ? ` · ${num(dl)} ${isAr() ? 'سورة منزّلة' : 'downloaded'}` : ''}</span></span>
         {recs.some(hasTimings) && <span class="badge" title={isAr() ? 'توقيتات آيات' : 'ayah timings'}>{isAr() ? 'آيات' : 'ayahs'}</span>}
         {settings.reciterId && recs.some((x) => x.id === settings.reciterId) && <span class="badge ok">{isAr() ? 'الافتراضي' : 'default'}</span>}
@@ -55,16 +67,34 @@ export function ReciterLibrary({ playSurahAfter, range }: { playSurahAfter?: num
       <TopBar title={isAr() ? 'القراء' : 'Reciters'} onBack right={<button class="icon-btn" aria-label={isAr() ? 'التنزيلات' : 'Downloads'} onClick={() => navigate('/quran/downloads')}><Icon name="library" /></button>} />
       {playSurahAfter && <div style="margin-bottom:12px"><Notice kind="info">{range ? (isAr() ? `اختر قارئًا لتشغيل الآيات ${num(range.from)}–${num(range.to)} فقط — تُعرض هنا التسجيلات التي تحوي توقيتات آيات` : `Choose a reciter to play ayahs ${range.from}–${range.to} only — only recordings with ayah timings are listed`) : (isAr() ? 'اختر قارئًا لتشغيل السورة' : 'Choose a reciter to play the surah')}</Notice></div>}
       <input class="input" placeholder={isAr() ? 'ابحث باسم القارئ (عربي/إنجليزي)' : 'Search reciter'} value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
-      <div class="chips scroll" style="margin:10px 0">
-        {(['all', 'hafs', 'warsh', 'qalun', 'other'] as const).map((k) => <button key={k} class="chip" aria-pressed={riw === k} onClick={() => setRiw(k)}>{k === 'all' ? (isAr() ? 'كل الروايات' : 'All') : k === 'hafs' ? 'حفص' : k === 'warsh' ? 'ورش' : k === 'qalun' ? 'قالون' : (isAr() ? 'روايات أخرى' : 'Other')}</button>)}
-        <button class="chip" aria-pressed={onlyComplete} onClick={() => setOnlyComplete(!onlyComplete)}>{isAr() ? 'مصحف كامل فقط' : 'Complete only'}</button>
+      <div class="flt-label">{isAr() ? 'الرواية' : 'Riwayah'}</div>
+      <div class="riw-strip" role="group" aria-label={isAr() ? 'الرواية' : 'Riwayah'}>
+        <button class="riw" aria-pressed={riw === 'all'} onClick={() => setRiw('all')}><span>{isAr() ? 'الكل' : 'All'}</span><span class="rc num">{num(total)}</span></button>
+        {shown.map((k) => <button key={k} class="riw" aria-pressed={riw === k} onClick={() => setRiw(riw === k ? 'all' : k)}><span>{rLabel(k)}</span><span class="rc num">{num(riwCount.get(k) || 0)}</span></button>)}
+        {extra.length > 0 && <button class="riw more" onClick={() => setMoreRiw(true)}><span>{isAr() ? `روايات أخرى` : 'More'}</span><span class="rc num">{num(extra.filter((k) => k !== riw).length)}</span><Icon name="chevron-down" /></button>}
       </div>
+      <div class="flt-row">
+        <Seg value={sty} onChange={(v) => setSty(v)} options={[{ v: 'all', label: isAr() ? 'كل الأساليب' : 'All styles' }, { v: 'murattal', label: STYLE_AR.murattal }, { v: 'mujawwad', label: STYLE_AR.mujawwad }, { v: 'muallim', label: STYLE_AR.muallim }, { v: 'taraweeh', label: STYLE_AR.taraweeh }]} />
+        <button class="pill-toggle" aria-pressed={onlyComplete} onClick={() => setOnlyComplete(!onlyComplete)}>{onlyComplete && <Icon name="check" />}{isAr() ? 'كامل ١١٤' : '114 only'}</button>
+      </div>
+      <Sheet open={moreRiw} onClose={() => setMoreRiw(false)} title={isAr() ? 'القراءات والروايات' : 'Riwayat'}>
+        <p class="muted small" style="margin-bottom:10px">{isAr() ? 'العدد = تسجيلات متاحة لهذه الرواية' : 'Count = recordings available'}</p>
+        <div class="list">
+          {riwOrder.map((k) => (
+            <button key={k} class={`list-item ${riw === k ? 'selected' : ''}`} onClick={() => { setRiw(k); setMoreRiw(false); }}>
+              <span class="grow"><span class="title">{isAr() ? RIWAYAH_AR[k] : RIWAYAH_EN[k]}</span></span>
+              <span class="badge num">{num(riwCount.get(k) || 0)}</span>{riw === k && <Icon name="check" />}
+            </button>
+          ))}
+        </div>
+      </Sheet>
+      {taraweeh.length > 0 && <><h2 style="margin:8px 0">{isAr() ? 'تراويح الحرمين' : 'Haramain taraweeh'} <span class="badge">{num(taraweeh.reduce((a, r) => a + recordingsOf(c, r.id).length, 0))}</span></h2><div class="list" style="margin-bottom:12px">{taraweeh.map((r) => <Row key={r.id} r={r} />)}</div></>}
       <h2 style="margin:8px 0">{isAr() ? 'القراء المشهورون' : 'Famous reciters'} <span class="badge">{num(famous.length)}</span></h2>
       <div class="list">{famous.map((r) => <Row key={r.id} r={r} />)}</div>
       <h2 style="margin:20px 0 8px">{isAr() ? 'جميع القراء' : 'All reciters'} <span class="badge">{num(others.length)}</span></h2>
       <div class="list">{others.map((r) => <Row key={r.id} r={r} />)}</div>
       <div class="card" style="margin-top:16px">
-        <div class="row between"><span class="small text-2">{isAr() ? 'الفهرس: MP3Quran' : 'Catalogue: MP3Quran'} · {c.refreshedAt ? new Date(c.refreshedAt).toLocaleDateString(isAr() ? 'ar-EG' : 'en-GB') : (isAr() ? 'نسخة مضمّنة' : 'bundled')}</span>
+        <div class="row between"><span class="small text-2">{isAr() ? 'الفهرس: MP3Quran + QuranicAudio' : 'Catalogue: MP3Quran + QuranicAudio'} · {c.refreshedAt ? new Date(c.refreshedAt).toLocaleDateString(isAr() ? 'ar-EG' : 'en-GB') : (isAr() ? 'نسخة مضمّنة' : 'bundled')}</span>
           <button class="btn secondary sm" disabled={refreshing} onClick={doRefresh}>{refreshing ? '…' : (isAr() ? 'تحديث الفهرس' : 'Refresh')}</button></div>
         {msg && <p class="muted small" style="margin-top:6px">{msg}</p>}
         <p class="muted small" style="margin-top:6px">{isAr() ? 'التحديث يجلب الأسماء العربية وقوائم السور والقراء الجدد، ولا يمسح ملفاتك أو اختياراتك.' : 'Refresh fetches Arabic names, surah lists and new reciters; it never deletes your files or choices.'}</p>
@@ -122,9 +152,19 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
       <TopBar title={displayName(reciter)} onBack />
       <CompactBanner nameAr={reciter.nameAr} />
       {recs.length > 1 && (
-        <div class="chips scroll" style="margin-bottom:12px">
-          {recs.map((r) => <button key={r.id} class="chip" style="white-space:nowrap" aria-pressed={r.id === rec.id} onClick={() => setRecId(r.id)}>{STYLE_AR[r.style]} · {r.riwayahAr.split(' ')[0]}{r.complete ? '' : ` · ${num(r.surahTotal)}/114`}{hasTimings(r) ? ' · ⏱' : ''}</button>)}
-        </div>
+        <>
+          <div class="flt-label">{isAr() ? `التسجيلات (${num(recs.length)})` : `Recordings (${recs.length})`}</div>
+          <div class={`rec-grid ${recs.length > 3 ? 'two' : ''}`} role="radiogroup">
+            {sortRecs(recs).map((r) => (
+              <button key={r.id} class="rec-card" role="radio" aria-checked={r.id === rec.id} onClick={() => setRecId(r.id)}>
+                <span class="rt">{r.style === 'taraweeh' && r.year ? `${r.year} هـ` : (isAr() ? RIWAYAH_SHORT[r.riwayah] : RIWAYAH_EN[r.riwayah])}{r.style !== 'taraweeh' && <span class="rs"> · {STYLE_AR[r.style]}</span>}</span>
+                <span class="rm">{r.recitationAr && r.style !== 'taraweeh' && !/^(Rewayat|Almusshaf)/.test(r.recitationAr) ? `${r.recitationAr} · ` : ''}{r.complete ? (isAr() ? '١١٤ سورة' : '114 surahs') : `${num(r.surahTotal)}/114`}{r.kbps ? ` · ${num(r.kbps)} ${isAr() ? 'ك.ب/ث' : 'kbps'}` : ''}{r.sizeMB ? ` · ≈${r.sizeMB >= 1024 ? num(+(r.sizeMB / 1024).toFixed(1)) + (isAr() ? ' ج.ب' : ' GB') : num(r.sizeMB) + (isAr() ? ' م.ب' : ' MB')}` : ''}</span>
+                <span class="rb">{SOURCE_AR[r.source]}{hasTimings(r) ? ' · ⏱' : ''}{settings.reciterId === r.id ? (isAr() ? ' · الافتراضي' : ' · default') : ''}</span>
+                {r.id === rec.id && <span class="ck"><Icon name="check" /></span>}
+              </button>
+            ))}
+          </div>
+        </>
       )}
       <section class="card">
         <div class="row between" style="flex-wrap:wrap;gap:6px">
@@ -159,7 +199,7 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
           );
         })}
       </div>
-      <p class="muted small" style="margin-top:12px">{isAr() ? 'المصدر: MP3Quran. البث والتنزيل بطلب المستخدم إلى جهازه فقط؛ لا تُعاد استضافة الملفات.' : 'Source: MP3Quran. Streaming and user-initiated download to this device only; files are never re-hosted.'}</p>
+      <p class="muted small" style="margin-top:12px">{isAr() ? `المصدر: ${SOURCE_AR[rec.source]}. البث والتنزيل بطلب المستخدم إلى جهازه فقط؛ لا تُعاد استضافة الملفات.` : `Source: ${SOURCE_AR[rec.source]}. Streaming and user-initiated download to this device only; files are never re-hosted.`}</p>
       <Sheet open={confirm} onClose={() => setConfirm(false)} title={isAr() ? 'تأكيد التنزيل' : 'Confirm download'}>
         <p>{isAr() ? `${num(sel.size)} سورة · ${displayName(reciter)} · ${STYLE_AR[rec.style]} (${rec.riwayahAr})` : `${sel.size} surahs · ${displayName(reciter)} · ${rec.style}`}</p>
         <dl class="kv" style="margin:10px 0">
@@ -189,7 +229,7 @@ export function DownloadsManager() {
   return (
     <main class="screen">
       <TopBar title={isAr() ? 'التنزيلات' : 'Downloads'} onBack />
-      <button class="card soft" style="width:100%;text-align:start;margin-bottom:12px" onClick={() => navigate('/quran/compact')}><strong>{isAr() ? 'تنزيل مضغوط (أصغر حتى ٨ مرات)' : 'Compact downloads (up to 8× smaller)'}</strong><br /><small class="muted">{isAr() ? '٤٠ قارئًا آية بآية بجودة مختارة — مع متابعة المصحف' : '40 reciters ayah-by-ayah — with mushaf follow'}</small></button>
+      <button class="card soft" style="width:100%;text-align:start;margin-bottom:12px" onClick={() => navigate('/quran/compact')}><strong>{isAr() ? 'تنزيل مضغوط (أصغر حتى ٨ مرات)' : 'Compact downloads (up to 8× smaller)'}</strong><br /><small class="muted">{isAr() ? '٤٨ قارئًا آية بآية بجودة مختارة — مع متابعة المصحف' : '48 reciters ayah-by-ayah — with mushaf follow'}</small></button>
       <section class="card">
         <dl class="kv">
           <dt>{isAr() ? 'المساحة المستخدمة' : 'Storage used'}</dt><dd>{DL.fmtBytes(DL.usageBytes())}</dd>
@@ -325,4 +365,10 @@ export function Avatar({ name, id, size = 44 }: { name: string; id: string; size
   let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const col = AV[h % AV.length];
   return <span class="avatar" style={`width:${size}px;height:${size}px;--av:${col}`} aria-hidden="true"><span>{a}{b ? '‌' + b : ''}</span></span>;
+}
+
+/** Recordings order on a reciter page: Hafs murattal complete first, then other riwayat, styles; taraweeh newest year first. */
+function sortRecs(recs: Recording[]): Recording[] {
+  const sw = (r: Recording) => (r.riwayah === 'hafs' ? 0 : 1) * 10 + ({ murattal: 0, mujawwad: 1, muallim: 2, taraweeh: 3 }[r.style] ?? 4);
+  return [...recs].sort((a, b) => (a.style === 'taraweeh' && b.style === 'taraweeh' ? String(b.year || '').localeCompare(String(a.year || '')) : 0) || sw(a) - sw(b) || Number(b.complete) - Number(a.complete) || (a.source === b.source ? 0 : a.source === 'mp3quran' ? -1 : 1));
 }

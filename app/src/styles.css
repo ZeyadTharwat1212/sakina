@@ -351,6 +351,13 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--space-3) 0; }
 .avatar { flex: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: .95em;
   background: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--av) 70%, #fff) 0%, var(--av) 70%); box-shadow: inset 0 0 0 2px rgba(255,255,255,.25); letter-spacing: -.02em; }
 .avatar span { transform: translateY(-1px); }
+.avatar.photo { position: relative; overflow: hidden; background: var(--surface-2, #e9e6df); box-shadow: 0 0 0 2px var(--surface, #fff), 0 0 0 3px color-mix(in srgb, var(--copper) 55%, transparent); }
+.avatar.photo img { position: absolute; max-width: none; }
+.reciter-head { display: flex; align-items: center; gap: 14px; margin: 4px 0 12px; }
+.reciter-head > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.reciter-head strong { font-size: 1.15em; }
+.photo-credit { font-size: .72em; }
+.photo-credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 
 /* ---------- audit fixes v2.1 ---------- */
 .chip { white-space: nowrap; }

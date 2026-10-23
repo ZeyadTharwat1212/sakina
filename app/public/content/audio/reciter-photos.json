@@ -1,0 +1,411 @@
+{
+"note": "Reciter photos from Wikimedia Commons (free licences). Loaded on demand, cached on the device; credited on each reciter page.",
+"photos": {
+"9": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/DrAhmedNeinaa.jpg/330px-DrAhmedNeinaa.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:DrAhmedNeinaa.jpg",
+"w": 680,
+"h": 680,
+"crop": [
+0.5,
+0.4,
+0.8
+],
+"licence": "CC BY-SA 4.0",
+"author": "NeinaaQari",
+"wikidata": "Q20386256"
+},
+"16": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/%D8%B5%D9%88%D8%B1%D8%A9_%D9%84%D9%84%D9%82%D8%A7%D8%B1%D8%A6_%D8%A7%D9%84%D8%B4%D9%8A%D8%AE_%D8%A7%D9%84%D8%B9%D9%8A%D9%88%D9%86_%D8%A7%D9%84%D9%83%D9%88%D8%B4%D9%8A.jpeg/330px-%D8%B5%D9%88%D8%B1%D8%A9_%D9%84%D9%84%D9%82%D8%A7%D8%B1%D8%A6_%D8%A7%D9%84%D8%B4%D9%8A%D8%AE_%D8%A7%D9%84%D8%B9%D9%8A%D9%88%D9%86_%D8%A7%D9%84%D9%83%D9%88%D8%B4%D9%8A.jpeg",
+"page": "https://commons.wikimedia.org/wiki/File:%D8%B5%D9%88%D8%B1%D8%A9_%D9%84%D9%84%D9%82%D8%A7%D8%B1%D8%A6_%D8%A7%D9%84%D8%B4%D9%8A%D8%AE_%D8%A7%D9%84%D8%B9%D9%8A%D9%88%D9%86_%D8%A7%D9%84%D9%83%D9%88%D8%B4%D9%8A.jpeg",
+"w": 600,
+"h": 915,
+"crop": [
+0.5,
+0.3,
+0.8
+],
+"licence": "CC BY-SA 4.0",
+"author": "Hamdaouiabde",
+"wikidata": "Q12190637"
+},
+"30": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Saad_al_Ghamdi.jpg/330px-Saad_al_Ghamdi.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Saad_al_Ghamdi.jpg",
+"w": 1440,
+"h": 1440,
+"crop": [
+0.5,
+0.35,
+0.75
+],
+"licence": "CC BY-SA 4.0",
+"author": "الشيخ هيثم الدخين",
+"wikidata": "Q3082522"
+},
+"31": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Saud_Shuraim_doing_the_Khutbah.png/330px-Saud_Shuraim_doing_the_Khutbah.png",
+"page": "https://commons.wikimedia.org/wiki/File:Saud_Shuraim_doing_the_Khutbah.png",
+"w": 350,
+"h": 470,
+"crop": [
+0.5,
+0.25,
+0.45
+],
+"licence": "CC BY-SA 4.0",
+"author": "Sobi2203",
+"wikidata": "Q270540"
+},
+"41": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/%D8%B5%D9%88%D8%B1%D8%A9_%D8%B4%D8%AE%D8%B5%D9%8A%D8%A9_%D8%B5%D8%A7%D9%84%D8%AD_%D8%A2%D9%84_%D8%B7%D8%A7%D9%84%D8%A8.jpg/330px-%D8%B5%D9%88%D8%B1%D8%A9_%D8%B4%D8%AE%D8%B5%D9%8A%D8%A9_%D8%B5%D8%A7%D9%84%D8%AD_%D8%A2%D9%84_%D8%B7%D8%A7%D9%84%D8%A8.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:%D8%B5%D9%88%D8%B1%D8%A9_%D8%B4%D8%AE%D8%B5%D9%8A%D8%A9_%D8%B5%D8%A7%D9%84%D8%AD_%D8%A2%D9%84_%D8%B7%D8%A7%D9%84%D8%A8.jpg",
+"w": 658,
+"h": 784,
+"crop": [
+0.5,
+0.35,
+0.85
+],
+"licence": "CC BY-SA 4.0",
+"author": "Ayman dhū alghiná",
+"wikidata": "Q12219545"
+},
+"43": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Salah_Ibn_Mohammed_Al_Budair.jpg/330px-Salah_Ibn_Mohammed_Al_Budair.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Salah_Ibn_Mohammed_Al_Budair.jpg",
+"w": 624,
+"h": 468,
+"crop": [
+0.55,
+0.35,
+0.55
+],
+"licence": "CC BY-SA 4.0",
+"author": "Salah Al Budair",
+"wikidata": "Q3469504"
+},
+"51": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Abdul_Basit_Abd_us-Samad_in_South_Africa_in_1966_%283%29_%28cropped%29.jpg/330px-Abdul_Basit_Abd_us-Samad_in_South_Africa_in_1966_%283%29_%28cropped%29.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Abdul_Basit_Abd_us-Samad_in_South_Africa_in_1966_%283%29_%28cropped%29.jpg",
+"w": 573,
+"h": 812,
+"crop": [
+0.38,
+0.32,
+0.38
+],
+"licence": "Public domain",
+"author": "",
+"wikidata": "Q308535"
+},
+"54": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Abdul-Rahman_Al-Sudais_%28Cropped%2C_2011%29.jpg/330px-Abdul-Rahman_Al-Sudais_%28Cropped%2C_2011%29.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Abdul-Rahman_Al-Sudais_%28Cropped%2C_2011%29.jpg",
+"w": 598,
+"h": 799,
+"crop": [
+0.5,
+0.3,
+0.75
+],
+"licence": "GODL-India",
+"author": "Prime Minister's Office (India)",
+"wikidata": "Q317948"
+},
+"55": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/%D8%B5%D9%88%D8%B1%D8%A9_%D8%B4%D8%AE%D8%B5%D9%8A%D8%A9_%D8%B9%D8%A8%D8%AF_%D8%A7%D9%84%D8%B9%D8%B2%D9%8A%D8%B2_%D8%A7%D9%84%D8%A3%D8%AD%D9%85%D8%AF.jpg/330px-%D8%B5%D9%88%D8%B1%D8%A9_%D8%B4%D8%AE%D8%B5%D9%8A%D8%A9_%D8%B9%D8%A8%D8%AF_%D8%A7%D9%84%D8%B9%D8%B2%D9%8A%D8%B2_%D8%A7%D9%84%D8%A3%D8%AD%D9%85%D8%AF.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:%D8%B5%D9%88%D8%B1%D8%A9_%D8%B4%D8%AE%D8%B5%D9%8A%D8%A9_%D8%B9%D8%A8%D8%AF_%D8%A7%D9%84%D8%B9%D8%B2%D9%8A%D8%B2_%D8%A7%D9%84%D8%A3%D8%AD%D9%85%D8%AF.jpg",
+"w": 1411,
+"h": 1666,
+"crop": [
+0.5,
+0.35,
+0.8
+],
+"licence": "CC BY-SA 4.0",
+"author": "Ayman dhū alghiná",
+"wikidata": "Q12222949"
+},
+"59": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Abdullah_Al_Matroud.jpg/330px-Abdullah_Al_Matroud.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Abdullah_Al_Matroud.jpg",
+"w": 500,
+"h": 500,
+"crop": [
+0.5,
+0.4,
+0.75
+],
+"licence": "CC BY-SA 4.0",
+"author": "",
+"wikidata": "Q12223422"
+},
+"62": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Abdullah_Al_Juhany_%28Cropped%29.png/330px-Abdullah_Al_Juhany_%28Cropped%29.png",
+"page": "https://commons.wikimedia.org/wiki/File:Abdullah_Al_Juhany_%28Cropped%29.png",
+"w": 1024,
+"h": 1228,
+"crop": [
+0.45,
+0.32,
+0.7
+],
+"licence": "CC BY-SA 4.0",
+"author": "الشيخ هيثم الدخين",
+"wikidata": "Q12223339"
+},
+"67": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Abdul_Mohsin_Al-Qasim.jpg/330px-Abdul_Mohsin_Al-Qasim.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Abdul_Mohsin_Al-Qasim.jpg",
+"w": 3000,
+"h": 3000,
+"crop": [
+0.48,
+0.17,
+0.3
+],
+"licence": "CC BY 4.0",
+"author": "শেখ শরীফ",
+"wikidata": "Q6156088"
+},
+"74": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/d/d7/Huthaify.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Huthaify.jpg",
+"w": 191,
+"h": 144,
+"crop": [
+0.43,
+0.27,
+0.42
+],
+"licence": "CC BY-SA 4.0",
+"author": "Km.jahiruddin md. Babur",
+"wikidata": "Q12228012"
+},
+"76": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/%D8%A7%D9%84%D8%B4%D9%8A%D8%AE_%D8%B9%D9%84%D9%8A_%D8%AC%D8%A7%D8%A8%D8%B1.png/330px-%D8%A7%D9%84%D8%B4%D9%8A%D8%AE_%D8%B9%D9%84%D9%8A_%D8%AC%D8%A7%D8%A8%D8%B1.png",
+"page": "https://commons.wikimedia.org/wiki/File:%D8%A7%D9%84%D8%B4%D9%8A%D8%AE_%D8%B9%D9%84%D9%8A_%D8%AC%D8%A7%D8%A8%D8%B1.png",
+"w": 1026,
+"h": 1524,
+"crop": [
+0.5,
+0.35,
+0.8
+],
+"licence": "CC0",
+"author": "Engalali9",
+"wikidata": "Q3093361"
+},
+"86": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/%D8%B5%D9%88%D8%B1%D8%A9_%D8%B4%D8%AE%D8%B5%D9%8A%D8%A9_%D8%A7%D9%84%D8%B4%D9%8A%D8%AE_%D9%86%D8%A7%D8%B5%D8%B1_%D8%A7%D9%84%D9%82%D8%B7%D8%A7%D9%85%D9%8A.jpg/330px-%D8%B5%D9%88%D8%B1%D8%A9_%D8%B4%D8%AE%D8%B5%D9%8A%D8%A9_%D8%A7%D9%84%D8%B4%D9%8A%D8%AE_%D9%86%D8%A7%D8%B5%D8%B1_%D8%A7%D9%84%D9%82%D8%B7%D8%A7%D9%85%D9%8A.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:%D8%B5%D9%88%D8%B1%D8%A9_%D8%B4%D8%AE%D8%B5%D9%8A%D8%A9_%D8%A7%D9%84%D8%B4%D9%8A%D8%AE_%D9%86%D8%A7%D8%B5%D8%B1_%D8%A7%D9%84%D9%82%D8%B7%D8%A7%D9%85%D9%8A.jpg",
+"w": 2664,
+"h": 2482,
+"crop": [
+0.45,
+0.4,
+0.6
+],
+"licence": "CC BY-SA 4.0",
+"author": "Ayman dhū alghiná",
+"wikidata": "Q6880178"
+},
+"92": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Yasser_Al-Dosari_%28cropped%29.jpg/330px-Yasser_Al-Dosari_%28cropped%29.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Yasser_Al-Dosari_%28cropped%29.jpg",
+"w": 1080,
+"h": 1621,
+"crop": [
+0.5,
+0.3,
+0.8
+],
+"licence": "CC BY-SA 4.0",
+"author": "MAL MALDIVE",
+"wikidata": "Q12251502"
+},
+"102": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/9/90/Maher_Al_Mueaqly.png",
+"page": "https://commons.wikimedia.org/wiki/File:Maher_Al_Mueaqly.png",
+"w": 290,
+"h": 354,
+"crop": [
+0.5,
+0.35,
+0.85
+],
+"licence": "CC BY-SA 3.0",
+"author": "وليد أيوب",
+"wikidata": "Q1530120"
+},
+"111": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/3/32/Qari_Muhammad_Jebril%2C_Ramadan_2019.png",
+"page": "https://commons.wikimedia.org/wiki/File:Qari_Muhammad_Jebril%2C_Ramadan_2019.png",
+"w": 301,
+"h": 333,
+"crop": [
+0.45,
+0.32,
+0.5
+],
+"licence": "CC BY 3.0",
+"author": "Alhidaya Croydon",
+"wikidata": "Q12240333"
+},
+"112": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Elminshwey.jpg/330px-Elminshwey.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Elminshwey.jpg",
+"w": 369,
+"h": 407,
+"crop": [
+0.5,
+0.4,
+0.85
+],
+"licence": "Public domain",
+"author": "",
+"wikidata": "Q3959320"
+},
+"118": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/7/70/Hussary.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Hussary.jpg",
+"w": 329,
+"h": 600,
+"crop": [
+0.42,
+0.3,
+1
+],
+"licence": "Public domain",
+"author": "",
+"wikidata": "Q6734373"
+},
+"123": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/%D0%9C%D0%B8%D1%88%D0%B0%D1%80%D0%B8_%D0%A0%D0%B0%D1%88%D0%B8%D0%B4.jpg/330px-%D0%9C%D0%B8%D1%88%D0%B0%D1%80%D0%B8_%D0%A0%D0%B0%D1%88%D0%B8%D0%B4.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:%D0%9C%D0%B8%D1%88%D0%B0%D1%80%D0%B8_%D0%A0%D0%B0%D1%88%D0%B8%D0%B4.jpg",
+"w": 346,
+"h": 480,
+"crop": [
+0.5,
+0.4,
+0.85
+],
+"licence": "Copyrighted free use",
+"author": "quranic.ru",
+"wikidata": "Q948361"
+},
+"125": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Mostafa_Ismaeel.jpg/330px-Mostafa_Ismaeel.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Mostafa_Ismaeel.jpg",
+"w": 474,
+"h": 690,
+"crop": [
+0.51,
+0.1,
+0.3
+],
+"licence": "Public domain",
+"author": "",
+"wikidata": "Q4116099"
+},
+"160": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Kalbani.jpg/330px-Kalbani.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Kalbani.jpg",
+"w": 728,
+"h": 1072,
+"crop": [
+0.5,
+0.3,
+0.8
+],
+"licence": "CC BY-SA 3.0",
+"author": "I3bdulghani",
+"wikidata": "Q12222190"
+},
+"217": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Bandar_Baleela.jpg/330px-Bandar_Baleela.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Bandar_Baleela.jpg",
+"w": 4000,
+"h": 2752,
+"crop": [
+0.5,
+0.25,
+0.35
+],
+"licence": "CC BY-SA 3.0",
+"author": "محبين يحيى الزعبي",
+"wikidata": "Q12199312"
+},
+"221": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/d/d7/Raad_Mohammad_Al_Kurdi.png",
+"page": "https://commons.wikimedia.org/wiki/File:Raad_Mohammad_Al_Kurdi.png",
+"w": 300,
+"h": 350,
+"crop": [
+0.5,
+0.35,
+0.85
+],
+"licence": "CC BY-SA 4.0",
+"author": "Radi omar",
+"wikidata": "Q56871542"
+},
+"231": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/5/50/%D9%87%D8%B2%D8%A7%D8%B9_%D8%A7%D9%84%D8%A8%D9%84%D9%88%D8%B4%D9%8A.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:%D9%87%D8%B2%D8%A7%D8%B9_%D8%A7%D9%84%D8%A8%D9%84%D9%88%D8%B4%D9%8A.jpg",
+"w": 320,
+"h": 320,
+"crop": [
+0.45,
+0.35,
+0.55
+],
+"licence": "CC BY-SA 4.0",
+"author": "Ammar molla",
+"wikidata": "Q40378685"
+},
+"241": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Great_Rifat.jpg/330px-Great_Rifat.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Great_Rifat.jpg",
+"w": 337,
+"h": 428,
+"crop": [
+0.42,
+0.27,
+0.4
+],
+"licence": "CC BY-SA 3.0",
+"author": "",
+"wikidata": "Q4166061"
+},
+"254": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Photo_of_badr_al-turki_in_2023.jpg/330px-Photo_of_badr_al-turki_in_2023.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Photo_of_badr_al-turki_in_2023.jpg",
+"w": 1010,
+"h": 1280,
+"crop": [
+0.5,
+0.3,
+0.8
+],
+"licence": "CC0",
+"author": "Abo.ibrahim0",
+"wikidata": "Q133693358"
+},
+"qa-68": {
+"src": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Abdulrazaq_al-Dulaimi.jpg/330px-Abdulrazaq_al-Dulaimi.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Abdulrazaq_al-Dulaimi.jpg",
+"w": 1284,
+"h": 2284,
+"crop": [
+0.5,
+0.25,
+0.7
+],
+"licence": "CC0",
+"author": "Mahmoudalrawi",
+"wikidata": "Q12222851"
+}
+}
+}

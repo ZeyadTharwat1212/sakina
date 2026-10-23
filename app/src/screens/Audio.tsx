@@ -150,6 +150,7 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
   return (
     <main class="screen">
       <TopBar title={displayName(reciter)} onBack />
+      <div class="reciter-head"><Avatar name={displayName(reciter)} id={reciter.id} size={72} /><div><strong>{displayName(reciter)}</strong>{reciter.nameAr && reciter.name !== reciter.nameAr && <small class="muted">{reciter.name}</small>}<PhotoCredit id={reciter.id} /></div></div>
       <CompactBanner nameAr={reciter.nameAr} />
       {recs.length > 1 && (
         <>
@@ -361,12 +362,35 @@ function CompactBanner({ nameAr }: { nameAr: string | null }) {
 
 /** Monogram avatar for reciters (no photo download; colour derived from the id). */
 const AV = ['#2F6A59', '#7D5F22', '#3E5C76', '#6B4E71', '#4F6B3A', '#8A4B3A', '#2E6470', '#5B5F2A'];
+/** Reciter photos (Wikimedia Commons, free licences) — content/audio/reciter-photos.json; others keep the initials avatar. */
+export interface ReciterPhoto { src: string; page: string; w: number; h: number; crop: [number, number, number]; licence: string; author: string }
+let photosP: Promise<Record<string, ReciterPhoto>> | null = null;
+let photosNow: Record<string, ReciterPhoto> | null = null;
+function loadPhotos() { return (photosP ||= fetch('content/audio/reciter-photos.json').then((r) => r.json()).then((j) => (photosNow = j.photos || {})).catch(() => (photosNow = {}))); }
+export function useReciterPhoto(id: string): ReciterPhoto | null {
+  const [, force] = useState(0);
+  useEffect(() => { if (!photosNow) void loadPhotos().then(() => force((n) => n + 1)); }, []);
+  return photosNow?.[id] || null;
+}
 export function Avatar({ name, id, size = 44 }: { name: string; id: string; size?: number }) {
+  const photo = useReciterPhoto(id);
+  const [failed, setFailed] = useState(false);
   const words = name.replace(/^(الشيخ|الشيخ\s)/, '').split(/\s+/).filter((w) => w.length > 1);
   const a = (words[0] || '?')[0]; const b = words.length > 1 ? words[words.length - 1].replace(/^ال/, '')[0] : '';
   let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const col = AV[h % AV.length];
+  if (photo && !failed) {
+    const [x, y, w] = photo.crop; const iw = size / w, ih = (iw * photo.h) / photo.w;
+    return <span class="avatar photo" style={`width:${size}px;height:${size}px;--av:${col}`} aria-hidden="true">
+      <img src={photo.src} alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onError={() => setFailed(true)}
+        style={`width:${iw}px;height:${ih}px;left:${size / 2 - x * iw}px;top:${size / 2 - y * ih}px`} />
+    </span>;
+  }
   return <span class="avatar" style={`width:${size}px;height:${size}px;--av:${col}`} aria-hidden="true"><span>{a}{b ? '‌' + b : ''}</span></span>;
+}
+function PhotoCredit({ id }: { id: string }) {
+  const p = useReciterPhoto(id); if (!p) return null;
+  return <small class="muted photo-credit">{isAr() ? 'الصورة: ' : 'Photo: '}<a href={p.page} target="_blank" rel="noopener">{p.author || (isAr() ? 'ويكيميديا كومنز' : 'Wikimedia Commons')}</a> · {p.licence}</small>;
 }
 
 /** Recordings order on a reciter page: Hafs murattal complete first, then other riwayat, styles; taraweeh newest year first. */

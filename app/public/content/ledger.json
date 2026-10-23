@@ -586,8 +586,8 @@
    "offlineBundling": "not bundled — streamed; user-initiated download to the device only",
    "reviewStatus": "metadata-checked",
    "reviewNotes": "Snapshot 2026-10-22: 129 recordings (translation recordings excluded). Same-person matches with MP3Quran checked by hand; surah lists from the files API."
-   },
-   {
+  },
+  {
    "builtOn": "2026-10-22",
    "id": "audio-abdulrahman-mosaad",
    "kind": "audio",
@@ -598,6 +598,18 @@
    "offlineBundling": "cache on device only when the user asks",
    "reviewStatus": "cross-checked",
    "reviewNotes": "Only complete surahs kept (duration vs letter count 280–590 ms/letter; excerpts titled «من سورة/تلاوة من/أواخر» and the 10/19/23 files at 100–165 ms/letter were dropped). Surahs: 1, 2, 15, 18, 25, 29, 32, 49, 67, 73, 78, 87, 88, 100, 107, 108, 110, 112. Written permission from the sheikh needed before an App Store release."
+  },
+  {
+   "builtOn": "2026-10-24",
+   "id": "reciter-photos",
+   "kind": "image",
+   "title": "صور القراء (٢٩) من ويكيميديا كومنز",
+   "source": "commons.wikimedia.org via Wikidata (P18), matched by occupation qāriʾ/imam and name",
+   "licence": "Per file: CC BY-SA 3.0/4.0, CC BY 3.0/4.0, CC0, public domain, GODL-India, copyrighted free use; author + licence shown on each reciter page with a link to the file page",
+   "licenceStatus": "granted",
+   "offlineBundling": "loaded from upload.wikimedia.org, cached on device",
+   "reviewStatus": "cross-checked",
+   "reviewNotes": "Each photo checked by eye for identity and a respectful portrait; wrong matches dropped (Zaylai = medieval scholar, Abdullah Kamel linked to a Minshawi photo, Yahya Hawwa casual photo). No free photo exists yet for Shatri, Ajmi, Basfar, Abkar, Jaleel, Fares Abbad, Rifai, Tablawi, Ayyub, al-Banna, Noreen, Islam Sobhi, Nufais, Mosaad — initials avatar kept."
   }
  ]
 }

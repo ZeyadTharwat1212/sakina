@@ -1,7 +1,7 @@
 name: Android (Google Play)
 # Builds the signed release bundle (.aab) for Google Play and an .apk for direct install.
 # Signing: repository secrets SAKINA_KEYSTORE_B64 (base64 of the upload keystore) + SAKINA_KS_PASS.
-# Without them the job still builds an unsigned .aab/.apk so you can see the build is healthy.
+# Without them the job builds an unsigned .aab (artifact) that is signed afterwards with the upload key (jarsigner) before upload to Play.
 on:
   workflow_dispatch:
   push:
@@ -42,10 +42,9 @@ jobs:
           VERSION_NAME: 1.0.${{ github.run_number }}
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon bundleRelease assembleRelease
+          ./gradlew --no-daemon bundleRelease
           mkdir -p ../../out
           cp app/build/outputs/bundle/release/*.aab ../../out/sakina-1.0.${{ github.run_number }}.aab
-          cp app/build/outputs/apk/release/*.apk ../../out/sakina-1.0.${{ github.run_number }}.apk
           ls -la ../../out
       - uses: actions/upload-artifact@v4
         with:

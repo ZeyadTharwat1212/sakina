@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.sakina.app',
+  appId: 'dev.zeyad.sakina',
   appName: 'سكينة',
   webDir: 'dist',
   // Everything is bundled: no remote server, no backend.

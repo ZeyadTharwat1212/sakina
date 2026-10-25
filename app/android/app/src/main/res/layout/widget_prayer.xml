@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sakina prayer widget: next prayer + countdown, then the five times of today. RTL. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/w_root"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical"
+    android:background="@drawable/widget_bg" android:padding="14dp" android:layoutDirection="rtl">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+        <TextView android:id="@+id/w_next" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+            android:textColor="#FFFFFFFF" android:textSize="20sp" android:textStyle="bold" android:text="سكينة" android:maxLines="1"/>
+        <TextView android:id="@+id/w_left" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textColor="#FFF1D79A" android:textSize="15sp" android:textStyle="bold" android:background="@drawable/widget_next_bg"
+            android:paddingStart="10dp" android:paddingEnd="10dp" android:paddingTop="4dp" android:paddingBottom="4dp" android:text=""/>
+    </LinearLayout>
+    <TextView android:id="@+id/w_sub" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:textColor="#B3FFFFFF" android:textSize="12sp" android:layout_marginTop="2dp" android:maxLines="1" android:text="افتح التطبيق لحساب المواقيت"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="10dp">
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/n0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#B3FFFFFF" android:textSize="11sp" android:text="الفجر"/>
+            <TextView android:id="@+id/t0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="14sp" android:textStyle="bold" android:text="--:--"/></LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/n1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#B3FFFFFF" android:textSize="11sp" android:text="الظهر"/>
+            <TextView android:id="@+id/t1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="14sp" android:textStyle="bold" android:text="--:--"/></LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/n2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#B3FFFFFF" android:textSize="11sp" android:text="العصر"/>
+            <TextView android:id="@+id/t2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="14sp" android:textStyle="bold" android:text="--:--"/></LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/n3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#B3FFFFFF" android:textSize="11sp" android:text="المغرب"/>
+            <TextView android:id="@+id/t3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="14sp" android:textStyle="bold" android:text="--:--"/></LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/n4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#B3FFFFFF" android:textSize="11sp" android:text="العشاء"/>
+            <TextView android:id="@+id/t4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFFFF" android:textSize="14sp" android:textStyle="bold" android:text="--:--"/></LinearLayout>
+    </LinearLayout>
+</LinearLayout>

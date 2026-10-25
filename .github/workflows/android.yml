@@ -1,0 +1,58 @@
+name: Android (Google Play)
+# Builds the signed release bundle (.aab) for Google Play and an .apk for direct install.
+# Signing: repository secrets SAKINA_KEYSTORE_B64 (base64 of the upload keystore) + SAKINA_KS_PASS.
+# Without them the job still builds an unsigned .aab/.apk so you can see the build is healthy.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Web build + sync into Android
+        working-directory: app
+        run: |
+          npm ci
+          npm test
+          npm run build
+          npx cap sync android
+      - name: Upload key
+        env:
+          KS_B64: ${{ secrets.SAKINA_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"; echo "SAKINA_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"; else echo "::warning::No signing secrets — building unsigned"; fi
+      - name: Gradle (bundle + apk)
+        working-directory: app/android
+        env:
+          SAKINA_KS_PASS: ${{ secrets.SAKINA_KS_PASS }}
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: 1.0.${{ github.run_number }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon bundleRelease assembleRelease
+          mkdir -p ../../out
+          cp app/build/outputs/bundle/release/*.aab ../../out/sakina-1.0.${{ github.run_number }}.aab
+          cp app/build/outputs/apk/release/*.apk ../../out/sakina-1.0.${{ github.run_number }}.apk
+          ls -la ../../out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sakina-android-${{ github.run_number }}
+          path: out/*
+      - name: GitHub release (aab + apk)
+        if: env.SAKINA_KEYSTORE != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "android-${{ github.run_number }}" out/* --title "Sakina Android 1.0.${{ github.run_number }}" --notes "Google Play bundle (.aab) and direct-install .apk, build ${{ github.run_number }}." --prerelease

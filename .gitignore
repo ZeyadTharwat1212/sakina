@@ -1,6 +1,5 @@
 node_modules/
 app/dist/
 app/ios/
-app/android/
 deliverable/
 .DS_Store

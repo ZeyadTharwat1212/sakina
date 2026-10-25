@@ -1,6 +1,7 @@
 import { useEffect } from 'preact/hooks';
 import { useRoute, goTab, TABS, type Tab } from './lib/router';
 import { useStore, applyTheme } from './lib/store';
+import { reschedule } from './lib/notify';
 import { t } from './lib/i18n';
 import { Icon, TabIcon } from './components/ui';
 import { Onboarding } from './screens/Onboarding';
@@ -21,6 +22,8 @@ export function App() {
   const route = useRoute();
   const { settings } = useStore();
 
+  // keep the next 7 days of prayer alerts + the home-screen widget fresh every time the app opens (Android/iOS only)
+  useEffect(() => { if (settings.onboarded) void reschedule(settings.location, settings.prayer); }, [settings.location, settings.prayer, settings.lang]);
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const on = () => applyTheme();

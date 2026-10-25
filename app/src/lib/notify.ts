@@ -12,7 +12,8 @@ import { upcomingSchedule, computeDay, civilDate, nightTimes, type PrayerName } 
 import { getSettings } from './store';
 import { t, fmtTime } from './i18n';
 import { fastingFor, ramadanInfo, atTime, addDays } from './calendar';
-import { toHijri } from './hijri';
+import { toHijri, formatHijri } from './hijri';
+import { Preferences } from '@capacitor/preferences';
 
 export const isNative = Capacitor.isNativePlatform();
 export type PermState = 'granted' | 'denied' | 'prompt' | 'unavailable';
@@ -97,8 +98,28 @@ export function planNotifications(loc: Location, ps: PrayerSettings, s: Settings
 }
 
 /** Cancel everything we scheduled and schedule afresh for the current location/settings (section 15/16: no stale or duplicate alerts). */
+/** Home-screen widget data (Android SakinaWidget reads Preferences key "widget"): today + 6 days of the five prayers. */
+export async function writeWidget(loc: Location | null, ps: PrayerSettings, now = new Date()) {
+  if (!isNative || !loc) return;
+  try {
+    const s = getSettings() as Settings;
+    const AR: Record<string, string> = { fajr: 'الفجر', dhuhr: 'الظهر', asr: 'العصر', maghrib: 'المغرب', isha: 'العشاء' };
+    const EN: Record<string, string> = { fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha' };
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const civil = civilDate(loc.tz, i, now);
+      const d = computeDay(loc, ps, civil);
+      const ymd = `${civil.getFullYear()}-${String(civil.getMonth() + 1).padStart(2, '0')}-${String(civil.getDate()).padStart(2, '0')}`;
+      const h = toHijri(civil, s.hijriAdjust);
+      days.push({ d: ymd, hijri: formatHijri(h, true), hijriEn: formatHijri(h, false), p: (['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).map((n) => ({ n, ar: AR[n], en: EN[n], t: d.times[n].getTime() })) });
+    }
+    await Preferences.set({ key: 'widget', value: JSON.stringify({ city: loc.name, tz: loc.tz, lang: s.lang, h24: false, days, at: Date.now() }) });
+  } catch { /* widget is optional */ }
+}
+
 export async function reschedule(loc: Location | null, ps: PrayerSettings): Promise<number> {
   if (!isNative) return 0;
+  await writeWidget(loc, ps);
   const pending = await LocalNotifications.getPending();
   if (pending.notifications.length) await LocalNotifications.cancel({ notifications: pending.notifications.map((n) => ({ id: n.id })) });
   if (!loc || (await permissionState()) !== 'granted') return 0;

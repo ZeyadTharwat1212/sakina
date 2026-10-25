@@ -50,8 +50,7 @@ jobs:
         with:
           name: sakina-android-${{ github.run_number }}
           path: out/*
-      - name: GitHub release (aab + apk)
-        if: env.SAKINA_KEYSTORE != ''
+      - name: GitHub release (bundle)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "android-${{ github.run_number }}" out/* --title "Sakina Android 1.0.${{ github.run_number }}" --notes "Google Play bundle (.aab) and direct-install .apk, build ${{ github.run_number }}." --prerelease
+        run: gh release create "android-${{ github.run_number }}" out/* --title "Sakina Android 1.0.${{ github.run_number }}" --notes "Google Play bundle (.aab), build ${{ github.run_number }}$([ -z "$SAKINA_KEYSTORE" ] && echo ' — unsigned, signed with the upload key before upload')." --prerelease

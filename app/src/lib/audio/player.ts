@@ -38,16 +38,7 @@ function el() {
   audio.addEventListener('timeupdate', onTime);
   audio.addEventListener('ended', onEnded);
   audio.addEventListener('error', () => set({ playing: false, loading: false, error: s.local ? 'تعذّر تشغيل الملف المنزّل — أعد تنزيله' : 'تعذّر تشغيل التلاوة — تحقق من الاتصال، أو نزّل السورة للاستماع دون إنترنت' }));
-  if ('mediaSession' in navigator) {
-    const ms = navigator.mediaSession;
-    ms.setActionHandler('play', () => void play());
-    ms.setActionHandler('pause', () => pause());
-    ms.setActionHandler('previoustrack', () => void prev());
-    ms.setActionHandler('nexttrack', () => void next());
-    ms.setActionHandler('seekbackward', () => seekBy(-10));
-    ms.setActionHandler('seekforward', () => seekBy(10));
-    try { ms.setActionHandler('seekto', (d) => { if (d.seekTime != null) seekTo(d.seekTime); }); } catch { /* unsupported */ }
-  }
+  // lock-screen controls and metadata: ./nowplaying.ts (one place for both engines)
   return audio;
 }
 
@@ -89,7 +80,6 @@ async function load(index: number, autoplay: boolean, range?: { from: number; to
   a.src = local || fileUrl(rec, t.surah);
   a.playbackRate = s.rate;
   set({ index, pos: 0, dur: 0, timings: null, currentAyah: null, ayahRange: null, rangeNote: null, error: null, loading: true, local: !!local, open: s.open === 'none' ? 'mini' : s.open });
-  void updateMediaSession(rec, t.surah);
   if (range) {
     // Chosen ayahs: wait for the timings first so playback starts exactly at the first chosen ayah.
     const tm = await getTimings(catalog, rec, t.surah);
@@ -103,11 +93,6 @@ async function load(index: number, autoplay: boolean, range?: { from: number; to
     void getTimings(catalog, rec, t.surah).then((tm) => { if (current() === t) set({ timings: tm }); });
   }
   if (autoplay) { try { await a.play(); } catch { set({ loading: false }); } }
-}
-async function updateMediaSession(rec: Recording, surah: number) {
-  if (!('mediaSession' in navigator)) return;
-  const chs = await getChapters();
-  navigator.mediaSession.metadata = new MediaMetadata({ title: `سورة ${chs[surah - 1].name}`, artist: displayName(rec), album: rec.recitationAr || rec.recitation, artwork: [{ src: 'icon-512.png', sizes: '512x512', type: 'image/png' }] });
 }
 
 /* ---------- public API ---------- */

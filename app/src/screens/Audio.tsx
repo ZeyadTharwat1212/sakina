@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { getCatalog, refreshCatalog, recordingsOf, displayName, hasSurah, STYLE_AR, SOURCE_AR, RIWAYAH_SHORT, RIWAYAH_EN, RIWAYAH_AR, fileUrl, hasTimings, timedRecordingFor, type Catalog, type Recording } from '../lib/audio/catalog';
 import * as DL from '../lib/audio/downloads';
+import { loadPhotos, photosSync, type ReciterPhoto } from '../lib/audio/photos';
 import { playSurah, playAyahRange, getPlayer, subscribePlayer } from '../lib/audio/player';
 import { getChapters, getAyahAudioSources, type Chapter } from '../lib/content';
 import { ayahUrls, cacheAyahs, cachedCount, deleteCached, type AyahReciter } from '../lib/audio/ayah';
@@ -363,14 +364,10 @@ function CompactBanner({ nameAr }: { nameAr: string | null }) {
 /** Monogram avatar for reciters (no photo download; colour derived from the id). */
 const AV = ['#2F6A59', '#7D5F22', '#3E5C76', '#6B4E71', '#4F6B3A', '#8A4B3A', '#2E6470', '#5B5F2A'];
 /** Reciter photos (Wikimedia Commons, free licences) — content/audio/reciter-photos.json; others keep the initials avatar. */
-export interface ReciterPhoto { src: string; page: string; w: number; h: number; crop: [number, number, number]; licence: string; author: string }
-let photosP: Promise<Record<string, ReciterPhoto>> | null = null;
-let photosNow: Record<string, ReciterPhoto> | null = null;
-function loadPhotos() { return (photosP ||= fetch('content/audio/reciter-photos.json').then((r) => r.json()).then((j) => (photosNow = j.photos || {})).catch(() => (photosNow = {}))); }
 export function useReciterPhoto(id: string): ReciterPhoto | null {
   const [, force] = useState(0);
-  useEffect(() => { if (!photosNow) void loadPhotos().then(() => force((n) => n + 1)); }, []);
-  return photosNow?.[id] || null;
+  useEffect(() => { if (!photosSync()) void loadPhotos().then(() => force((n) => n + 1)); }, []);
+  return photosSync()?.[id] || null;
 }
 export function Avatar({ name, id, size = 44 }: { name: string; id: string; size?: number }) {
   const photo = useReciterPhoto(id);
@@ -382,7 +379,7 @@ export function Avatar({ name, id, size = 44 }: { name: string; id: string; size
   if (photo && !failed) {
     const [x, y, w] = photo.crop; const iw = size / w, ih = (iw * photo.h) / photo.w;
     return <span class="avatar photo" style={`width:${size}px;height:${size}px;--av:${col}`} aria-hidden="true">
-      <img src={photo.src} alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onError={() => setFailed(true)}
+      <img src={photo.src} alt="" crossOrigin="anonymous" loading="lazy" decoding="async" referrerpolicy="no-referrer" onError={() => setFailed(true)}
         style={`width:${iw}px;height:${ih}px;left:${size / 2 - x * iw}px;top:${size / 2 - y * ih}px`} />
     </span>;
   }

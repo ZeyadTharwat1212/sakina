@@ -13,7 +13,8 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   if (url.hostname === 'upload.wikimedia.org') {
     // cache-first so photos show offline after the first view
-    e.respondWith(caches.open(PHOTOS).then((c) => c.match(e.request).then((hit) => hit || fetch(e.request).then((r) => { if (r.ok || r.type === 'opaque') c.put(e.request, r.clone()); return r; }))));
+    // an opaque copy (from a plain <img>) can't serve a CORS request (canvas artwork), so only reuse it for no-cors
+    e.respondWith(caches.open(PHOTOS).then((c) => c.match(e.request).then((hit) => (hit && (hit.type !== 'opaque' || e.request.mode === 'no-cors')) ? hit : fetch(e.request).then((r) => { if (r.ok || (r.type === 'opaque' && !hit)) c.put(e.request, r.clone()); return r; }))));
     return;
   }
   if (url.origin !== location.origin) return; // never touch audio streams or other origins

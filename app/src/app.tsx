@@ -13,6 +13,8 @@ import { AdhkarHome, DhikrSession, Tasbih } from './screens/Adhkar';
 import { LibraryHome, HadithBook, HadithChapterScreen, SearchScreen, SourcesScreen, TafsirLibrary, TranslationsLibrary } from './screens/Library';
 import { SettingsScreen } from './screens/Settings';
 import { MiniPlayer } from './screens/Player';
+import { startNowPlaying } from './lib/audio/nowplaying';
+startNowPlaying();
 import { ReciterLibrary, ReciterPage, DownloadsManager, AyahDownloads } from './screens/Audio';
 import { TrackerScreen, HijriScreen, KhatmaScreen, AsmaScreen, MosquesScreen, WallpapersScreen, DuasScreen } from './screens/Tools';
 import { RamadanScreen, FastingScreen, QiyamScreen, FajrAlarmScreen, TeachScreen, CardsScreen, HelpScreen, ZakatScreen } from './screens/More';

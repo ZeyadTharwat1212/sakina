@@ -1,6 +1,7 @@
 /** Mushaf page mode: the Madani mushaf (1441 AH) page by page, 15 lines, exact line breaks, with the King Fahd Complex
  *  QCF v4 page fonts (loaded on demand). Word-level taps select an ayah; selection, tafsir, bookmarks and listening
  *  reuse the reader's ayah sheet. The text itself is never modified — glyph codes come straight from the layout data. */
+import { NowAyah } from '../components/NowAyah';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { getChapters, getMeta, getSurah, getMushafPage, getMushafVerses, ensureMushafFont, pageOf, juzOf, ayahDisplay, type MushafPage as PageData, type SurahText } from '../lib/content';
 import { followTick } from '../lib/audio/follow';
@@ -225,7 +226,9 @@ export function AyahDock({ onMushaf }: { onMushaf: boolean }) {
   const rec = src.data?.reciters.find((r) => r.id === ap.reciter);
   const page = meta.data ? pageOf(meta.data, ap.ch, ap.v) : 1;
   return (
-    <div class={`ayah-dock ${onMushaf ? 'on-mushaf' : ''}`} role="region" aria-label={t('listen')}>
+    <div class={`ayah-dock np-card ${onMushaf ? 'on-mushaf' : ''}`} role="region" aria-label={t('listen')}>
+      <NowAyah />
+      <div class="np-row">
       <div class="ad-info">
         <strong>{chapters.data ? chapters.data[ap.ch - 1]?.name : ''} · {num(ap.v)}</strong>
         <small class="muted">{ap.error ? ap.error : ap.loading ? (isAr() ? 'جارٍ التحميل…' : 'Loading…') : `${rec ? (isAr() ? rec.ar : rec.en) : ''}${exact === true ? (isAr() ? ' · متابعة دقيقة' : ' · exact follow') : exact === false ? (isAr() ? ' · متابعة تقريبية' : ' · approx. follow') : ''}${ap.rep > 1 ? ` · ×${num(ap.rep)}` : ''}`}</small>
@@ -236,6 +239,7 @@ export function AyahDock({ onMushaf }: { onMushaf: boolean }) {
         <button class="icon-btn" aria-label={isAr() ? 'الآية السابقة' : 'Previous ayah'} onClick={() => void skip(-1)}><Icon name="next" /></button>
         {!onMushaf && <button class="icon-btn" aria-label={isAr() ? 'المصحف' : 'Mushaf'} onClick={() => navigate(`/quran/page/${page}?follow=1`)}><Icon name="quran" /></button>}
         <button class="icon-btn" aria-label={t('stop')} onClick={stopAyahs}><Icon name="close" /></button>
+      </div>
       </div>
     </div>
   );

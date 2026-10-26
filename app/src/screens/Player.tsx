@@ -1,4 +1,5 @@
 /** Mini player (fixed above the tab bar) that expands into the full player sheet. */
+import { NowAyah } from '../components/NowAyah';
 import { useEffect, useState } from 'preact/hooks';
 import { getMeta, pageOf } from '../lib/content';
 import { getPlayer, subscribePlayer, toggle, next, prev, seekTo, seekBy, setRate, setRepeat, setSleep, setOpen, stop, setAyahRange, removeFromQueue, playQueue } from '../lib/audio/player';
@@ -29,15 +30,18 @@ export function MiniPlayer() {
   return (
     <>
       {p.open === 'mini' && (
-        <div class="miniplayer" role="region" aria-label={t('listen')}>
+        <div class="miniplayer np-card" role="region" aria-label={t('listen')}>
+          <NowAyah />
+          <div class="np-row">
           <button class="icon-btn" aria-label={p.playing ? t('pause') : t('play')} onClick={() => void toggle()}><Icon name={p.loading ? 'more' : p.playing ? 'pause' : 'play'} /></button>
           <button class="grow" style="text-align:start;min-width:0" onClick={() => setOpen('full')}>
             <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">سورة {name} · {who}</div>
-            <small class="muted num">{fmt(p.pos)} / {fmt(p.dur)}{p.local ? ` · ${isAr() ? 'من الجهاز' : 'offline'}` : ''}{p.currentAyah ? ` · ${t('ayah')} ${num(p.currentAyah)}` : ''}{p.error ? ` · ${p.error}` : ''}</small>
+            <small class="muted num">{fmt(p.pos)} / −{fmt(Math.max(0, p.dur - p.pos))}{p.local ? ` · ${isAr() ? 'من الجهاز' : 'offline'}` : ''}{p.currentAyah ? ` · ${t('ayah')} ${num(p.currentAyah)}` : ''}{p.error ? ` · ${p.error}` : ''}</small>
             <div class="progress" style="height:3px;margin-top:4px"><div style={`width:${pct}%`} /></div>
           </button>
           <button class="icon-btn" aria-label={isAr() ? 'التالية' : 'Next'} onClick={() => void next()}><Icon name="next" /></button>
           <button class="icon-btn" aria-label={t('stop')} onClick={stop}><Icon name="close" /></button>
+          </div>
         </div>
       )}
       <Sheet open={p.open === 'full'} onClose={() => setOpen('mini')} title={`سورة ${name}`}>

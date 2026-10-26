@@ -1,5 +1,6 @@
 import UIKit
 import AVFoundation
+import ActivityKit
 import Capacitor
 
 @UIApplicationMain
@@ -11,6 +12,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Quran audio keeps playing with the screen locked and ignores the silent switch (needs UIBackgroundModes=audio)
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
         excludeDownloadsFromBackup()
+        // a Live Activity left over from a previous run (app was killed while playing)
+        if #available(iOS 16.2, *) { Task { for a in Activity<SakinaAyahAttributes>.activities { await a.end(nil, dismissalPolicy: .immediate) } } }
         return true
     }
 
@@ -59,4 +62,67 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+}
+
+
+// MARK: - Live Activity: the ayah being recited, on the Lock Screen and in the Dynamic Island
+
+/// Same definition as ios/App/SakinaWidget/SakinaLiveActivity.swift — keep both identical.
+@available(iOS 16.1, *)
+struct SakinaAyahAttributes: ActivityAttributes {
+    public struct ContentState: Codable, Hashable {
+        var ayah: String      // the ayah being recited now ("" when not known)
+        var surah: String
+        var reciter: String
+        var ayahNo: Int       // 0 when not known
+        var playing: Bool
+    }
+    var title: String
+}
+
+/// JS: registerPlugin('LiveAyah').update({ ayah, surah, reciter, ayahNo, playing }) / .end()
+@objc(LiveAyahPlugin)
+public class LiveAyahPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "LiveAyahPlugin"
+    public let jsName = "LiveAyah"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "isSupported", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "update", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "end", returnType: CAPPluginReturnPromise)
+    ]
+
+    @objc func isSupported(_ call: CAPPluginCall) {
+        if #available(iOS 16.2, *) { call.resolve(["value": ActivityAuthorizationInfo().areActivitiesEnabled]) } else { call.resolve(["value": false]) }
+    }
+
+    @objc func update(_ call: CAPPluginCall) {
+        guard #available(iOS 16.2, *) else { call.resolve(); return }
+        let ayah = String((call.getString("ayah") ?? "").prefix(900)) // ContentState must stay under 4 KB
+        let state = SakinaAyahAttributes.ContentState(ayah: ayah, surah: call.getString("surah") ?? "", reciter: call.getString("reciter") ?? "", ayahNo: call.getInt("ayahNo") ?? 0, playing: call.getBool("playing") ?? true)
+        Task {
+            let content = ActivityContent(state: state, staleDate: nil)
+            if let activity = Activity<SakinaAyahAttributes>.activities.first {
+                await activity.update(content)
+            } else if ActivityAuthorizationInfo().areActivitiesEnabled {
+                // starting is only allowed while the app is in the foreground (playback always starts from a tap)
+                _ = try? Activity.request(attributes: SakinaAyahAttributes(title: "سكينة"), content: content, pushType: nil)
+            }
+            call.resolve()
+        }
+    }
+
+    @objc func end(_ call: CAPPluginCall) {
+        guard #available(iOS 16.2, *) else { call.resolve(); return }
+        Task {
+            for activity in Activity<SakinaAyahAttributes>.activities { await activity.end(nil, dismissalPolicy: .immediate) }
+            call.resolve()
+        }
+    }
+}
+
+/// Registers the app's own plugins (Main.storyboard points here instead of CAPBridgeViewController).
+class MainViewController: CAPBridgeViewController {
+    override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(LiveAyahPlugin())
+    }
 }

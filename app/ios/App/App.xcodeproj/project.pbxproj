@@ -15,7 +15,42 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+		E81469FFCACDF199D4C1FB40 /* SakinaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 823CB6DF4ADDEA6F4887289F /* SakinaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		646FD131B76F706A5F9B873A /* SakinaLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE221DA1AA94D1BA6A86870 /* SakinaLiveActivity.swift */; };
+		6E996BD33D856FE86AEEB788 /* SakinaWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 919ABCAD73C01892A0AE99DD /* SakinaWidgetBundle.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		6327414194FADF3F8193F5B6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C82B490A21470C478631143D;
+			remoteInfo = SakinaWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3D299E825D208155483D718F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E81469FFCACDF199D4C1FB40 /* SakinaWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4C74A5F08AC91F9ABAA8692C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C82B490A21470C478631143D /* SakinaWidget */;
+			targetProxy = 6327414194FADF3F8193F5B6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
@@ -28,6 +63,10 @@
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		823CB6DF4ADDEA6F4887289F /* SakinaWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SakinaWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		EDE221DA1AA94D1BA6A86870 /* SakinaLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SakinaLiveActivity.swift; sourceTree = "<group>"; };
+		919ABCAD73C01892A0AE99DD /* SakinaWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SakinaWidgetBundle.swift; sourceTree = "<group>"; };
+		38C8CD3B58B402C5DF844E11 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -36,6 +75,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		73F9333B2FE5DC2101A99F10 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -48,6 +94,7 @@
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
+				979F961B940CBB4EB775EFAF /* SakinaWidget */,
 			);
 			sourceTree = "<group>";
 		};
@@ -55,6 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				823CB6DF4ADDEA6F4887289F /* SakinaWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -74,6 +122,16 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		979F961B940CBB4EB775EFAF /* SakinaWidget */ = {
+			isa = PBXGroup;
+			children = (
+				EDE221DA1AA94D1BA6A86870 /* SakinaLiveActivity.swift */,
+				919ABCAD73C01892A0AE99DD /* SakinaWidgetBundle.swift */,
+				38C8CD3B58B402C5DF844E11 /* Info.plist */,
+			);
+			path = SakinaWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -84,10 +142,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				3D299E825D208155483D718F /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				4C74A5F08AC91F9ABAA8692C /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -96,6 +156,23 @@
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		C82B490A21470C478631143D /* SakinaWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 11894F6B716D34C3EC56C733 /* Build configuration list for PBXNativeTarget "SakinaWidget" */;
+			buildPhases = (
+				7D4612C1BEFF5CC90CCDD4A0 /* Sources */,
+				73F9333B2FE5DC2101A99F10 /* Frameworks */,
+				E4F2B8E0DC8F32743A56FCA4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SakinaWidget;
+			productName = SakinaWidget;
+			productReference = 823CB6DF4ADDEA6F4887289F /* SakinaWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -106,6 +183,9 @@
 				LastSwiftUpdateCheck = 0920;
 				LastUpgradeCheck = 0920;
 				TargetAttributes = {
+					C82B490A21470C478631143D = {
+						CreatedOnToolsVersion = 15.0;
+					};
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
@@ -130,6 +210,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				C82B490A21470C478631143D /* SakinaWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -148,6 +229,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E4F2B8E0DC8F32743A56FCA4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -156,6 +244,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D4612C1BEFF5CC90CCDD4A0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				646FD131B76F706A5F9B873A /* SakinaLiveActivity.swift in Sources */,
+				6E996BD33D856FE86AEEB788 /* SakinaWidgetBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -334,6 +431,57 @@
 			};
 			name = Release;
 		};
+		984C1E801FD39BCC94CD741A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SakinaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.zeyad.sakina.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		137023D2D0F12A61C3B4F584 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SakinaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.zeyad.sakina.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -351,6 +499,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		11894F6B716D34C3EC56C733 /* Build configuration list for PBXNativeTarget "SakinaWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				984C1E801FD39BCC94CD741A /* Debug */,
+				137023D2D0F12A61C3B4F584 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

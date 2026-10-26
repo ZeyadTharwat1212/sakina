@@ -9,6 +9,19 @@ import { getAyahPlayer, subscribeAyahPlayer, toggleAyahs, skip, ayahClock, getAy
 import { getCatalog, recordingById, displayName } from './catalog';
 import { getChapters, getSurah, ayahDisplay, type SurahText, type Chapter } from '../content';
 import { squareArtwork } from './photos';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+/** iOS Live Activity (Lock Screen + Dynamic Island) — native side in ios/App (AppDelegate.swift + SakinaWidget). */
+interface LiveAyahPlugin { update(o: { ayah: string; surah: string; reciter: string; ayahNo: number; playing: boolean }): Promise<void>; end(): Promise<void> }
+const LiveAyah = Capacitor.getPlatform() === 'ios' ? registerPlugin<LiveAyahPlugin>('LiveAyah') : null;
+let liveKey = '';
+function toLiveActivity(n: NowPlaying | null) {
+  if (!LiveAyah) return;
+  if (!n) { if (liveKey) { liveKey = ''; void LiveAyah.end().catch(() => {}); } return; }
+  const key = `${n.ch}|${n.v}|${n.reciter}|${n.playing}|${!!n.text}`;
+  if (key === liveKey) return; liveKey = key;
+  void LiveAyah.update({ ayah: n.text ? plain(n.text) : '', surah: n.surah, reciter: n.reciter, ayahNo: n.text && n.v ? n.v : 0, playing: n.playing }).catch(() => {});
+}
 
 export interface NowPlaying { engine: 'full' | 'ayah'; ch: number; v: number | null; surah: string; reciter: string; reciterId: string | null; text: string | null; playing: boolean; pos: number; dur: number }
 let np: NowPlaying | null = null;
@@ -49,6 +62,7 @@ function compute() {
   np = next_;
   subs.forEach((f) => f());
   void toMediaSession(np);
+  toLiveActivity(np);
 }
 
 /* ---------- lock screen ---------- */

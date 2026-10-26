@@ -13,6 +13,7 @@
    - **Team**: اختر فريقك.
    - **Bundle Identifier**: `dev.zeyad.sakina` (أو غيّره لمعرّف خاص بك مثل `com.yourname.sakina` لو رفضه Xcode).
    - اترك «Automatically manage signing» مفعّلًا.
+   - **كرّر نفس الشيء للهدف الثاني SakinaWidget** (ويدجت شاشة القفل / Dynamic Island): اختر نفس الـ Team. معرّفه `dev.zeyad.sakina.widget` — لو غيّرت معرّف التطبيق لازم يكون معرّف الويدجت = معرّف التطبيق + `.widget`.
    - تأكد من وجود **Background Modes → Audio** (موجود في Info.plist؛ لو لم يظهر أضفه من «+ Capability»).
 3. أنشئ التطبيق في **App Store Connect** ← My Apps ← «+» ← New App: نفس الـ Bundle ID، الاسم «سكينة — Sakina»، اللغة العربية. (لو الاسم محجوز جرّب «سكينة: قرآن وصلاة».)
 4. في Xcode اختر الجهاز **Any iOS Device (arm64)** ثم **Product → Archive**.
@@ -41,11 +42,12 @@ npx cap sync ios
 
 1. Open `sakina/app/ios/App/App.xcodeproj`; let Xcode resolve the Capacitor package from GitHub.
 2. Target **App → Signing & Capabilities**: pick your Team; bundle id `dev.zeyad.sakina` (change it if needed); automatic signing on. Background Modes → Audio is set in Info.plist.
+   Do the same for the second target **SakinaWidget** (Live Activity on the Lock Screen / Dynamic Island, iOS 16.2+): same Team; its bundle id must be the app's id + `.widget`.
 3. App Store Connect → New App with the same bundle id; name «سكينة — Sakina»; primary language Arabic.
 4. Destination **Any iOS Device (arm64)** → **Product → Archive** → **Distribute App → App Store Connect → Upload**.
 5. TestFlight: internal testers (no review) or an external group with a **public link** (short beta review).
 6. Store listing text, privacy answers ("Data Not Collected"), review notes and 6.9″ screenshots: `store/LISTING.md`, `store/screenshots-6.9/`.
 
-Already configured: iPhone-only, portrait, location/motion usage strings (Arabic + English), background audio + `.playback` audio session, downloads excluded from iCloud backup, `ITSAppUsesNonExemptEncryption = NO`, 1024 px app icon without alpha, light/dark launch screen, iOS 14+.
+Already configured: Live Activity widget showing the ayah being recited (Lock Screen + Dynamic Island, `NSSupportsLiveActivities`), iPhone-only, portrait, location/motion usage strings (Arabic + English), background audio + `.playback` audio session, downloads excluded from iCloud backup, `ITSAppUsesNonExemptEncryption = NO`, 1024 px app icon without alpha, light/dark launch screen, iOS 14+.
 
 If the build fails with "No such module 'Capacitor'": File → Packages → Reset Package Caches, then build again.

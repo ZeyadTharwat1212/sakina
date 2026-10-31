@@ -1,0 +1,49 @@
+name: iOS — App Store listing + submit for review
+# Run manually (Actions → this workflow → Run workflow) after a TestFlight build has processed.
+# Uploads the store page (Arabic + English text, screenshots, age rating, review notes) with the same
+# App Store Connect API key secrets as ios.yml, and — only if you tick it — submits the latest build for review.
+# Note: Apple's "App Privacy" questionnaire (answer: Data Not Collected) can only be filled in the App Store Connect website.
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: 'Submit the latest build for App Store review (otherwise only the listing is uploaded)'
+        type: boolean
+        default: false
+      rights_confirmed:
+        description: 'I confirm we have the rights to all third-party content in the app (recitations, fonts, texts)'
+        type: boolean
+        default: false
+jobs:
+  deliver:
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      REVIEW_PHONE: ${{ secrets.REVIEW_PHONE }}
+      BUNDLE_ID: dev.zeyad.sakina
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check secrets
+        run: |
+          [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8" ] || { echo "::error::Add ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 secrets first"; exit 1; }
+          if [ "${{ inputs.submit }}" = "true" ] && [ "${{ inputs.rights_confirmed }}" != "true" ]; then echo "::error::Submitting needs the rights confirmation ticked"; exit 1; fi
+      - name: API key file
+        working-directory: app
+        run: |
+          python3 - <<'PY'
+          import json, os
+          json.dump({"key_id": os.environ["ASC_KEY_ID"], "issuer_id": os.environ["ASC_ISSUER_ID"], "key": os.environ["ASC_KEY_P8"], "in_house": False}, open("asc_key.json", "w"))
+          PY
+          [ -n "$REVIEW_PHONE" ] && printf '%s\n' "$REVIEW_PHONE" > fastlane/metadata/review_information/phone_number.txt || true
+      - name: Upload listing (and submit)
+        working-directory: app
+        run: |
+          SUBMIT=false; [ "${{ inputs.submit }}" = "true" ] && SUBMIT=true
+          fastlane deliver --api_key_path asc_key.json --app_identifier "$BUNDLE_ID" --platform ios \
+            --metadata_path fastlane/metadata --screenshots_path fastlane/screenshots --overwrite_screenshots true \
+            --app_rating_config_path fastlane/age_rating.json --skip_binary_upload true --force true \
+            --run_precheck_before_submit false --submit_for_review $SUBMIT --automatic_release false \
+            --submission_information '{"add_id_info_uses_idfa": false, "content_rights_contains_third_party_content": true, "content_rights_has_rights": ${{ inputs.rights_confirmed }}, "export_compliance_uses_encryption": false}'

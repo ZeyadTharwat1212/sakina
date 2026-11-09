@@ -7,7 +7,7 @@
  */
 import { getAyahAudioSources, getChapters } from '../content';
 import { getSettings, updateUser } from '../store';
-import { pause as pauseMain, getPlayer, subscribePlayer } from './player';
+import { pause as pauseMain, mainAudible, subscribePlayer } from './player';
 
 export interface AyahReciter { id: string; ar: string; en: string; in: string | null; ea: string; lite: string; tm?: string; kbps: number; liteKbps: number; riwayah?: string }
 export interface AyahPlayerState { active: boolean; playing: boolean; ch: number; v: number; from: number; to: number; rep: number; reciter: string; error: string | null; loading: boolean; continuous: boolean }
@@ -45,22 +45,33 @@ async function cachedBlobUrl(urls: string[]): Promise<string | null> {
 }
 
 /* ---------- engine ---------- */
-interface Slot { el: HTMLAudioElement; key: string; urls: string[]; i: number; blob: string | null; ready: Promise<void> | null }
+interface Slot { el: HTMLAudioElement; key: string; urls: string[]; i: number; blob: string | null; ready: Promise<void> | null; tok: number }
 const slots: Slot[] = [];
 let cur = 0; // index of the playing slot
 let session = 0;
 let repLeft = 1;
-function mkSlot(): Slot { const el = new Audio(); el.preload = 'auto'; return { el, key: '', urls: [], i: 0, blob: null, ready: null }; }
+function mkSlot(): Slot { const el = new Audio(); el.preload = 'auto'; return { el, key: '', urls: [], i: 0, blob: null, ready: null, tok: 0 }; }
+let prepSeq = 0;
 function slot(i: number) { while (slots.length < 2) slots.push(mkSlot()); return slots[i]; }
 async function prepare(sl: Slot, ch: number, v: number) {
   const key = `${s.reciter}:${ch}:${v}:${getSettings().audioQuality}`;
   if (sl.key === key && sl.ready) return sl.ready;
+  const tok = ++prepSeq; sl.tok = tok;
+  sl.el.onended = null; sl.el.onplaying = null; sl.el.onwaiting = null;
+  // a failing pre-load just moves to the next mirror; only the slot that is playing may call play()
+  sl.el.onerror = () => {
+    if (sl.tok !== tok) return;
+    if (sl.i + 1 < sl.urls.length) { sl.i++; sl.el.src = sl.urls[sl.i]; if (slots[cur] === sl && s.playing) void sl.el.play().catch(() => {}); }
+    else if (slots[cur] === sl) set({ playing: false, loading: false, error: 'تعذّر جلب الملف الصوتي لهذه الآية — تحقق من الاتصال أو اختر قارئًا آخر' });
+  };
   if (sl.blob) { URL.revokeObjectURL(sl.blob); sl.blob = null; }
   sl.key = key; sl.i = 0;
   sl.ready = (async () => {
-    sl.urls = await ayahUrls(ch, v, s.reciter);
-    sl.blob = await cachedBlobUrl(sl.urls);
-    sl.el.src = sl.blob || sl.urls[0];
+    const urls = await ayahUrls(ch, v, s.reciter);
+    const blob = await cachedBlobUrl(urls);
+    if (sl.tok !== tok) { if (blob) URL.revokeObjectURL(blob); return; } // a newer prepare took this slot
+    sl.urls = urls; sl.blob = blob;
+    sl.el.src = blob || urls[0];
     sl.el.load();
   })();
   return sl.ready;
@@ -77,10 +88,9 @@ async function playSlot(my: number) {
   if (my !== session) return;
   sl.el.playbackRate = 1;
   sl.el.onended = () => void onEnded(my);
-  sl.el.onerror = () => { if (my !== session) return; if (sl.i + 1 < sl.urls.length) { sl.i++; sl.el.src = sl.urls[sl.i]; void sl.el.play().catch(() => {}); } else set({ playing: false, loading: false, error: 'تعذّر جلب الملف الصوتي لهذه الآية — تحقق من الاتصال أو اختر قارئًا آخر' }); };
   sl.el.onplaying = () => { if (my === session) set({ loading: false, playing: true, error: null }); };
   sl.el.onwaiting = () => { if (my === session) set({ loading: true }); };
-  try { await sl.el.play(); } catch { if (my === session) set({ loading: false, playing: false }); return; }
+  try { await sl.el.play(); } catch { if (my === session && sl.i + 1 >= sl.urls.length) set({ loading: false, playing: false, error: sl.el.error ? 'تعذّر جلب الملف الصوتي لهذه الآية — تحقق من الاتصال أو اختر قارئًا آخر' : null }); return; }
   // pre-load what comes next into the other slot
   const n = repLeft > 1 ? [s.ch, s.v] as [number, number] : await nextPos(s.ch, s.v);
   if (n && my === session) void prepare(slot(1 - cur), n[0], n[1]);
@@ -116,10 +126,13 @@ export async function skip(delta: number) {
   let ch = s.ch, v = s.v + delta;
   if (v < 1) { if (ch > 1) { ch--; v = vc[ch - 1]; } else v = 1; }
   if (v > vc[ch - 1]) { if (ch < 114) { ch++; v = 1; } else v = vc[ch - 1]; }
-  return playAyahs(ch, v, s.continuous ? vc[ch - 1] : Math.max(v, s.to), { continuous: s.continuous, rep: s.rep });
+  return playAyahs(ch, v, s.continuous || ch !== s.ch ? vc[ch - 1] : Math.max(v, s.to), { continuous: s.continuous, rep: s.rep });
 }
 export function stopAyahs() { session++; for (const sl of slots) { sl.el.pause(); sl.el.removeAttribute('src'); sl.key = ''; sl.ready = null; } set({ playing: false, loading: false, active: false }); }
-export function toggleAyahs() { const sl = slots[cur]; if (!sl) return; if (sl.el.paused) { void sl.el.play(); set({ playing: true }); } else { sl.el.pause(); set({ playing: false }); } }
+export function toggleAyahs() {
+  const sl = slots[cur]; if (!sl || !s.active) return;
+  if (sl.el.paused) { sl.el.play().then(() => set({ playing: true, error: null }), () => set({ playing: false })); } else { sl.el.pause(); set({ playing: false }); }
+}
 /** For the follow view: where are we right now? */
 export function ayahClock(): { ch: number; v: number; ms: number; dur: number; playing: boolean } | null {
   if (!s.active) return null; const sl = slots[cur]; if (!sl) return null;
@@ -150,4 +163,4 @@ export async function deleteCached(reciter: string, ch: number) {
 }
 
 // Only one engine at a time: when a full-surah recording starts, the ayah-by-ayah engine steps aside.
-subscribePlayer(() => { if (getPlayer().playing && s.active) stopAyahs(); });
+subscribePlayer(() => { if (mainAudible() && s.active) stopAyahs(); });

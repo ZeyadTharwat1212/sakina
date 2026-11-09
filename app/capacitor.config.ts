@@ -6,6 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   // Everything is bundled: no remote server, no backend.
   server: { androidScheme: 'https' },
+  // Android 15+ forces edge-to-edge: keep the web view clear of the status and navigation bars
+  android: { adjustMarginsForEdgeToEdge: 'auto' },
   plugins: {
     LocalNotifications: {
       smallIcon: 'ic_stat_sakina',

@@ -2,8 +2,8 @@
  *  dhikr of the moment, ayah of the day, daily rows. Calm, no photos, no verses on images. */
 import { useEffect, useState } from 'preact/hooks';
 import { useStore, updateSettings, todayKey, updateUser } from '../lib/store';
-import { t, num, fmtTime, fmtDate, isAr } from '../lib/i18n';
-import { nextPrayer, methodByKey, isLocationStale, zonedParts, PRAYERS } from '../lib/prayer';
+import { t, num, fmtTime, fmtDate, isAr, frac } from '../lib/i18n';
+import { nextPrayer, methodByKey, isLocationStale, zonedParts, PRAYERS, civilDate } from '../lib/prayer';
 import { toHijri, formatHijri, hijriFlags } from '../lib/hijri';
 import { getChapters, getAdhkar, getHadithChapter, getHadithIndex, getSurah, getMeta, ayahDisplay, getAsma } from '../lib/content';
 import { ramadanInfo, fastingFor, addDays } from '../lib/calendar';
@@ -42,12 +42,13 @@ export function Today() {
   const aod = useAyahOfDay();
   const asma = useAsync(getAsma, []);
 
-  const now = new Date();
+  const now = useNow(30000); // re-render every 30 s so the next prayer, scene and prompts move on by themselves
   const tz = loc?.tz || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const hour = loc ? zonedParts(now, tz).h : now.getHours();
   const isMorning = hour >= 4 && hour < 12;
   const scene = hour < 5 || hour >= 20 ? 'night' : hour < 8 ? 'dawn' : hour < 16 ? 'day' : 'evening';
-  const hijri = toHijri(now, settings.hijriAdjust);
+  const civilNow = loc ? civilDate(loc.tz, 0, now) : now; // the city's calendar day (the device may be in another zone)
+  const hijri = toHijri(civilNow, settings.hijriAdjust);
   const flags = hijriFlags(hijri);
   const next = loc ? nextPrayer(loc, settings.prayer, now) : null;
   const method = methodByKey(settings.prayer.method);
@@ -63,9 +64,9 @@ export function Today() {
   const lastCh = lastRead && chapters.data ? chapters.data[lastRead.ch - 1] : null;
   const hadith = nawawi.data ? nawawi.data.hadiths[dayN % nawawi.data.hadiths.length] : null;
   const nameOfDay = asma.data ? asma.data.names[dayN % asma.data.names.length] : null;
-  const ram = ramadanInfo(now, settings.hijriAdjust);
-  const fastToday = fastingFor(addDays(now, 0), settings.hijriAdjust);
-  const fastTomorrow = fastingFor(addDays(now, 1), settings.hijriAdjust);
+  const ram = ramadanInfo(civilNow, settings.hijriAdjust);
+  const fastToday = fastingFor(addDays(civilNow, 0), settings.hijriAdjust);
+  const fastTomorrow = fastingFor(addDays(civilNow, 1), settings.hijriAdjust);
   // Tracker prompt: the most recent prayer whose time has passed today and is not yet logged or skipped
   const trk = (user.tracker?.[todayKey()] || {}) as Record<string, boolean | string[]>;
   const passed = next ? (['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).filter((p) => next.day.times[p].getTime() <= now.getTime()) : [];
@@ -103,7 +104,7 @@ export function Today() {
         {next && loc && (
           <div class="prayer-strip">
             {PRAYERS.map((p) => (
-              <div key={p} class={`ps ${p === next.name ? 'on' : ''} ${p === 'sunrise' ? 'sunrise' : ''}`}>
+              <div key={p} class={`ps ${p === next.name && !next.tomorrow ? 'on' : ''} ${p === 'sunrise' ? 'sunrise' : ''}`}>
                 <span class="small">{t(p)}</span><span class="num small">{fmtTime(next.day.times[p], loc.tz)}</span>
               </div>
             ))}
@@ -174,7 +175,7 @@ export function Today() {
 
       {nameOfDay && (
         <section class="card" style="margin-top:12px" onClick={() => navigate('/library/asma')} role="button" tabIndex={0}>
-          <div class="row between"><h2>{isAr() ? 'اسم من أسماء الله الحسنى' : 'Name of Allah'}</h2><small class="muted">{num((dayN % 99) + 1)}/٩٩</small></div>
+          <div class="row between"><h2>{isAr() ? 'اسم من أسماء الله الحسنى' : 'Name of Allah'}</h2><small class="muted">{frac((dayN % 99) + 1, 99)}</small></div>
           <div class="row" style="gap:12px;margin-top:6px;align-items:flex-start"><div style="font-family:var(--font-quran);font-size:1.9em;color:var(--primary);flex:none">{nameOfDay.ar}</div><p class="small" style="line-height:1.6">{nameOfDay.meaning}</p></div>
         </section>
       )}
@@ -184,7 +185,7 @@ export function Today() {
           <h2 style="margin:20px 0 8px">{isAr() ? 'رحلة اليوم' : 'Your day'}</h2>
           <div class="list">
             {!hidden.has('wird') && <button class="list-item" onClick={() => navigate(user.khatma ? '/library/khatma' : '/quran')}><Icon name="book" /><span class="grow"><span class="title">{t('dailyWird')}</span><br /><span class="sub">{user.khatma ? (isAr() ? 'حصة اليوم من خطة الختمة' : 'Today’s khatma share') : (isAr() ? 'صفحة أو أكثر من حيث توقفت — بلا خطة إجبارية' : 'A page or more from where you stopped')}</span></span>{dayLog.wird && <span class="badge ok">✓</span>}</button>}
-            {!hidden.has('tracker') && <button class="list-item" onClick={() => navigate('/library/tracker')}><Icon name="check" /><span class="grow"><span class="title">{isAr() ? 'متتبع الصلوات' : 'Prayer tracker'}</span><br /><span class="sub">{(() => { const r = user.tracker?.[todayKey()] || {}; const n = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].filter((p) => (r as Record<string, boolean>)[p]).length; return isAr() ? `${num(n)} / ٥ اليوم` : `${n} / 5 today`; })()}</span></span></button>}
+            {!hidden.has('tracker') && <button class="list-item" onClick={() => navigate('/library/tracker')}><Icon name="check" /><span class="grow"><span class="title">{isAr() ? 'متتبع الصلوات' : 'Prayer tracker'}</span><br /><span class="sub">{(() => { const r = user.tracker?.[todayKey()] || {}; const n = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].filter((p) => (r as Record<string, boolean>)[p]).length; return isAr() ? `${frac(n, 5)} اليوم` : `${n} / 5 today`; })()}</span></span></button>}
             {!hidden.has('nawafil') && <button class="list-item" onClick={() => navigate('/prayer/nawafil')}><Icon name="sun" /><span class="grow"><span class="title">{t('nawafil')}</span><br /><span class="sub">{isAr() ? 'الضحى، منتصف الليل، الثلث الأخير — بمصدر الحساب' : 'Duha, midnight, last third'}</span></span></button>}
             {!hidden.has('hadith') && hadith && (
               <button class="list-item" onClick={() => navigate(`/library/hadith/nawawi40/${nawawi.data!.chapter}/${hadith.id}`)}><Icon name="library" />

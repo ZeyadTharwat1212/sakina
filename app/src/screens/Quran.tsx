@@ -4,7 +4,7 @@ import { getChapters, getMeta, getSurah, getHafs, getTafsirAny, getTranslationAn
 import { SelectionBar, AyahMiniBar, useAyahPlayer } from './Mushaf';
 import { playAyahs, getAyahPlayer } from '../lib/audio/ayah';
 import { useStore, updateUser, updateSettings, type Bookmark } from '../lib/store';
-import { t, num, isAr } from '../lib/i18n';
+import { t, num, isAr, frac } from '../lib/i18n';
 import { navigate } from '../lib/router';
 import { TopBar, Sheet, Icon, useAsync, Loading, Seg, shareText, copyText, Toggle } from '../components/ui';
 import { playFromReader } from './Audio';
@@ -189,7 +189,7 @@ export function QuranReader(props: ReaderProps) {
             {verses.map((x) => (
               <div key={x.v} id={`a-${s.ch}-${x.v}`} class={`ayah-item ${(sel?.ch === s.ch && sel.v === x.v) || inMulti(s.ch, x.v) ? 'selected' : ''} ${isPlayingAyah(s.ch, x.v) ? 'playing' : ''}`} onClick={() => tapAyah(s.ch, x.v)} role="button" tabIndex={0}>
                 <p class="ayah-text">{ayahNode(s, x)} <AyahNo v={x.v} kfgqpc={useHafs} />{isSajda(m, s.ch, x.v) && <span class="badge" title="سجدة">۩</span>}</p>
-                {panel !== 'none' && <PanelText kind={panel} ch={s.ch} v={x.v} tafsirId={settings.tafsir} />}
+                {panel !== 'none' && <PanelText kind={panel} ch={s.ch} v={x.v} tafsirId={settings.tafsirId || settings.tafsir} />}
               </div>
             ))}
           </div>
@@ -236,7 +236,7 @@ export function QuranReader(props: ReaderProps) {
         {pageMode ? (
           <>
             <button class="btn secondary sm" disabled={props.page! >= m.mushaf.pages} onClick={() => navigate(`/quran/text/${props.page! + 1}`)}>{isAr() ? 'الصفحة التالية' : 'Next page'}</button>
-            <span class="muted num">{num(props.page!)} / {num(m.mushaf.pages)}</span>
+            <span class="muted num">{frac(props.page!, m.mushaf.pages)}</span>
             <button class="btn secondary sm" disabled={props.page! <= 1} onClick={() => navigate(`/quran/text/${props.page! - 1}`)}>{isAr() ? 'السابقة' : 'Previous'}</button>
           </>
         ) : (
@@ -283,8 +283,9 @@ export function AyahSheet({ sel, onClose, chs, meta, texts, tafsirId, onMulti }:
   const tcat = useAsync(getTafsirCatalog, []); const trcat = useAsync(getTranslationCatalog, []);
   const [showAllTafsir, setShowAllTafsir] = useState(false);
   if (!sel) return null;
-  const s = texts.find((x) => x.ch === sel.ch)!;
-  const verse = s.verses[sel.v - 1];
+  const s = texts.find((x) => x.ch === sel.ch);
+  const verse = s?.verses[sel.v - 1];
+  if (!s || !verse) return null; // the surah text for a just-turned page is still loading
   const text = ayahDisplay(s, verse);
   const c = chs[sel.ch - 1];
   const ref = `﴿${text}﴾ [${c.name}: ${sel.v}]`;

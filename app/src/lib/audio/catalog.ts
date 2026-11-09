@@ -20,7 +20,7 @@ export interface ReciterEntry { id: string; name: string; nameAr: string | null;
 export interface Catalog {
   source: string; fileUrl: string; liveApi: { reciters: string; timing: string };
   recordings: Recording[]; reciters: ReciterEntry[]; famousOrder: string[]; famousMissing: string[];
-  refreshedAt?: number; refreshedFrom?: string; version?: number; sources?: string[];
+  refreshedAt?: number; refreshedFrom?: string; version?: number; sources?: string[]; builtAt?: number;
 }
 
 const KEY = 'sakina.catalog';
@@ -44,7 +44,7 @@ export async function getCatalog(): Promise<Catalog> {
   const stored = await readCache();
   // A stored refresh wins only if it is newer than the bundle and has the same source
   // …and only if it was made from the same catalogue version (v2 added QuranicAudio + Arabic names + exact surah lists)
-  const base = stored && stored.source === bundled.source && stored.refreshedAt && (stored.version || 1) === (bundled.version || 1) ? stored : bundled;
+  const base = stored && stored.source === bundled.source && stored.refreshedAt && (stored.version || 1) === (bundled.version || 1) && stored.refreshedAt > (bundled.builtAt || 0) ? stored : bundled;
   cached = await withExtras(base);
   return cached;
 }
@@ -119,7 +119,7 @@ export async function refreshCatalog(): Promise<{ ok: boolean; added: number; up
         reciters.set(rid, re);
       }
     }
-    cached = { ...base, recordings: [...byId.values()], reciters: [...reciters.values()], refreshedAt: Date.now(), refreshedFrom: base.liveApi.reciters };
+    cached = await withExtras({ ...base, recordings: [...byId.values()], reciters: [...reciters.values()], refreshedAt: Date.now(), refreshedFrom: base.liveApi.reciters });
     await writeCache(cached);
     return { ok: true, added, updated };
   } catch (e) {

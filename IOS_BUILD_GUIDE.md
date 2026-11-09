@@ -48,6 +48,6 @@ npx cap sync ios
 5. TestFlight: internal testers (no review) or an external group with a **public link** (short beta review).
 6. Store listing text, privacy answers ("Data Not Collected"), review notes and 6.9″ screenshots: `store/LISTING.md`, `store/screenshots-6.9/`.
 
-Already configured: Live Activity widget showing the ayah being recited (Lock Screen + Dynamic Island, `NSSupportsLiveActivities`), iPhone-only, portrait, location/motion usage strings (Arabic + English), background audio + `.playback` audio session, downloads excluded from iCloud backup, `ITSAppUsesNonExemptEncryption = NO`, 1024 px app icon without alpha, light/dark launch screen, iOS 14+.
+Already configured: Live Activity widget showing the ayah being recited (Lock Screen + Dynamic Island, `NSSupportsLiveActivities`), iPhone-only, portrait, location/motion usage strings (Arabic + English), background audio + `.playback` audio session, downloads excluded from iCloud backup, `ITSAppUsesNonExemptEncryption = NO`, 1024 px app icon without alpha, light/dark launch screen, iOS 15+.
 
 If the build fails with "No such module 'Capacitor'": File → Packages → Reset Package Caches, then build again.

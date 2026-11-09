@@ -88,8 +88,11 @@ export async function enqueue(rec: Recording, surahs: number[]) {
   }
   emit(); await persist(); void pump();
 }
+/** Native downloads can't be aborted mid-file: remember the user's choice and apply it when the file lands. */
+const cancelled = new Map<string, 'paused' | 'removed'>();
 export async function pause(key: string) {
   const it = state.items[key]; if (!it) return;
+  if (native && it.status === 'downloading') cancelled.set(key, 'paused');
   controllers.get(key)?.abort(); controllers.delete(key);
   if (it.status === 'downloading' || it.status === 'queued') { it.status = 'paused'; emit(); await persist(); }
 }
@@ -99,6 +102,7 @@ export async function resume(key: string) {
 }
 export async function remove(key: string) {
   const it = state.items[key]; if (!it) return;
+  if (native && it.status === 'downloading') cancelled.set(key, 'removed');
   controllers.get(key)?.abort(); controllers.delete(key); partial.delete(key);
   try {
     if (native) await Filesystem.deleteFile({ path: localPath(it), directory: Directory.Data });
@@ -135,6 +139,13 @@ async function run(it: DlItem) {
       it.error = /cors|failed to fetch|networkerror/i.test(msg) ? 'network-or-cors' : msg;
       if (it.status === 'queued') await new Promise((r) => setTimeout(r, 1500 * it.attempts));
     }
+  }
+  const c = cancelled.get(it.key);
+  if (c) {
+    cancelled.delete(it.key);
+    try { await Filesystem.deleteFile({ path: localPath(it), directory: Directory.Data }); } catch { /* not written */ }
+    if (c === 'removed') { emit(); return; } // the item is already gone from the list
+    it.status = 'paused'; it.received = 0;
   }
   emit(); await persist();
 }

@@ -45,6 +45,8 @@ jobs:
           ./gradlew --no-daemon bundleRelease
           mkdir -p ../../out
           cp app/build/outputs/bundle/release/*.aab ../../out/sakina-1.0.${{ github.run_number }}.aab
+          if [ -z "$SAKINA_KEYSTORE" ]; then ./gradlew --no-daemon assembleRelease -PdebugSign; else ./gradlew --no-daemon assembleRelease; fi
+          cp app/build/outputs/apk/release/*.apk ../../out/sakina-1.0.${{ github.run_number }}$([ -z "$SAKINA_KEYSTORE" ] && echo -test).apk
           ls -la ../../out
       - uses: actions/upload-artifact@v4
         with:
@@ -53,4 +55,4 @@ jobs:
       - name: GitHub release (bundle)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "android-${{ github.run_number }}" out/* --title "Sakina Android 1.0.${{ github.run_number }}" --notes "Google Play bundle (.aab), build ${{ github.run_number }}$([ -z "$SAKINA_KEYSTORE" ] && echo ' — unsigned, signed with the upload key before upload')." --prerelease
+        run: gh release create "android-${{ github.run_number }}" out/* --title "Sakina Android 1.0.${{ github.run_number }}" --notes "Android build ${{ github.run_number }}: .apk to install directly on a phone$([ -z "$SAKINA_KEYSTORE" ] && echo ' (test signature)'), .aab for Google Play$([ -z "$SAKINA_KEYSTORE" ] && echo ' (unsigned — signed with the upload key before upload)')." --prerelease

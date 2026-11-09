@@ -85,7 +85,8 @@ export function MushafScreen({ page, follow: followParam }: { page: number; foll
     return () => { dead = true; cancelAnimationFrame(raf); clearInterval(wd); host.current?.querySelectorAll('.w.cur, .w.now').forEach((e) => { e.classList.remove('cur', 'now'); (e as HTMLElement).style.removeProperty('--p'); }); };
   }, [follow, fontReady, reciting, page, settings.followMode, versesIdx.data]);
 
-  useEffect(() => { setFontReady(false); if (!pg.data) return; let alive = true; Promise.all([ensureMushafFont(pg.data.font), pg.data.lines.some((l) => l.w.some((w) => w[3] === 'B')) ? ensureMushafFont('QCF4_QBSML') : Promise.resolve()]).then(() => alive && setFontReady(true)).catch(() => alive && setFontReady(true)); return () => { alive = false; }; }, [pg.data?.p]);
+  const [fontErr, setFontErr] = useState(false); const [fontTry, setFontTry] = useState(0); // failed page-font load (offline on the web): retry button instead of empty boxes
+  useEffect(() => { setFontReady(false); setFontErr(false); if (!pg.data) return; let alive = true; Promise.all([ensureMushafFont(pg.data.font), pg.data.lines.some((l) => l.w.some((w) => w[3] === 'B')) ? ensureMushafFont('QCF4_QBSML') : Promise.resolve()]).then(() => alive && setFontReady(true)).catch(() => alive && setFontErr(true)); return () => { alive = false; }; }, [pg.data?.p, fontTry]);
   // Fit: start from the width-based size (or the user's), then shrink until no line overflows.
   useEffect(() => {
     if (!fontReady || !host.current) return;
@@ -101,7 +102,7 @@ export function MushafScreen({ page, follow: followParam }: { page: number; foll
   }, [fontReady, pg.data?.p, settings.mushafSize]);
   // Last-read position = first ayah on the page (after a short dwell)
   useEffect(() => {
-    if (!pg.data || !meta.data) return;
+    if (!pg.data) return;
     const first = pg.data.lines.flatMap((l) => l.w).find((w) => w[1] === 'w');
     if (!first) return;
     const [c, v] = String(first[2]).split(':').map(Number);
@@ -164,7 +165,8 @@ export function MushafScreen({ page, follow: followParam }: { page: number; foll
         <input class="input num" style="width:84px;text-align:center" inputMode="numeric" value={num(page)} onChange={(e) => { const n = Number((e.target as HTMLInputElement).value.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))); if (n >= 1 && n <= 604) navigate(`/quran/page/${n}`); }} />
         <button class="btn secondary sm" disabled={page <= 1} onClick={() => navigate(`/quran/page/${page - 1}`)}>{isAr() ? 'السابقة' : 'Previous'}<Icon name="next" /></button>
       </div>
-      {!fontReady && <p class="muted small" style="text-align:center">{isAr() ? 'يتم تحميل خط الصفحة من مجمع الملك فهد (مرة واحدة لكل ١٣ صفحة تقريبًا)…' : 'Loading the page font (once per ~13 pages)…'}</p>}
+      {!fontReady && !fontErr && <p class="muted small" style="text-align:center">{isAr() ? 'يتم تحميل خط الصفحة من مجمع الملك فهد (مرة واحدة لكل ١٣ صفحة تقريبًا)…' : 'Loading the page font (once per ~13 pages)…'}</p>}
+      {fontErr && <div class="card" style="text-align:center"><p class="small">{isAr() ? 'تعذّر تحميل خط هذه الصفحة — تحقق من الاتصال.' : 'Couldn’t load this page’s font — check the connection.'}</p><button class="btn sm" onClick={() => setFontTry((n) => n + 1)}>{isAr() ? 'إعادة المحاولة' : 'Retry'}</button> <button class="btn ghost sm" onClick={() => navigate(`/quran/text/${page}`)}>{isAr() ? 'عرض نصي للصفحة' : 'Text view'}</button></div>}
       <div class="listen-row">
         {!reciting
           ? <button class="btn" onClick={() => { setFollow(true); void playFrom(fc, fv); }}><Icon name="play" />{isAr() ? 'استمع مع المتابعة في المصحف' : 'Listen & follow along'}</button>

@@ -80,7 +80,11 @@ export function num(n: number | string): string {
   const ar = pref === 'ar' ? true : pref === 'en' ? false : isAr();
   return ar ? s.replace(/\d/g, (d) => AR_DIGITS[Number(d)]) : s;
 }
+/** "18 من 114" in Arabic (a slash between Arabic digits is reordered by the bidi algorithm and reads backwards), "18/114" otherwise. */
+export function frac(a: number, b: number): string { return isAr() ? `${num(a)} من ${num(b)}` : `${num(a)}/${num(b)}`; }
 const numLocale = () => { const p = getSettings().numerals; return p === 'ar' ? 'ar-EG' : p === 'en' ? (isAr() ? 'ar-EG-u-nu-latn' : 'en-GB') : (isAr() ? 'ar-EG' : 'en-GB'); };
+/** Grouped number in the user's numeral style (Arabic-Indic digits with ٬ ٫ separators, or Latin). */
+export function fmtNum(n: number, maxFrac = 0): string { try { return new Intl.NumberFormat(numLocale(), { maximumFractionDigits: maxFrac }).format(n); } catch { return num(n.toFixed(maxFrac)); } }
 export function fmtTime(d: Date, tz: string): string {
   try {
     return new Intl.DateTimeFormat(numLocale(), { hour: '2-digit', minute: '2-digit', timeZone: tz }).format(d);

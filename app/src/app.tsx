@@ -1,7 +1,10 @@
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import { useEffect } from 'preact/hooks';
 import { useRoute, goTab, TABS, type Tab } from './lib/router';
 import { useStore, applyTheme } from './lib/store';
 import { reschedule } from './lib/notify';
+import { getSettings } from './lib/store';
 import { t } from './lib/i18n';
 import { Icon, TabIcon } from './components/ui';
 import { Onboarding } from './screens/Onboarding';
@@ -25,7 +28,13 @@ export function App() {
   const { settings } = useStore();
 
   // keep the next 7 days of prayer alerts + the home-screen widget fresh every time the app opens (Android/iOS only)
-  useEffect(() => { if (settings.onboarded) void reschedule(settings.location, settings.prayer); }, [settings.location, settings.prayer, settings.lang]);
+  useEffect(() => { if (settings.onboarded) void reschedule(settings.location, settings.prayer).catch(() => {}); }, [settings.location, settings.prayer, settings.lang, settings.hijriAdjust, settings.numerals]);
+  // Notifications are planned 7 days ahead: top them up whenever the app comes back to the foreground.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const h = CapApp.addListener('appStateChange', ({ isActive }) => { const st = getSettings(); if (isActive && st.onboarded) void reschedule(st.location, st.prayer).catch(() => {}); });
+    return () => { void h.then((x) => x.remove()); };
+  }, []);
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const on = () => applyTheme();

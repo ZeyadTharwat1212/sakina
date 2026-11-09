@@ -2,9 +2,9 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Geolocation } from '@capacitor/geolocation';
 import { useStore, updateSettings, updatePrayer, type Location, DEFAULT_SETTINGS } from '../lib/store';
-import { t, num, fmtTime, fmtDate, isAr } from '../lib/i18n';
+import { t, num, fmtTime, fmtDate, isAr, fmtNum } from '../lib/i18n';
 import { PRAYERS, computeDay, civilDate, nextPrayer, methodByKey, METHODS, CITIES, suggestMethod, qiblaBearing, nightTimes, isLocationStale, zonedParts, type PrayerName } from '../lib/prayer';
-import { reschedule, permissionState, requestPermission, pendingCount, testNotification, isNative, type PermState } from '../lib/notify';
+import { reschedule, permissionState, requestPermission, pendingCount, testNotification, isNative, type PermState, exactAlarmState, openExactAlarmSetting } from '../lib/notify';
 import { navigate } from '../lib/router';
 import { TopBar, Seg, Toggle, Notice, useNow, Icon } from '../components/ui';
 import { toHijri, formatHijri, HIJRI_MONTHS } from '../lib/hijri';
@@ -25,13 +25,13 @@ export function PrayerHome() {
   const method = methodByKey(ps.method);
   const next = nextPrayer(loc, ps, now);
   const today = next.day;
-  const hijri = toHijri(now, settings.hijriAdjust);
+  const hijri = toHijri(civilDate(loc.tz, 0, now), settings.hijriAdjust);
   const monthRows = useMonthRows(loc, ps, monthOffset);
   const rows = range === 'day' ? [] : range === 'week' ? Array.from({ length: 7 }, (_, i) => computeDay(loc, ps, civilDate(loc.tz, i, now))) : monthRows;
   const monthDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const mh1 = toHijri(monthDate, settings.hijriAdjust), mh2 = toHijri(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0), settings.hijriAdjust);
   const todayParts = zonedParts(now, loc.tz);
-  const isToday = (d: Date) => d.getDate() === todayParts.d && d.getMonth() + 1 === todayParts.m;
+  const isToday = (d: Date) => d.getDate() === todayParts.d && d.getMonth() + 1 === todayParts.m && d.getFullYear() === todayParts.y;
 
   return (
     <main class="screen">
@@ -49,7 +49,7 @@ export function PrayerHome() {
         <hr />
         <div>
           {PRAYERS.map((p) => (
-            <div key={p} class={`prayer-row ${p === next.name && isToday(today.date) ? 'next' : ''} ${p === 'sunrise' ? 'sunrise' : ''}`}>
+            <div key={p} class={`prayer-row ${p === next.name && !next.tomorrow && isToday(today.date) ? 'next' : ''} ${p === 'sunrise' ? 'sunrise' : ''}`}>
               <span>{t(p)}{p === 'sunrise' && <span class="badge sunrise" style="margin-inline-start:8px">{isAr() ? 'حدث فلكي — ليس صلاة' : 'astronomical — not a prayer'}</span>}</span>
               <span class="time num">{fmtTime(today.times[p], loc.tz)}</span>
             </div>
@@ -139,7 +139,14 @@ export function CityScreen() {
         <input class="input" inputMode="decimal" placeholder="lng" value={lng} onInput={(e) => setLng((e.target as HTMLInputElement).value)} />
       </div>
       <input class="input" style="margin-top:8px" placeholder="IANA time zone, e.g. Africa/Cairo" value={tz} onInput={(e) => setTz((e.target as HTMLInputElement).value)} />
-      <button class="btn block" style="margin-top:8px" disabled={!lat || !lng || !tz} onClick={() => { try { Intl.DateTimeFormat('en', { timeZone: tz }); } catch { setErr('Invalid time zone'); return; } apply({ name: `${lat}, ${lng}`, lat: Number(lat), lng: Number(lng), tz, source: 'manual', updatedAt: Date.now() }); }}>{t('save')}</button>
+      <button class="btn block" style="margin-top:8px" disabled={!lat || !lng || !tz} onClick={() => {
+        // accept Arabic-Indic digits and a comma decimal; reject anything that is not a real coordinate
+        const toNum = (x: string) => Number(x.trim().replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[٫,]/g, '.'));
+        const la = toNum(lat), lo = toNum(lng);
+        if (!isFinite(la) || !isFinite(lo) || Math.abs(la) > 90 || Math.abs(lo) > 180) { setErr(isAr() ? 'إحداثيات غير صحيحة: خط العرض بين −٩٠ و٩٠، وخط الطول بين −١٨٠ و١٨٠' : 'Invalid coordinates: latitude −90…90, longitude −180…180'); return; }
+        try { Intl.DateTimeFormat('en', { timeZone: tz.trim() }); } catch { setErr(isAr() ? 'المنطقة الزمنية غير صحيحة (مثال: Africa/Cairo)' : 'Invalid time zone (e.g. Africa/Cairo)'); return; }
+        apply({ name: `${la.toFixed(3)}, ${lo.toFixed(3)}`, lat: la, lng: lo, tz: tz.trim(), source: 'manual', updatedAt: Date.now() });
+      }}>{t('save')}</button>
     </main>
   );
 }
@@ -239,7 +246,7 @@ export function QiblaScreen() {
       <TopBar title={t('qibla')} onBack />
       <section class="card" style="text-align:center">
         <p class="muted">{t('qiblaBearing')}</p>
-        <div class="countdown num">{num(bearing.toFixed(1))}°</div>
+        <div class="countdown num">{fmtNum(bearing, 1)}°</div>
         <small class="muted">{loc.name} · {isAr() ? 'محسوب من الإحداثيات (دائرة عظمى) — يعمل دون إنترنت' : 'computed from coordinates (great circle) — works offline'}</small>
         <QiblaRose bearing={bearing} heading={rel != null ? heading! : null} aligned={aligned} label={`${t('qiblaBearing')} ${bearing.toFixed(0)}`} />
         {status === 'ok' ? <p class={aligned ? 'badge ok' : 'muted small'}>{aligned ? (isAr() ? 'أنت متجه إلى القبلة' : 'Facing the qibla') : (isAr() ? `أدر الهاتف ${rel! < 180 ? 'يمينًا' : 'يسارًا'} ${num(Math.round(rel! < 180 ? rel! : 360 - rel!))}°` : `Turn ${rel! < 180 ? 'right' : 'left'} ${Math.round(rel! < 180 ? rel! : 360 - rel!)}°`)}</p>
@@ -256,7 +263,8 @@ export function DiagnosticsScreen() {
   const [perm, setPerm] = useState<PermState>('unavailable');
   const [pending, setPending] = useState(0);
   const [msg, setMsg] = useState('');
-  const refresh = async () => { setPerm(await permissionState()); setPending(await pendingCount()); };
+  const [exact, setExact] = useState<'granted' | 'denied' | 'unavailable'>('unavailable');
+  const refresh = async () => { setPerm(await permissionState()); setPending(await pendingCount()); setExact(await exactAlarmState()); };
   useEffect(() => { void refresh(); }, []);
   const label: Record<PermState, string> = { granted: isAr() ? 'مسموح' : 'granted', denied: isAr() ? 'مرفوض — فعّله من إعدادات النظام' : 'denied — enable in system settings', prompt: isAr() ? 'لم يُطلب بعد' : 'not asked yet', unavailable: isAr() ? 'غير متاح (متصفح)' : 'unavailable (browser)' };
   return (
@@ -265,12 +273,13 @@ export function DiagnosticsScreen() {
       <section class="card">
         <dl class="kv">
           <dt>{t('permission')}</dt><dd><span class={`badge ${perm === 'granted' ? 'ok' : 'warn'}`}>{label[perm]}</span></dd>
-          <dt>{t('scheduled')}</dt><dd class="num">{num(pending)} {isAr() ? 'تنبيهًا (الأيام العشرة القادمة)' : 'notifications (next 10 days)'}</dd>
+          <dt>{t('scheduled')}</dt><dd class="num">{num(pending)} {isAr() ? 'تنبيهًا (الأيام السبعة القادمة)' : 'notifications (next 7 days)'}</dd>
           <dt>{t('city')}</dt><dd>{settings.location ? `${settings.location.name} · ${settings.location.tz}` : '—'}</dd>
           <dt>{isAr() ? 'المنصة' : 'Platform'}</dt><dd>{isNative ? (isAr() ? 'تطبيق' : 'native app') : (isAr() ? 'متصفح' : 'browser')}</dd>
         </dl>
         <hr />
         <div class="stack">
+          {exact === 'denied' && <div class="card soft" style="margin-bottom:8px"><p class="small">{isAr() ? 'أندرويد يؤخر التنبيهات العادية لتوفير البطارية. فعّل «المنبّهات والتذكيرات» لسكينة حتى يصل الأذان في وقته بالضبط.' : 'Android delays ordinary alerts to save battery. Allow “Alarms & reminders” for Sakina so the adhan arrives exactly on time.'}</p><button class="btn sm" onClick={async () => { await openExactAlarmSetting(); setTimeout(() => { void (async () => { await refresh(); await reschedule(settings.location, settings.prayer); })(); }, 1500); }}>{isAr() ? 'فتح الإعداد' : 'Open setting'}</button></div>}
           {perm !== 'granted' && isNative && <button class="btn" onClick={async () => { await requestPermission(); await reschedule(settings.location, settings.prayer); await refresh(); }}>{t('enable')}</button>}
           <button class="btn secondary" disabled={!isNative} onClick={async () => { const n = await reschedule(settings.location, settings.prayer); setMsg(isAr() ? `أُعيدت الجدولة: ${n}` : `Rescheduled: ${n}`); await refresh(); }}>{isAr() ? 'إعادة الجدولة الآن' : 'Reschedule now'}</button>
           <button class="btn secondary" disabled={!isNative} onClick={async () => { await testNotification(); setMsg(isAr() ? 'سيصل تنبيه اختبار خلال 5 ثوانٍ' : 'A test notification arrives in 5 s'); }}>{t('testSound')}</button>
@@ -306,9 +315,9 @@ export function NawafilScreen() {
       <TopBar title={t('nawafil')} onBack />
       <section class="card">
         <Row name={t('sunrise')} at={n.sunrise} note={isAr() ? 'حدث فلكي — لا تُصلى النافلة عنده' : 'astronomical event — not a prayer time'} />
-        <Row name={`${t('duha')} (${isAr() ? 'تذكيرك' : 'your reminder'})`} at={n.duhaReminder} note={isAr() ? `الشروق + ${settings.prayer.duhaOffsetMin} دقيقة — إعداد شخصي؛ بداية الوقت الشرعي بحسب مرجعك المحلي (مثال: فتوى دار الإفتاء المصرية لمصر)` : `Sunrise + ${settings.prayer.duhaOffsetMin} min — your setting; the juristic start follows your local authority`} />
+        <Row name={`${t('duha')} (${isAr() ? 'تذكيرك' : 'your reminder'})`} at={n.duhaReminder} note={isAr() ? `الشروق + ${num(settings.prayer.duhaOffsetMin)} دقيقة — إعداد شخصي؛ بداية الوقت الشرعي بحسب مرجعك المحلي (مثال: فتوى دار الإفتاء المصرية لمصر)` : `Sunrise + ${settings.prayer.duhaOffsetMin} min — your setting; the juristic start follows your local authority`} />
         <Row name={t('maghrib')} at={n.maghrib} note={isAr() ? 'بداية الليل في الحساب' : 'start of night in this calculation'} />
-        <Row name={t('midnight')} at={n.midnight} note={isAr() ? 'منتصف ما بين المغرب والفجر التالي (ليس 00:00)' : 'halfway between Maghrib and next Fajr (not 00:00)'} />
+        <Row name={t('midnight')} at={n.midnight} note={isAr() ? 'منتصف ما بين المغرب والفجر التالي (ليس الساعة ١٢ ليلًا)' : 'halfway between Maghrib and next Fajr (not 00:00)'} />
         <Row name={t('lastThird')} at={n.lastThird} note={isAr() ? 'بداية الثلث الأخير من الليل بالتعريف نفسه' : 'start of the last third, same definition'} />
         <Row name={`${t('fajr')} (${isAr() ? 'الغد' : 'tomorrow'})`} at={n.nextFajr} note={isAr() ? 'نهاية الليل' : 'end of night'} />
       </section>

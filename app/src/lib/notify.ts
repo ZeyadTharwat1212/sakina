@@ -10,7 +10,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import type { Location, PrayerSettings, Settings } from './store';
 import { upcomingSchedule, computeDay, civilDate, nightTimes, type PrayerName } from './prayer';
 import { getSettings } from './store';
-import { t, fmtTime } from './i18n';
+import { t, fmtTime, num } from './i18n';
 import { fastingFor, ramadanInfo, atTime, addDays } from './calendar';
 import { toHijri, formatHijri } from './hijri';
 import { Preferences } from '@capacitor/preferences';
@@ -25,6 +25,14 @@ export async function permissionState(): Promise<PermState> {
 export async function requestPermission(): Promise<PermState> {
   if (!isNative) return 'unavailable';
   try { const r = await LocalNotifications.requestPermissions(); return r.display === 'granted' ? 'granted' : 'denied'; } catch { return 'unavailable'; }
+}
+/** Android 12+: exact alarms (adhan on the minute). On Android 14+ this is off by default for new installs. */
+export async function exactAlarmState(): Promise<'granted' | 'denied' | 'unavailable'> {
+  if (!isNative || Capacitor.getPlatform() !== 'android') return 'unavailable';
+  try { const r = await LocalNotifications.checkExactNotificationSetting(); return r.exact_alarm === 'granted' ? 'granted' : 'denied'; } catch { return 'unavailable'; }
+}
+export async function openExactAlarmSetting(): Promise<void> {
+  try { await LocalNotifications.changeExactNotificationSetting(); } catch { /* not android */ }
 }
 export async function pendingCount(): Promise<number> {
   if (!isNative) return 0;
@@ -42,22 +50,24 @@ export function planNotifications(loc: Location, ps: PrayerSettings, s: Settings
   const ar = s.lang === 'ar';
   const names: Record<PrayerName, string> = { fajr: t('fajr'), sunrise: t('sunrise'), dhuhr: t('dhuhr'), asr: t('asr'), maghrib: t('maghrib'), isha: t('isha') };
   const out: Planned[] = [];
-  const push = (at: Date, title: string, body: string, kind: string, silent = false) => {
-    if (at.getTime() > now.getTime()) out.push({ id: 0, title, body, schedule: { at, allowWhileIdle: true }, sound: silent ? undefined : 'default', silent, extra: { prayer: kind } });
+  const prayers: Planned[] = [];
+  const push = (at: Date, title: string, body: string, kind: string, silent = false, into = out) => {
+    if (at.getTime() > now.getTime()) into.push({ id: 0, title, body, schedule: { at, allowWhileIdle: true }, sound: silent ? undefined : 'default', silent, extra: { prayer: kind } });
   };
   for (const p of upcomingSchedule(loc, ps, DAYS, now)) {
-    push(new Date(p.at.getTime() - ps.preMinutes * 60000), `${names[p.name]} — ${loc.name}`, `${fmtTime(p.at, loc.tz)} · ${t('calculated')}`, p.name, ps.notifyMode === 'silent');
+    push(new Date(p.at.getTime() - ps.preMinutes * 60000), `${names[p.name]} — ${loc.name}`, `${fmtTime(p.at, loc.tz)} · ${t('calculated')}`, p.name, ps.notifyMode === 'silent', prayers);
   }
   const rem = s.reminders;
   const ram = ramadanInfo(now, s.hijriAdjust);
-  for (let i = 0; i < DAYS; i++) {
+  // i = -1: tonight's night-time reminders when rescheduling after midnight (past items are skipped by push)
+  for (let i = -1; i < DAYS; i++) {
     const civil = civilDate(loc.tz, i, now);
     const d = computeDay(loc, ps, civil);
     const nt = nightTimes(loc, ps, civil);
     const h = toHijri(civil, s.hijriAdjust);
     // Sunrise / Duha / last third / evening tracker
     if (rem.sunrise) push(d.times.sunrise, t('sunrise'), ar ? 'انتهى وقت الفجر (حدث فلكي)' : 'Fajr time has ended (sunrise)', 'reminder');
-    if (rem.duha) push(nt.duhaReminder, t('duha'), ar ? `تذكيرك الشخصي بصلاة الضحى (الشروق + ${ps.duhaOffsetMin} د)` : 'Your Duha reminder', 'reminder');
+    if (rem.duha) push(nt.duhaReminder, t('duha'), ar ? `تذكيرك الشخصي بصلاة الضحى (الشروق + ${num(ps.duhaOffsetMin)} د)` : 'Your Duha reminder', 'reminder');
     if (rem.lastThird) push(nt.lastThird, t('lastThird'), ar ? 'بداية الثلث الأخير من الليل (مغرب → فجر)' : 'Last third of the night begins', 'reminder');
     if (rem.trackerEvening) push(new Date(d.times.isha.getTime() + 60 * 60000), ar ? 'متتبع الصلوات' : 'Prayer tracker', ar ? 'سجّل صلوات اليوم (خاص على جهازك)' : 'Log today’s prayers (private)', 'reminder');
     // Friday: Kahf at the chosen time, salawat spread across the day (or every day)
@@ -71,7 +81,7 @@ export function planNotifications(loc: Location, ps: PrayerSettings, s: Settings
     const night = nt.nextFajr.getTime() - nt.maghrib.getTime();
     const thirdAt = s.qiyam.third === 'first' ? new Date(nt.maghrib.getTime() + night / 3) : s.qiyam.third === 'second' ? nt.midnight : s.qiyam.third === 'last' ? nt.lastThird : null;
     if (thirdAt && !(s.qiyam.third === 'last' && rem.lastThird)) push(thirdAt, ar ? 'قيام الليل' : 'Qiyam al-layl', ar ? `${s.qiyam.third === 'first' ? 'الثلث الأول' : s.qiyam.third === 'second' ? 'منتصف الليل' : 'الثلث الأخير'} — وقت تذكيرك الشخصي` : 'Your qiyam reminder', 'reminder');
-    if (s.qiyam.beforeFajrMin > 0) push(new Date(nt.nextFajr.getTime() - s.qiyam.beforeFajrMin * 60000), ar ? 'التهجد' : 'Tahajjud', ar ? `بقي ${s.qiyam.beforeFajrMin} دقيقة على الفجر` : `${s.qiyam.beforeFajrMin} min to Fajr`, 'reminder');
+    if (s.qiyam.beforeFajrMin > 0) push(new Date(nt.nextFajr.getTime() - s.qiyam.beforeFajrMin * 60000), ar ? 'التهجد' : 'Tahajjud', ar ? `بقي ${num(s.qiyam.beforeFajrMin)} دقيقة على الفجر` : `${s.qiyam.beforeFajrMin} min to Fajr`, 'reminder');
     if (s.qiyam.witr) push(new Date(d.times.isha.getTime() + 45 * 60000), ar ? 'الوتر' : 'Witr', ar ? 'لا تنسَ الوتر قبل النوم' : 'Remember Witr before sleeping', 'reminder');
     // Fajr alarm (notification-based; a true alarm needs the native build)
     if (s.fajrAlarm.on) {
@@ -82,8 +92,8 @@ export function planNotifications(loc: Location, ps: PrayerSettings, s: Settings
     // Ramadan: iftar at maghrib, suhoor before fajr, Laylat al-Qadr odd nights of the last ten
     if (h.m === 9) {
       if (s.ramadan.iftar) push(d.times.maghrib, ar ? 'حان وقت الإفطار' : 'Iftar time', ar ? `المغرب ${fmtTime(d.times.maghrib, loc.tz)} · تقبّل الله` : `Maghrib ${fmtTime(d.times.maghrib, loc.tz)}`, 'iftar');
-      if (s.ramadan.suhoor) push(new Date(d.times.fajr.getTime() - s.ramadan.suhoorMin * 60000), ar ? 'المسحراتي' : 'Suhoor', ar ? `بقي ${s.ramadan.suhoorMin} دقيقة على الفجر (الإمساك)` : `${s.ramadan.suhoorMin} min to Fajr`, 'suhoor');
-      if (s.ramadan.qadr && h.d >= 20 && h.d % 2 === 0) push(new Date(d.times.maghrib.getTime() + 30 * 60000), ar ? 'العشر الأواخر' : 'Last ten nights', ar ? `الليلة ليلة ${h.d + 1} — من الليالي الوترية` : `Night ${h.d + 1}, an odd night`, 'reminder');
+      if (s.ramadan.suhoor) push(new Date(d.times.fajr.getTime() - s.ramadan.suhoorMin * 60000), ar ? 'المسحراتي' : 'Suhoor', ar ? `بقي ${num(s.ramadan.suhoorMin)} دقيقة على الفجر (الإمساك)` : `${s.ramadan.suhoorMin} min to Fajr`, 'suhoor');
+      if (s.ramadan.qadr && h.d >= 20 && h.d % 2 === 0) push(new Date(d.times.maghrib.getTime() + 30 * 60000), ar ? 'العشر الأواخر' : 'Last ten nights', ar ? `الليلة ليلة ${num(h.d + 1)} — من الليالي الوترية` : `Night ${h.d + 1}, an odd night`, 'reminder');
     } else if (s.ramadan.suhoor && ram.daysUntil === 1 && i === 0) push(new Date(d.times.isha.getTime() + 30 * 60000), ar ? 'رمضان' : 'Ramadan', ar ? 'غدًا أول أيام رمضان (حسابيًا) — تحقق من إعلان بلدك' : 'Ramadan starts tomorrow (calculated)', 'reminder');
     // Sunnah fasting: the evening before
     if (rem.fastEve) { const f = fastingFor(addDays(civil, 1), s.hijriAdjust); if (f.reasons.length && !f.forbidden && f.reasons[0].id !== 'ramadan') push(new Date(d.times.isha.getTime() + 20 * 60000), ar ? 'صيام الغد' : 'Fasting tomorrow', ar ? `غدًا: ${f.reasons.map((r) => r.title).join(' · ')} — انوِ الصيام` : f.reasons.map((r) => r.title).join(' · '), 'reminder'); }
@@ -93,8 +103,12 @@ export function planNotifications(loc: Location, ps: PrayerSettings, s: Settings
     if (a.evening) push(atTime(civil, a.eveningAt), t('eveningAdhkar'), ar ? 'أذكار المساء' : 'Evening adhkar', 'adhkar');
     if (a.sleep) push(atTime(civil, a.sleepAt), ar ? 'أذكار النوم' : 'Sleep adhkar', ar ? 'آية الكرسي والمعوذات قبل النوم' : 'Before sleeping', 'adhkar');
   }
-  out.sort((x, y) => x.schedule.at.getTime() - y.schedule.at.getTime());
-  return out.slice(0, CAP).map((n, i) => ({ ...n, id: BASE_ID + i }));
+  // The five prayers always come first; optional reminders fill what is left of the cap (iOS keeps 64 pending).
+  const byTime = (x: Planned, y: Planned) => x.schedule.at.getTime() - y.schedule.at.getTime();
+  prayers.sort(byTime); out.sort(byTime);
+  const keep = prayers.slice(0, CAP);
+  const all = [...keep, ...out.slice(0, Math.max(0, CAP - keep.length))].sort(byTime);
+  return all.map((n, i) => ({ ...n, id: BASE_ID + i }));
 }
 
 /** Cancel everything we scheduled and schedule afresh for the current location/settings (section 15/16: no stale or duplicate alerts). */

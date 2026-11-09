@@ -2,7 +2,7 @@
  *  All local-first; reminders go through the same notification planner (lib/notify.ts). */
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { useStore, updateSettings, updateUser, todayKey, getSettings, type Settings } from '../lib/store';
-import { t, num, isAr, fmtTime } from '../lib/i18n';
+import { t, num, isAr, fmtTime, fmtNum } from '../lib/i18n';
 import { navigate } from '../lib/router';
 import { TopBar, Icon, Seg, Toggle, Notice, useNow, useAsync, shareText } from '../components/ui';
 import { toHijri, formatHijri, HIJRI_MONTHS } from '../lib/hijri';
@@ -69,7 +69,7 @@ export function RamadanScreen() {
 
       {loc ? (
         <section class="card" style="margin-top:12px">
-          <div class="row between"><h2>{ar() ? `إمساكية رمضان ${num(info.year)}هـ` : `Imsakiya ${info.year} AH`}</h2><button class="btn ghost sm" onClick={shareTable}><Icon name="share" /></button></div>
+          <div class="row between"><h2>{ar() ? `إمساكية رمضان ${num(info.year)}هـ` : `Imsakiya ${info.year} AH`}</h2><button class="btn ghost sm" onClick={shareTable} aria-label={ar() ? "مشاركة الإمساكية" : "Share the timetable"}><Icon name="share" /></button></div>
           <p class="muted small">{loc.name} · {ar() ? 'الإمساك = الفجر بطريقة الحساب المختارة؛ لا يُضاف احتياط' : 'Imsak = Fajr with your chosen method; no extra margin added'}</p>
           <div style="overflow:auto;margin-top:8px">
             <table class="table">
@@ -396,15 +396,18 @@ export function HelpScreen() {
 export function ZakatScreen() {
   const { user } = useStore();
   const saved = user.zakat || {};
-  const [v, setV] = useState<Record<string, number>>({ cash: 0, goldG: 0, goldPrice: 0, silverG: 0, silverPrice: 0, trade: 0, receivable: 0, debts: 0, ...saved });
-  const n = (k: string) => Number(v[k]) || 0;
+  const init: Record<string, number> = { cash: 0, goldG: 0, goldPrice: 0, silverG: 0, silverPrice: 0, trade: 0, receivable: 0, debts: 0, ...saved };
+  // What the user typed is kept as text (so "3." and "0.5" can be typed); Arabic-Indic digits and ٫ or , decimals are accepted.
+  const [raw, setRaw] = useState<Record<string, string>>(() => Object.fromEntries(Object.entries(init).map(([k, x]) => [k, x ? String(x) : ''])));
+  const parse = (t: string) => { const x = Number(String(t || '').replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٬\s]/g, '').replace(/[٫,]/g, '.')); return isFinite(x) && x > 0 ? x : 0; };
+  const n = (k: string) => parse(raw[k]);
   const goldValue = n('goldG') * n('goldPrice'), silverValue = n('silverG') * n('silverPrice');
   const total = n('cash') + goldValue + silverValue + n('trade') + n('receivable') - n('debts');
   const nisabGold = 85 * n('goldPrice'), nisabSilver = 595 * n('silverPrice');
   const nisab = nisabGold > 0 ? nisabGold : nisabSilver;
   const due = nisab > 0 && total >= nisab ? total * 0.025 : 0;
   const field = (k: string, label: string, hint?: string) => (
-    <div class="field"><label>{label}{hint && <small class="muted"> — {hint}</small>}</label><input class="input num" inputMode="decimal" value={v[k] || ''} onInput={(e) => { const nv = { ...v, [k]: Number((e.target as HTMLInputElement).value) || 0 }; setV(nv); updateUser({ zakat: nv }); }} /></div>
+    <div class="field"><label>{label}{hint && <small class="muted"> — {hint}</small>}</label><input class="input num" inputMode="decimal" value={raw[k] || ''} onInput={(e) => { const nr = { ...raw, [k]: (e.target as HTMLInputElement).value }; setRaw(nr); updateUser({ zakat: Object.fromEntries(Object.entries(nr).map(([kk, x]) => [kk, parse(x)])) }); }} /></div>
   );
   return (
     <main class="screen">
@@ -424,11 +427,11 @@ export function ZakatScreen() {
       </section>
       <section class="card primary" style="margin-top:12px;text-align:center">
         <div class="muted">{ar() ? 'إجمالي المال الزكوي' : 'Zakatable wealth'}</div>
-        <div class="num" style="font-size:1.4em;font-weight:700">{num(total.toLocaleString('en-US', { maximumFractionDigits: 2 }))}</div>
-        <div class="muted small">{ar() ? `النصاب: ${num(nisab.toLocaleString('en-US', { maximumFractionDigits: 0 }))}` : `Nisab: ${nisab.toLocaleString('en-US', { maximumFractionDigits: 0 })}`}</div>
+        <div class="num" style="font-size:1.4em;font-weight:700">{fmtNum(total, 2)}</div>
+        <div class="muted small">{ar() ? `النصاب: ${fmtNum(nisab, 0)}` : `Nisab: ${nisab.toLocaleString('en-US', { maximumFractionDigits: 0 })}`}</div>
         <hr style="opacity:.3" />
         <div class="muted">{ar() ? 'الزكاة المستحقة (٢٫٥٪)' : 'Zakat due (2.5%)'}</div>
-        <div class="num" style="font-size:2em;font-weight:700">{nisab > 0 ? num(due.toLocaleString('en-US', { maximumFractionDigits: 2 })) : '—'}</div>
+        <div class="num" style="font-size:2em;font-weight:700">{nisab > 0 ? fmtNum(due, 2) : '—'}</div>
         {nisab > 0 && total < nisab && <small class="muted">{ar() ? 'لم يبلغ النصاب — لا زكاة واجبة' : 'Below nisab — no zakat due'}</small>}
       </section>
       <p class="muted small" style="margin-top:12px">{ar() ? 'حساب تقريبي للتذكير؛ تفاصيل الحلي والديون والأصول الاستثمارية تُسأل عنها أهل العلم. يُحفظ على جهازك فقط.' : 'An aid, not a ruling; ask scholars about jewellery, debts and investments. Saved on your device only.'}</p>

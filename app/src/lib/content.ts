@@ -18,7 +18,7 @@ export interface LedgerEntry { id: string; kind: string; title: string; author?:
 const cache = new Map<string, Promise<unknown>>();
 function load<T>(rel: string): Promise<T> {
   if (!cache.has(rel)) {
-    cache.set(rel, fetch(`content/${rel}`).then((r) => { if (!r.ok) throw new Error(`content ${rel}: ${r.status}`); return r.json(); }));
+    cache.set(rel, fetch(`content/${rel}`).then((r) => { if (!r.ok) throw new Error(`content ${rel}: ${r.status}`); return r.json(); }).catch((e) => { cache.delete(rel); throw e; }));
   }
   return cache.get(rel) as Promise<T>;
 }
@@ -69,7 +69,7 @@ export async function getTafsirAny(id: string, ch: number): Promise<PerVerse> {
     if (!r) { r = await fetch(url); if (!r.ok) throw new Error(`${r.status}`); try { const c = await caches.open(OFFLINE_CACHE); await c.put(url, r.clone()); } catch { /* ignore */ } }
     const rows = (await r.json()) as { ayah: number; text: string }[];
     return { ch, verses: rows.map((x) => ({ v: x.ayah, t: x.text })) } as PerVerse;
-  })());
+  })().catch((e) => { cache.delete(key); throw e; }));
   return cache.get(key) as Promise<PerVerse>;
 }
 /** Download a whole on-demand tafsir for offline use; reports progress. */
@@ -89,15 +89,15 @@ export const getTranslationAny = (id: string, ch: number) => id === 'en-saheeh' 
 export const MUSHAF_V = '2';
 export type MushafWord = [string, 'w' | 'e' | 'h' | 'b' | 'q', string | number | null, 'B' | 0 | undefined, number];
 export interface MushafPage { p: number; font: string; surahs: [number, number, number][]; lines: { n: number; w: MushafWord[] }[] }
-export const getMushafPage = (p: number) => { const key = `mushaf/pages/${p}`; if (!cache.has(key)) cache.set(key, fetch(`mushaf/pages/${p}.json?v=${MUSHAF_V}`).then((r) => { if (!r.ok) throw new Error(`page ${p}: ${r.status}`); return r.json(); })); return cache.get(key) as Promise<MushafPage>; };
-export const getMushafVerses = () => { const key = 'mushaf/verses'; if (!cache.has(key)) cache.set(key, fetch('mushaf/verses.json').then((r) => r.json())); return cache.get(key) as Promise<Record<string, { page: number; lines: { line: number; word_start: number; word_end: number }[] }>>; };
+export const getMushafPage = (p: number) => { const key = `mushaf/pages/${p}`; if (!cache.has(key)) cache.set(key, fetch(`mushaf/pages/${p}.json?v=${MUSHAF_V}`).then((r) => { if (!r.ok) throw new Error(`page ${p}: ${r.status}`); return r.json(); }).catch((e) => { cache.delete(key); throw e; })); return cache.get(key) as Promise<MushafPage>; };
+export const getMushafVerses = () => { const key = 'mushaf/verses'; if (!cache.has(key)) cache.set(key, fetch('mushaf/verses.json').then((r) => { if (!r.ok) throw new Error(`verses: ${r.status}`); return r.json(); }).catch((e) => { cache.delete(key); throw e; })); return cache.get(key) as Promise<Record<string, { page: number; lines: { line: number; word_start: number; word_end: number }[] }>>; };
 const loadedFonts = new Set<string>();
 /** Load one QCF4 page font (≈0.8 MB, covers ~13 pages) through the FontFace API; cached by the service worker afterwards. */
 export async function ensureMushafFont(name: string): Promise<void> {
   if (loadedFonts.has(name)) return;
   const file = name === 'QCF4_QBSML' ? 'QCF4_QBSML.woff2' : `${name}_W.woff2`;
   const ff = new FontFace(name, `url(fonts/qcf4/${file})`);
-  await ff.load();
+  await ff.load(); // throws when offline and not cached — the caller shows a retry
   (document.fonts as unknown as { add: (f: FontFace) => void }).add(ff);
   loadedFonts.add(name);
 }
@@ -106,7 +106,14 @@ export async function mushafFontsCached(): Promise<number> {
 }
 export async function downloadAllMushafFonts(onProgress?: (done: number, total: number) => void) {
   const names = [...new Set(Object.values(await (await fetch('mushaf/font-map.json')).json() as Record<string, string>)), 'QCF4_QBSML'];
-  let i = 0; for (const n of names) { await ensureMushafFont(n); onProgress?.(++i, names.length); }
+  // store the files for offline use without decoding 48 fonts into memory (each page loads its own font when opened)
+  const c = await caches.open('sakina-static-v1');
+  let i = 0;
+  for (const n of names) {
+    const url = new URL(`fonts/qcf4/${n === 'QCF4_QBSML' ? 'QCF4_QBSML.woff2' : `${n}_W.woff2`}`, location.href).href;
+    if (!(await c.match(url))) { const r = await fetch(url); if (!r.ok) throw new Error(`font ${n}: ${r.status}`); await c.put(url, r); }
+    onProgress?.(++i, names.length);
+  }
 }
 
 /** Display text of an ayah: the stored text is verbatim Tanzil; the basmala prefix of verse 1 is rendered as a header instead. */

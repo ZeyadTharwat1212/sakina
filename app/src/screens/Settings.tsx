@@ -1,7 +1,8 @@
+import { Capacitor } from '@capacitor/core';
 /** Sections 32–33: settings, accessibility, privacy, export/delete. */
 import { useEffect, useState } from 'preact/hooks';
 import { useStore, updateSettings, wipeAll, exportAll } from '../lib/store';
-import { t, num, isAr } from '../lib/i18n';
+import { t, num, isAr, frac } from '../lib/i18n';
 import { navigate } from '../lib/router';
 import { TopBar, Seg, Toggle, Sheet, shareText, useAsync, Icon } from '../components/ui';
 import { toHijri, formatHijri } from '../lib/hijri';
@@ -26,9 +27,10 @@ function AyahAudioSettings() {
         <Seg value={settings.followMode} options={[{ v: 'word', label: isAr() ? 'كلمة بكلمة' : 'Word by word' }, { v: 'ayah', label: isAr() ? 'آية بآية' : 'Ayah' }]} onChange={(v) => updateSettings({ followMode: v })} /></div>
       <button class="btn ghost sm" onClick={() => navigate('/quran/compact')}><Icon name="download" />{isAr() ? 'تنزيل مضغوط' : 'Compact downloads'}</button>
       <div class="row between" style="margin-top:8px"><span class="small">{isAr() ? 'تكرار كل آية' : 'Repeat each ayah'}</span><div class="chips">{[1, 2, 3, 5, 10].map((n) => <button key={n} class="chip" aria-pressed={settings.ayahRepeat === n} onClick={() => updateSettings({ ayahRepeat: n })}>×{num(n)}</button>)}</div></div>
-      <hr />
-      <div class="row between"><span class="small">{isAr() ? 'خطوط صفحات المصحف (QCF v4)' : 'Mushaf page fonts'}<br /><small class="muted">{cached == null ? '' : isAr() ? `${num(cached)}/48 محفوظة على الجهاز` : `${cached}/48 cached`}</small></span>
-        <button class="btn secondary sm" disabled={!!prog} onClick={async () => { setProg('0'); try { await downloadAllMushafFonts((d, tt) => setProg(`${d}/${tt}`)); } finally { setProg(null); } }}>{prog ? prog : (isAr() ? 'تنزيل الكل (٣٦ م.ب)' : 'Download all (36 MB)')}</button></div>
+      {!Capacitor.isNativePlatform() && <>      <hr />
+      <div class="row between"><span class="small">{isAr() ? 'خطوط صفحات المصحف (QCF v4)' : 'Mushaf page fonts'}<br /><small class="muted">{cached == null ? '' : isAr() ? `${frac(cached, 48)} محفوظة على الجهاز` : `${cached}/48 cached`}</small></span>
+        <button class="btn secondary sm" disabled={!!prog} onClick={async () => { setProg('0'); try { await downloadAllMushafFonts((d, tt) => setProg(frac(d, tt))); } finally { setProg(null); } }}>{prog ? prog : (isAr() ? 'تنزيل الكل (٣٦ م.ب)' : 'Download all (36 MB)')}</button></div>
+      </>}
     </>
   );
 }

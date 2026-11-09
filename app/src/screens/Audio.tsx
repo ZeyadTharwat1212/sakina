@@ -7,7 +7,7 @@ import { playSurah, playAyahRange, getPlayer, subscribePlayer } from '../lib/aud
 import { getChapters, getAyahAudioSources, type Chapter } from '../lib/content';
 import { ayahUrls, cacheAyahs, cachedCount, deleteCached, type AyahReciter } from '../lib/audio/ayah';
 import { useStore, updateSettings } from '../lib/store';
-import { t, num, isAr } from '../lib/i18n';
+import { t, num, isAr, frac } from '../lib/i18n';
 import { navigate } from '../lib/router';
 import { TopBar, Icon, useAsync, Loading, Seg, Toggle, Sheet, Notice } from '../components/ui';
 
@@ -117,6 +117,8 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
   const [estimate, setEstimate] = useState<{ bytes: number | null; n: number } | null>(null);
   const [confirm, setConfirm] = useState(false);
   useEffect(() => { if (cat.data && !recId) { const recs = recordingsOf(cat.data, id); const pref = (range && timedRecordingFor(cat.data, id, recs.find((r) => r.id === settings.reciterId))) || recs.find((r) => r.id === settings.reciterId) || recs.find((r) => r.complete && r.riwayah === 'hafs' && r.style === 'murattal') || recs[0]; setRecId(pref?.id || null); } }, [cat.data]);
+  // Auto-play once the preferred recording has been chosen (never the list's first entry by accident)
+  useEffect(() => { const rec = cat.data && recId ? recordingsOf(cat.data, id).find((r) => r.id === recId) : null; if (playAfter && rec) { updateSettings({ reciterId: rec.id }); if (range) void playAyahRange(rec.id, playAfter, range.from, range.to); else void playSurah(rec.id, playAfter); navigate(`/quran/reciters/${id}`, true); } }, [recId, cat.data]);
   if (!cat.data || !chapters.data) return <main class="screen"><TopBar title="" onBack /><Loading error={cat.error || chapters.error} /></main>;
   const c = cat.data, chs = chapters.data;
   const reciter = c.reciters.find((r) => r.id === id);
@@ -146,7 +148,6 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
   };
   const startDownload = async () => { await DL.enqueue(rec, [...sel]); setConfirm(false); setSelecting(false); };
   const isCurrent = (n: number) => player.queue[player.index]?.recId === rec.id && player.queue[player.index]?.surah === n;
-  useEffect(() => { if (playAfter && rec) { updateSettings({ reciterId: rec.id }); if (range) void playAyahRange(rec.id, playAfter, range.from, range.to); else void playSurah(rec.id, playAfter); navigate(`/quran/reciters/${id}`, true); } }, [rec?.id]);
 
   return (
     <main class="screen">
@@ -160,7 +161,7 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
             {sortRecs(recs).map((r) => (
               <button key={r.id} class="rec-card" role="radio" aria-checked={r.id === rec.id} onClick={() => setRecId(r.id)}>
                 <span class="rt">{r.style === 'taraweeh' && r.year ? `${r.year} هـ` : (isAr() ? RIWAYAH_SHORT[r.riwayah] : RIWAYAH_EN[r.riwayah])}{r.style !== 'taraweeh' && <span class="rs"> · {STYLE_AR[r.style]}</span>}</span>
-                <span class="rm">{r.recitationAr && r.style !== 'taraweeh' && !/^(Rewayat|Almusshaf)/.test(r.recitationAr) ? `${r.recitationAr} · ` : ''}{r.complete ? (isAr() ? '١١٤ سورة' : '114 surahs') : `${num(r.surahTotal)}/114`}{r.kbps ? ` · ${num(r.kbps)} ${isAr() ? 'ك.ب/ث' : 'kbps'}` : ''}{r.sizeMB ? ` · ≈${r.sizeMB >= 1024 ? num(+(r.sizeMB / 1024).toFixed(1)) + (isAr() ? ' ج.ب' : ' GB') : num(r.sizeMB) + (isAr() ? ' م.ب' : ' MB')}` : ''}</span>
+                <span class="rm">{r.recitationAr && r.style !== 'taraweeh' && !/^(Rewayat|Almusshaf)/.test(r.recitationAr) ? `${r.recitationAr} · ` : ''}{r.complete ? (isAr() ? '١١٤ سورة' : '114 surahs') : frac(r.surahTotal, 114)}{r.kbps ? ` · ${num(r.kbps)} ${isAr() ? 'ك.ب/ث' : 'kbps'}` : ''}{r.sizeMB ? ` · ≈${r.sizeMB >= 1024 ? num(+(r.sizeMB / 1024).toFixed(1)) + (isAr() ? ' ج.ب' : ' GB') : num(r.sizeMB) + (isAr() ? ' م.ب' : ' MB')}` : ''}</span>
                 <span class="rb">{SOURCE_AR[r.source]}{hasTimings(r) ? ' · ⏱' : ''}{settings.reciterId === r.id ? (isAr() ? ' · الافتراضي' : ' · default') : ''}</span>
                 {r.id === rec.id && <span class="ck"><Icon name="check" /></span>}
               </button>
@@ -171,7 +172,7 @@ export function ReciterPage({ id, playAfter, range }: { id: string; playAfter?: 
       <section class="card">
         <div class="row between" style="flex-wrap:wrap;gap:6px">
           <div><strong>{STYLE_AR[rec.style]}</strong> · {rec.riwayahAr}<br /><small class="muted">{reciter.nameAr ? `${reciter.name} · ` : ''}{rec.recitationAr || rec.recitation} · {rec.id}</small></div>
-          <span class={`badge ${rec.complete ? 'ok' : 'warn'}`}>{rec.complete ? t('complete114') : `${num(rec.surahTotal)}/114 ${t('incomplete')}`}</span>
+          <span class={`badge ${rec.complete ? 'ok' : 'warn'}`}>{rec.complete ? t('complete114') : `${frac(rec.surahTotal, 114)} · ${t('incomplete')}`}</span>
         </div>
         {rec.rights === 'needs-permission' && <p class="small" style="margin:8px 0 0;padding:8px 10px;border-radius:10px;background:var(--surface-2,rgba(0,0,0,.04))">{isAr() ? 'تلاوات مختارة كاملة السور، جمعناها من أرشيف الإنترنت (archive.org) مرتبة حسب ترتيب المصحف. لم يصدر بعد إذن صريح من الشيخ؛ تُشغَّل من مصدرها دون إعادة استضافة.' : 'Selected complete surahs gathered from archive.org in mushaf order. No explicit permission from the reciter yet; streamed from the source, never re-hosted.'}</p>}
         <button class="chip" style="margin-top:8px" aria-pressed={settings.reciterId === rec.id} onClick={() => updateSettings({ reciterId: rec.id })}>{settings.reciterId === rec.id ? (isAr() ? 'القارئ الافتراضي ✓' : 'Default reciter ✓') : (isAr() ? 'اجعله القارئ الافتراضي' : 'Set as default reciter')}</button>
@@ -248,7 +249,7 @@ export function DownloadsManager() {
         const done = list.filter((i) => i.status === 'done').length;
         return (
           <section key={recId} class="card" style="margin-top:12px">
-            <div class="row between"><div><strong>{rec ? displayName(rec) : recId}</strong><br /><small class="muted">{rec ? `${STYLE_AR[rec.style]} · ${rec.riwayahAr}` : ''} · {num(done)}/{num(list.length)} · {DL.fmtBytes(list.reduce((a, i) => a + (i.status === 'done' ? (i.total || i.received) : 0), 0))}</small></div>
+            <div class="row between"><div><strong>{rec ? displayName(rec) : recId}</strong><br /><small class="muted">{rec ? `${STYLE_AR[rec.style]} · ${rec.riwayahAr}` : ''} · {frac(done, list.length)} · {DL.fmtBytes(list.reduce((a, i) => a + (i.status === 'done' ? (i.total || i.received) : 0), 0))}</small></div>
               <button class="btn ghost sm" onClick={() => setConfirmRec(recId)}>{isAr() ? 'حذف الكل' : 'Delete all'}</button></div>
             <div class="list" style="margin-top:8px">
               {list.map((it) => (
@@ -326,20 +327,20 @@ export function AyahDownloads({ reciter: initial }: { reciter?: string }) {
         <div class="field" style="margin-top:12px"><label>{isAr() ? 'الجودة' : 'Quality'}</label>
           <Seg value={settings.audioQuality} options={[{ v: 'lite', label: isAr() ? `مضغوطة · ${num(r.liteKbps)} ك.ب/ث` : `Compact · ${r.liteKbps} kbps` }, { v: 'hq', label: isAr() ? `عالية · ${num(r.kbps)} ك.ب/ث` : `High · ${r.kbps} kbps` }]} onChange={(v) => updateSettings({ audioQuality: v })} /></div>
         <p class="muted small">{isAr() ? `≈ ${num(mbPerHour(settings.audioQuality === 'lite' ? r.liteKbps : r.kbps))} م.ب لكل ساعة تلاوة` : `≈ ${mbPerHour(settings.audioQuality === 'lite' ? r.liteKbps : r.kbps)} MB per hour`}{r.lite === r.ea ? (isAr() ? ' · لهذا القارئ نسخة واحدة فقط' : ' · single quality for this reciter') : (isAr() ? ` · المضغوطة أصغر ${num(Math.round(r.kbps / r.liteKbps))}× بنفس التلاوة` : ` · compact is ${Math.round(r.kbps / r.liteKbps)}× smaller, same recording`)}</p>
-        <p class="small" style="margin-top:6px">{isAr() ? 'المصحف كاملًا بهذه الجودة: ' : 'Whole Quran at this quality: '}<strong class="num">{est ? `≈ ${num(Math.round(est / 1048576))} ${isAr() ? 'م.ب' : 'MB'}` : '…'}</strong> · {isAr() ? `منزَّل: ${num(doneSurahs)}/١١٤ سورة` : `${doneSurahs}/114 downloaded`}{usage ? ` · ${isAr() ? 'المستخدم على الجهاز' : 'used'} ${usage}` : ''}</p>
+        <p class="small" style="margin-top:6px">{isAr() ? 'المصحف كاملًا بهذه الجودة: ' : 'Whole Quran at this quality: '}<strong class="num">{est ? `≈ ${num(Math.round(est / 1048576))} ${isAr() ? 'م.ب' : 'MB'}` : '…'}</strong> · {isAr() ? `منزَّل: ${frac(doneSurahs, 114)} سورة` : `${doneSurahs}/114 downloaded`}{usage ? ` · ${isAr() ? 'المستخدم على الجهاز' : 'used'} ${usage}` : ''}</p>
         {r.tm && <p class="small" style="margin-top:6px"><span class="badge ok">{isAr() ? 'متابعة كلمة بكلمة دقيقة' : 'Exact word follow'}</span> {isAr() ? 'لهذا القارئ توقيتات لكل كلمة (quran-align)' : 'word timings available'}</p>}
         <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap">
           {!job ? <button class="btn" onClick={() => void run(isAr() ? 'المصحف كاملًا' : 'Whole Quran', chs.map((c) => c.id).filter((id) => counts[id] !== chs[id - 1].verses))}><Icon name="download" />{isAr() ? 'تنزيل المصحف كاملًا' : 'Download whole Quran'}</button>
             : <button class="btn secondary" onClick={() => { signal.cancel = true; }}>{isAr() ? 'إيقاف' : 'Stop'}</button>}
           <button class="btn ghost" onClick={() => updateSettings({ ayahReciter: r.id })} disabled={settings.ayahReciter === r.id}>{settings.ayahReciter === r.id ? (isAr() ? 'القارئ الافتراضي ✓' : 'Default ✓') : (isAr() ? 'اجعله الافتراضي' : 'Make default')}</button>
         </div>
-        {job && <div style="margin-top:10px"><small>{job.label} — {num(job.done)}/{num(job.total)} · {num(Math.round(job.bytes / 1048576 * 10) / 10)} {isAr() ? 'م.ب' : 'MB'}</small><div class="progress"><div style={`width:${(job.done / job.total) * 100}%`} /></div></div>}
+        {job && <div style="margin-top:10px"><small>{job.label} — {frac(job.done, job.total)} · {num(Math.round(job.bytes / 1048576 * 10) / 10)} {isAr() ? 'م.ب' : 'MB'}</small><div class="progress"><div style={`width:${(job.done / job.total) * 100}%`} /></div></div>}
       </section>
       <div class="list" style="margin-top:12px">
         {chs.map((c) => { const n = counts[c.id] || 0; const full = n === c.verses; return (
           <div key={c.id} class="list-item">
             <span class="badge num">{num(c.id)}</span>
-            <span class="grow"><span class="title">{c.name}</span><br /><span class="sub">{full ? (isAr() ? 'منزّلة — تعمل دون إنترنت' : 'downloaded') : n ? `${num(n)}/${num(c.verses)}` : `${num(c.verses)} ${t('ayah')}`}</span></span>
+            <span class="grow"><span class="title">{c.name}</span><br /><span class="sub">{full ? (isAr() ? 'منزّلة — تعمل دون إنترنت' : 'downloaded') : n ? frac(n, c.verses) : `${num(c.verses)} ${t('ayah')}`}</span></span>
             {full ? <button class="icon-btn" aria-label={isAr() ? 'حذف' : 'Delete'} onClick={async () => { await deleteCached(r.id, c.id); void refresh(); }}><Icon name="close" /></button>
               : <button class="icon-btn" aria-label={isAr() ? 'تنزيل' : 'Download'} disabled={!!job} onClick={() => void run(c.name, [c.id])}><Icon name="download" /></button>}
           </div>); })}

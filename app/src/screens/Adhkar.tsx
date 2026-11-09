@@ -3,7 +3,7 @@ import { useState } from 'preact/hooks';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { getAdhkar, type Dhikr } from '../lib/content';
 import { useStore, updateUser, todayKey } from '../lib/store';
-import { t, num, isAr } from '../lib/i18n';
+import { t, num, isAr, frac } from '../lib/i18n';
 import { navigate } from '../lib/router';
 import { TopBar, Sheet, Icon, useAsync, Loading, shareText, Toggle } from '../components/ui';
 
@@ -37,7 +37,7 @@ export function AdhkarHome() {
         <div class="list">
           {filtered.map((c) => (
             <button key={c.id} class="list-item" onClick={() => navigate(`/adhkar/session/${c.id}`)}>
-              <span class="grow"><span class="title">{c.name}</span><br /><span class="sub">{num(c.items.length)} · {c.items.filter((i) => i.ref).length === c.items.length ? (isAr() ? 'كل الأذكار بمرجع' : 'all referenced') : `${num(c.items.filter((i) => i.ref).length)}/${num(c.items.length)} ${isAr() ? 'بمرجع' : 'referenced'}`}</span></span>
+              <span class="grow"><span class="title">{c.name}</span><br /><span class="sub">{num(c.items.length)} · {c.items.filter((i) => i.ref).length === c.items.length ? (isAr() ? 'كل الأذكار بمرجع' : 'all referenced') : `${frac(c.items.filter((i) => i.ref).length, c.items.length)} ${isAr() ? 'بمرجع' : 'referenced'}`}</span></span>
             </button>
           ))}
         </div>
@@ -97,7 +97,7 @@ export function DhikrSession({ catId }: { catId: number }) {
       ) : (
         <>
           <section class="card" style="text-align:center">
-            <small class="muted num">{num(idx + 1)} / {num(cat.items.length)}</small>
+            <small class="muted num">{frac(idx + 1, cat.items.length)}</small>
             <p class="dhikr-text" style="margin:12px 0">{item.text}</p>
             <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap">
               <span class="badge">{t('count')}: {num(item.count)}</span>
@@ -156,7 +156,7 @@ export function Tasbih() {
         <button class="counter-btn" style={`--pct:${count / Math.max(1, target)}`} onClick={() => { if (hapt) tap(); set({ count: count + 1 >= target ? 0 : count + 1, total: (user.tasbih.total || 0) + 1 }); if (count + 1 >= target && hapt) tap(); }}><span>{num(count)}<span style="font-size:.38em;opacity:.85;display:block;margin-top:-.2em">{isAr() ? `من ${num(target)}` : `of ${target}`}</span></span></button>
         <small class="muted">{isAr() ? `الإجمالي: ${num(user.tasbih.total || 0)}` : `Total: ${user.tasbih.total || 0}`}</small>
         <div class="row" style="justify-content:center;gap:8px">
-          <button class="btn secondary sm" disabled={!count} onClick={() => set({ count: count - 1 })}><Icon name="undo" />{t('undo')}</button>
+          <button class="btn secondary sm" disabled={!count} onClick={() => set({ count: count - 1, total: Math.max(0, (user.tasbih.total || 0) - 1) })}><Icon name="undo" />{t('undo')}</button>
           <button class="btn secondary sm" onClick={() => set({ count: 0 })}>{t('reset')}</button>
         </div>
         <div style="margin-top:12px"><Toggle label={isAr() ? 'اهتزاز' : 'Haptics'} checked={hapt} onChange={setHapt} /></div>

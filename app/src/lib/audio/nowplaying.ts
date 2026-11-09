@@ -31,17 +31,19 @@ export function subscribeNowPlaying(f: () => void) { subs.add(f); return () => {
 
 let chapters: Chapter[] | null = null;
 const surahs = new Map<number, SurahText>();
+const loadingSurah = new Set<number>(); // one request per surah, not one per timeupdate
 const ayahNames = new Map<string, string>();
 function text(ch: number, v: number | null): string | null {
   if (!v) return null;
   const s = surahs.get(ch);
-  if (!s) { void getSurah(ch).then((x) => { surahs.set(ch, x); compute(); }).catch(() => {}); return null; }
+  if (!s) { if (!loadingSurah.has(ch)) { loadingSurah.add(ch); void getSurah(ch).then((x) => { surahs.set(ch, x); compute(); }).catch(() => {}).finally(() => loadingSurah.delete(ch)); } return null; }
   const verse = s.verses[v - 1]; return verse ? ayahDisplay(s, verse) : null;
 }
 /** Lock-screen fonts lack some Quranic annotation marks; drop them there (the app itself shows the full text). */
 const plain = (t: string) => t.replace(/[ۖ-ۜ۞-ۭ]/g, '').replace(/\s+/g, ' ').trim();
 
 let catalog: Awaited<ReturnType<typeof getCatalog>> | null = null;
+let catalogLoading = false;
 function compute() {
   const ap = getAyahPlayer();
   let next_: NowPlaying | null = null;
@@ -54,8 +56,8 @@ function compute() {
   } else {
     const p = getPlayer(); const tr = p.queue[p.index];
     if (tr && p.open !== 'none') {
-      if (!catalog) { void getCatalog().then((c) => { catalog = c; compute(); }); }
-      const rec = catalog ? recordingById(catalog, tr.recId) : null;
+      let rec = catalog ? recordingById(catalog, tr.recId) : null;
+      if (!rec && !catalogLoading) { catalogLoading = true; void getCatalog().then((c) => { catalog = c; catalogLoading = false; if (recordingById(c, tr.recId)) compute(); }); } // a refreshed catalogue replaces the object
       next_ = { engine: 'full', ch: tr.surah, v: p.currentAyah, surah: chapters[tr.surah - 1]?.name || '', reciter: rec ? displayName(rec) : '', reciterId: rec?.reciterId || null, text: text(tr.surah, p.currentAyah), playing: p.playing, pos: p.pos, dur: p.dur };
     }
   }
@@ -82,7 +84,7 @@ async function toMediaSession(n: NowPlaying | null) {
     if (n.reciterId) { const art = await squareArtwork(n.reciterId); if (art && lastKey === key) ms.metadata = new MediaMetadata({ title, artist, album: 'سكينة', artwork: [{ src: art, sizes: '512x512', type: 'image/jpeg' }] }); }
   }
   const now = Date.now();
-  if (n.dur > 0 && now - lastPosAt > 900) { lastPosAt = now; try { ms.setPositionState({ duration: n.dur, position: Math.min(n.pos, n.dur), playbackRate: 1 }); } catch { /* unsupported */ } }
+  if (n.dur > 0 && now - lastPosAt > 900) { lastPosAt = now; try { ms.setPositionState({ duration: n.dur, position: Math.min(n.pos, n.dur), playbackRate: n.engine === 'full' ? getPlayer().rate || 1 : 1 }); } catch { /* unsupported */ } }
 }
 function handlers() {
   if (!('mediaSession' in navigator)) return;

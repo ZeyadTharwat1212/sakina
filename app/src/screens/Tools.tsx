@@ -2,7 +2,7 @@
  *  personal khatma planner, Asmaa al-Husna, nearby mosques (OpenStreetMap), wallpapers (our own art), my duas. */
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { useStore, updateUser, todayKey } from '../lib/store';
-import { t, num, isAr, fmtTime } from '../lib/i18n';
+import { t, num, isAr, fmtTime, fmtNum } from '../lib/i18n';
 import { navigate } from '../lib/router';
 import { TopBar, Icon, TabIcon, Seg, Toggle, useAsync, Loading, Notice, shareText, Sheet } from '../components/ui';
 import { toHijri, formatHijri, HIJRI_MONTHS, hijriFlags } from '../lib/hijri';
@@ -109,7 +109,8 @@ export function HijriScreen() {
   const days = new Date(y, m + 1, 0).getDate(); const offset = (new Date(y, m, 1).getDay() + 1) % 7;
   const cells = [...Array(offset).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
   const h1 = toHijri(new Date(y, m, 1), settings.hijriAdjust), h2 = toHijri(new Date(y, m, days), settings.hijriAdjust);
-  const convH = toHijri(new Date(conv + 'T12:00:00'), settings.hijriAdjust);
+  const convDate = new Date((conv || '') + 'T12:00:00');
+  const convH = isNaN(convDate.getTime()) ? null : toHijri(convDate, settings.hijriAdjust);
   return (
     <main class="screen">
       <TopBar title={t('hijri')} onBack />
@@ -131,7 +132,7 @@ export function HijriScreen() {
       <section class="card" style="margin-top:12px">
         <h3>{isAr() ? 'محوّل التاريخ' : 'Date converter'}</h3>
         <input class="input" type="date" value={conv} onInput={(e) => setConv((e.target as HTMLInputElement).value)} style="margin:8px 0" />
-        <p class="text-2">{formatHijri(convH, isAr())}{hijriFlags(convH).length ? ` · ${hijriFlags(convH).join(' · ')}` : ''}</p>
+        <p class="text-2">{convH ? <>{formatHijri(convH, isAr())}{hijriFlags(convH).length ? ` · ${hijriFlags(convH).join(' · ')}` : ''}</> : '—'}</p>
       </section>
     </main>
   );
@@ -147,10 +148,14 @@ export function KhatmaScreen() {
   const total = meta.data.mushaf.pages;
   const plan = user.khatma;
   const start = () => updateUser({ khatma: { startDate: todayKey(), days, startPage: 1, createdAt: Date.now() } });
-  const perDay = Math.ceil(total / (plan?.days || days));
-  const dayIndex = plan ? Math.max(0, Math.floor((Date.now() - new Date(plan.startDate + 'T00:00:00').getTime()) / 86400000)) : 0;
-  const todayFrom = plan ? Math.min(total, plan.startPage + dayIndex * perDay) : 1;
-  const todayTo = Math.min(total, todayFrom + perDay - 1);
+  // Pages from the plan's start page to the end are spread evenly over its days (a rebalance restarts from the last-read page).
+  const planDays = plan?.days || days;
+  const pagesLeft = plan ? total - plan.startPage + 1 : total;
+  const perDay = Math.ceil(pagesLeft / planDays);
+  const rawDay = plan ? Math.max(0, Math.floor((Date.now() - new Date(plan.startDate + 'T00:00:00').getTime()) / 86400000)) : 0;
+  const dayIndex = Math.min(rawDay, planDays - 1);
+  const todayFrom = plan ? Math.min(total, plan.startPage + Math.round((pagesLeft * dayIndex) / planDays)) : 1;
+  const todayTo = plan ? Math.max(todayFrom, Math.min(total, plan.startPage + Math.round((pagesLeft * (dayIndex + 1)) / planDays) - 1)) : Math.min(total, perDay);
   const readPage = user.lastRead?.page || 0;
   const behind = plan ? Math.max(0, todayFrom - 1 - readPage) : 0;
   const chOf = (p: number) => chapters.data!.find((c, i, a) => c.page <= p && (!a[i + 1] || a[i + 1].page > p))?.name;
@@ -248,7 +253,7 @@ export function MosquesScreen() {
             <div class="list" style="margin-top:12px">
               {list.map((mq) => (
                 <a key={mq.id} class="list-item" href={`https://www.openstreetmap.org/?mlat=${mq.lat}&mlon=${mq.lon}#map=17/${mq.lat}/${mq.lon}`} target="_blank" rel="noopener" style="text-decoration:none;color:inherit">
-                  <Icon name="pin" /><span class="grow"><span class="title">{mq.name}</span><br /><span class="sub">{mq.dist < 1000 ? `${num(Math.round(mq.dist))} ${isAr() ? 'م' : 'm'}` : `${num((mq.dist / 1000).toFixed(1))} ${isAr() ? 'كم' : 'km'}`}{mq.tags['addr:street'] ? ` · ${mq.tags['addr:street']}` : ''}</span></span>
+                  <Icon name="pin" /><span class="grow"><span class="title">{mq.name}</span><br /><span class="sub">{mq.dist < 1000 ? `${num(Math.round(mq.dist))} ${isAr() ? 'م' : 'm'}` : `${fmtNum(mq.dist / 1000, 1)} ${isAr() ? 'كم' : 'km'}`}{mq.tags['addr:street'] ? ` · ${mq.tags['addr:street']}` : ''}</span></span>
                 </a>
               ))}
             </div>
@@ -277,7 +282,7 @@ export function WallpapersScreen() {
         {items.map((w) => (
           <div key={w.f} class="card" style="padding:8px">
             <img src={w.f} alt={isAr() ? w.ar : w.en} style="width:100%;border-radius:10px;display:block" loading="lazy" />
-            <div class="row between" style="margin-top:6px"><small>{isAr() ? w.ar : w.en}</small><a class="btn ghost sm" href={w.f} download target="_blank" rel="noopener"><Icon name="download" /></a></div>
+            <div class="row between" style="margin-top:6px"><small>{isAr() ? w.ar : w.en}</small><a class="btn ghost sm" href={w.f} download target="_blank" rel="noopener" aria-label={isAr() ? "تنزيل الخلفية" : "Download wallpaper"}><Icon name="download" /></a></div>
           </div>
         ))}
       </div>

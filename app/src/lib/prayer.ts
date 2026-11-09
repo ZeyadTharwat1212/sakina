@@ -96,15 +96,16 @@ export function computeDay(loc: Location, ps: PrayerSettings, civil: Date): DayT
   };
 }
 
-export interface NextInfo { name: PrayerName; at: Date; current: PrayerName | null; day: DayTimes }
+/** `tomorrow`: the next prayer is tomorrow's Fajr (after Isha) — today's table must not highlight its own, already passed, Fajr. */
+export interface NextInfo { name: PrayerName; at: Date; current: PrayerName | null; day: DayTimes; tomorrow: boolean }
 export function nextPrayer(loc: Location, ps: PrayerSettings, now = new Date()): NextInfo {
   const today = computeDay(loc, ps, civilDate(loc.tz, 0, now));
   for (const n of PRAYERS) if (today.times[n].getTime() > now.getTime()) {
     const idx = PRAYERS.indexOf(n);
-    return { name: n, at: today.times[n], current: idx > 0 ? PRAYERS[idx - 1] : null, day: today };
+    return { name: n, at: today.times[n], current: idx > 0 ? PRAYERS[idx - 1] : 'isha', day: today, tomorrow: false };
   }
   const tomorrow = computeDay(loc, ps, civilDate(loc.tz, 1, now));
-  return { name: 'fajr', at: tomorrow.times.fajr, current: 'isha', day: today };
+  return { name: 'fajr', at: tomorrow.times.fajr, current: 'isha', day: today, tomorrow: true };
 }
 
 /** Night-based times (section 19): night = maghrib → next fajr (documented definition). */

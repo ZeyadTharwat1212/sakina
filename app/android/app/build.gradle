@@ -30,7 +30,9 @@ android {
     }
     buildTypes {
         release {
+            // upload key when provided; -PdebugSign gives an installable test APK signed with the debug key
             if (System.getenv("SAKINA_KEYSTORE")) signingConfig signingConfigs.release
+            else if (project.hasProperty("debugSign")) signingConfig signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { getHadithIndex, getHadithChapter, getChapters, getSearchIndex, getAdhkar, getLedger, normalizeArabic, getTafsirCatalog, getTranslationCatalog, downloadTafsir, tafsirOfflineCount, type LedgerEntry } from '../lib/content';
 import { updateSettings } from '../lib/store';
 import { useStore, updateUser } from '../lib/store';
-import { t, num, isAr } from '../lib/i18n';
+import { t, num, isAr, frac } from '../lib/i18n';
 import { navigate } from '../lib/router';
 import { TopBar, Icon, useAsync, Loading, shareText, copyText, Notice } from '../components/ui';
 import { ToolsGrid } from './Tools';
@@ -149,7 +149,10 @@ export function SearchScreen({ q: initial }: { q: string }) {
   }, [nq, scope, qNorm, adhkar.data, hadith.data, chapters.data]);
 
   const highlight = (text: string) => {
-    const i = normalizeArabic(text).indexOf(nq);
+    // the match is found in diacritic-free text: walk the original to the same position so the snippet shows it
+    const ni = normalizeArabic(text).indexOf(nq);
+    let i = -1;
+    if (ni >= 0) { let acc = 0; i = 0; while (i < text.length && acc < ni) { acc += normalizeArabic(text[i]).length; i++; } }
     const start = Math.max(0, i - 60);
     return (i >= 0 ? (start > 0 ? '…' : '') : '') + text.slice(start, start + 220) + (text.length > start + 220 ? '…' : '');
   };
@@ -161,7 +164,7 @@ export function SearchScreen({ q: initial }: { q: string }) {
         {(['quran', 'adhkar', 'hadith'] as const).map((s) => <button key={s} class="chip" aria-pressed={scope === s} onClick={() => setScope(s)}>{t(s)}</button>)}
         {scope === 'hadith' && BOOKS.map((b) => <button key={b.id} class="chip" aria-pressed={book === b.id} onClick={() => setBook(b.id)}>{b.name}</button>)}
       </div>
-      {refMatch && chapters.data && Number(refMatch[1]) <= 114 && <button class="card soft" style="width:100%;text-align:start;margin-bottom:12px" onClick={() => navigate(`/quran/read/${refMatch[1]}/${refMatch[2]}`)}>{isAr() ? 'انتقال إلى' : 'Go to'} {chapters.data[Number(refMatch[1]) - 1].name} : {num(refMatch[2])}</button>}
+      {refMatch && chapters.data && Number(refMatch[1]) >= 1 && Number(refMatch[1]) <= 114 && Number(refMatch[2]) >= 1 && Number(refMatch[2]) <= chapters.data[Number(refMatch[1]) - 1].verses && <button class="card soft" style="width:100%;text-align:start;margin-bottom:12px" onClick={() => navigate(`/quran/read/${refMatch[1]}/${refMatch[2]}`)}>{isAr() ? 'انتقال إلى' : 'Go to'} {chapters.data[Number(refMatch[1]) - 1].name} : {num(refMatch[2])}</button>}
       {scope === 'hadith' && hadith.loading && <Loading />}
       {nq.length >= 2 && results.length === 0 && !(scope === 'hadith' && hadith.loading) && <p class="muted" style="text-align:center;padding:24px">{t('noResults')}</p>}
       <div class="list">
@@ -232,7 +235,7 @@ export function TafsirLibrary() {
               const n = e.bundled ? 114 : (counts[e.id] ?? 0);
               return (
                 <div key={e.id} class="list-item">
-                  <span class="grow"><span class="title">{e.name}</span><br /><span class="sub">{e.author}{e.bundled ? (isAr() ? ' · مضمّن' : ' · bundled') : n === 114 ? (isAr() ? ' · منزَّل كاملًا' : ' · downloaded') : n ? ` · ${num(n)}/114` : (isAr() ? ' · عند الطلب' : ' · on demand')}</span></span>
+                  <span class="grow"><span class="title">{e.name}</span><br /><span class="sub">{e.author}{e.bundled ? (isAr() ? ' · مضمّن' : ' · bundled') : n === 114 ? (isAr() ? ' · منزَّل كاملًا' : ' · downloaded') : n ? ` · ${frac(n, 114)}` : (isAr() ? ' · عند الطلب' : ' · on demand')}</span></span>
                   <button class={`chip ${settings.tafsirId === e.id ? '' : ''}`} aria-pressed={settings.tafsirId === e.id} onClick={() => updateSettings({ tafsirId: e.id })}>{settings.tafsirId === e.id ? (isAr() ? 'الافتراضي' : 'default') : (isAr() ? 'اختيار' : 'use')}</button>
                   {!e.bundled && n < 114 && <button class="icon-btn" aria-label="download" disabled={busy === e.id} onClick={async () => { setBusy(e.id); setProg(0); try { await downloadTafsir(e.id, setProg); } finally { setBusy(null); } }}>{busy === e.id ? <small class="num">{num(prog)}</small> : <Icon name="download" />}</button>}
                 </div>

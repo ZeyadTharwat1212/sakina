@@ -217,6 +217,7 @@ export function TafsirLibrary() {
   const cat = useAsync(getTafsirCatalog, []);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [dlErr, setDlErr] = useState<string | null>(null);
   const [prog, setProg] = useState(0);
   useEffect(() => { if (!cat.data) return; let alive = true; (async () => { const c: Record<string, number> = {}; for (const e of cat.data!) if (!e.bundled) c[e.id] = await tafsirOfflineCount(e.id); if (alive) setCounts(c); })(); return () => { alive = false; }; }, [cat.data, busy]);
   if (!cat.data) return <main class="screen"><TopBar title={isAr() ? 'التفاسير' : 'Tafsirs'} onBack /><Loading error={cat.error} /></main>;
@@ -235,9 +236,9 @@ export function TafsirLibrary() {
               const n = e.bundled ? 114 : (counts[e.id] ?? 0);
               return (
                 <div key={e.id} class="list-item">
-                  <span class="grow"><span class="title">{e.name}</span><br /><span class="sub">{e.author}{e.bundled ? (isAr() ? ' · مضمّن' : ' · bundled') : n === 114 ? (isAr() ? ' · منزَّل كاملًا' : ' · downloaded') : n ? ` · ${frac(n, 114)}` : (isAr() ? ' · عند الطلب' : ' · on demand')}</span></span>
+                  <span class="grow"><span class="title">{e.name}</span>{dlErr === e.id && <small class="warn-text" style="display:block">{isAr() ? 'تعذّر التنزيل — تحقق من الاتصال ثم أعد المحاولة' : 'Download failed — check the connection and retry'}</small>}<br /><span class="sub">{e.author}{e.bundled ? (isAr() ? ' · مضمّن' : ' · bundled') : n === 114 ? (isAr() ? ' · منزَّل كاملًا' : ' · downloaded') : n ? ` · ${frac(n, 114)}` : (isAr() ? ' · عند الطلب' : ' · on demand')}</span></span>
                   <button class={`chip ${settings.tafsirId === e.id ? '' : ''}`} aria-pressed={settings.tafsirId === e.id} onClick={() => updateSettings({ tafsirId: e.id })}>{settings.tafsirId === e.id ? (isAr() ? 'الافتراضي' : 'default') : (isAr() ? 'اختيار' : 'use')}</button>
-                  {!e.bundled && n < 114 && <button class="icon-btn" aria-label="download" disabled={busy === e.id} onClick={async () => { setBusy(e.id); setProg(0); try { await downloadTafsir(e.id, setProg); } finally { setBusy(null); } }}>{busy === e.id ? <small class="num">{num(prog)}</small> : <Icon name="download" />}</button>}
+                  {!e.bundled && n < 114 && <button class="icon-btn" aria-label={isAr() ? "تنزيل التفسير" : "Download tafsir"} disabled={busy === e.id} onClick={async () => { setBusy(e.id); setProg(0); setDlErr(null); try { await downloadTafsir(e.id, setProg); } catch { setDlErr(e.id); } finally { setBusy(null); } }}>{busy === e.id ? <small class="num">{num(prog)}</small> : <Icon name="download" />}</button>}
                 </div>
               );
             })}

@@ -160,7 +160,7 @@ export function Today() {
         <section class="card" style="margin-top:12px" onClick={() => navigate(`/adhkar/session/${dhikrCat.id}`)} role="button" tabIndex={0}>
           <div class="row between"><h2>{dhikrCat.name}</h2>{(isMorning ? dayLog.adhkarMorning : dayLog.adhkarEvening) ? <span class="badge ok">✓</span> : <span class="badge">{num(dhikrCat.items.length)}</span>}</div>
           <p class="dhikr-text" dir="rtl" style="text-align:start;font-size:1.05em;margin-top:6px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">{dhikrOfDay.text}</p>
-          <div class="row between" style="margin-top:6px"><small class="muted">{dhikrOfDay.ref || (isAr() ? 'المرجع قيد المراجعة' : 'reference pending')}</small><button class="btn ghost sm" onClick={(e) => { e.stopPropagation(); shareText(`${dhikrOfDay.text}${dhikrOfDay.ref ? `\n[${dhikrOfDay.ref}]` : ''}`); }}><Icon name="share" /></button></div>
+          <div class="row between" style="margin-top:6px"><small class="muted">{dhikrOfDay.ref || (isAr() ? 'المرجع قيد المراجعة' : 'reference pending')}</small><button class="btn ghost sm" onClick={(e) => { e.stopPropagation(); shareText(`${dhikrOfDay.text}${dhikrOfDay.ref ? `\n[${dhikrOfDay.ref}]` : ''}`); }} aria-label={isAr() ? "مشاركة الذكر" : "Share"}><Icon name="share" /></button></div>
         </section>
       )}
 

@@ -431,3 +431,4 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--space-3) 0; }
 .np-no { font-family: var(--font-ui); font-size: .62em; color: var(--muted); margin-inline-start: .35em; vertical-align: middle; }
 @keyframes npIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .np-ayah { animation: none; } }
+.warn-text { color: var(--warn-text); font-size: .8em; }

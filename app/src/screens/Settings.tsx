@@ -29,7 +29,7 @@ function AyahAudioSettings() {
       <div class="row between" style="margin-top:8px"><span class="small">{isAr() ? 'تكرار كل آية' : 'Repeat each ayah'}</span><div class="chips">{[1, 2, 3, 5, 10].map((n) => <button key={n} class="chip" aria-pressed={settings.ayahRepeat === n} onClick={() => updateSettings({ ayahRepeat: n })}>×{num(n)}</button>)}</div></div>
       {!Capacitor.isNativePlatform() && <>      <hr />
       <div class="row between"><span class="small">{isAr() ? 'خطوط صفحات المصحف (QCF v4)' : 'Mushaf page fonts'}<br /><small class="muted">{cached == null ? '' : isAr() ? `${frac(cached, 48)} محفوظة على الجهاز` : `${cached}/48 cached`}</small></span>
-        <button class="btn secondary sm" disabled={!!prog} onClick={async () => { setProg('0'); try { await downloadAllMushafFonts((d, tt) => setProg(frac(d, tt))); } finally { setProg(null); } }}>{prog ? prog : (isAr() ? 'تنزيل الكل (٣٦ م.ب)' : 'Download all (36 MB)')}</button></div>
+        <button class="btn secondary sm" disabled={!!prog} onClick={async () => { setProg('0'); try { await downloadAllMushafFonts((d, tt) => setProg(frac(d, tt))); } catch { alert(isAr() ? 'تعذّر تنزيل الخطوط — تحقق من الاتصال' : 'Download failed — check the connection'); } finally { setProg(null); } }}>{prog ? prog : (isAr() ? 'تنزيل الكل (٣٦ م.ب)' : 'Download all (36 MB)')}</button></div>
       </>}
     </>
   );

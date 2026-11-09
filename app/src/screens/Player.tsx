@@ -7,12 +7,13 @@ import { getCatalog, recordingById, displayName, STYLE_AR, type Catalog } from '
 import { getChapters, type Chapter } from '../lib/content';
 import { t, num, isAr } from '../lib/i18n';
 import { navigate } from '../lib/router';
-import { Icon, Sheet } from '../components/ui';
+import { Icon, Sheet, useDockHeight } from '../components/ui';
 import * as DL from '../lib/audio/downloads';
 
 const fmt = (s: number) => isFinite(s) && s > 0 ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '–:––';
 
 export function MiniPlayer() {
+  const dockRef = useDockHeight('--mini-h');
   const [, force] = useState(0);
   const [chs, setChs] = useState<Chapter[] | null>(null);
   const [cat, setCat] = useState<Catalog | null>(null);
@@ -30,7 +31,7 @@ export function MiniPlayer() {
   return (
     <>
       {p.open === 'mini' && (
-        <div class="miniplayer np-card" role="region" aria-label={t('listen')}>
+        <div class="miniplayer np-card" ref={dockRef} role="region" aria-label={t('listen')}>
           <NowAyah />
           <div class="np-row">
           <button class="icon-btn" aria-label={p.playing ? t('pause') : t('play')} onClick={() => void toggle()}><Icon name={p.loading ? 'more' : p.playing ? 'pause' : 'play'} /></button>

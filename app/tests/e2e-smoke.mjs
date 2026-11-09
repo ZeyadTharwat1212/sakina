@@ -121,6 +121,8 @@ await shot('12-adhkar');
 await page.click('.card:has-text("أذكار الصباح")');
 await page.waitForSelector('.counter-btn');
 await page.click('.counter-btn');
+await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); // the open player card sits over the page bottom
+await page.waitForTimeout(200);
 await page.click('text=المصدر');
 await page.waitForSelector('.sheet');
 await shot('13-dhikr-source');

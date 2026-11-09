@@ -9,7 +9,7 @@ import { getPlayer, subscribePlayer } from '../lib/audio/player';
 import { useStore, updateUser, updateSettings } from '../lib/store';
 import { t, num, isAr } from '../lib/i18n';
 import { navigate } from '../lib/router';
-import { TopBar, Icon, useAsync, Loading, shareText, copyText } from '../components/ui';
+import { TopBar, Icon, useAsync, Loading, shareText, copyText, useDockHeight } from '../components/ui';
 import { AyahSheet } from './Quran';
 import { getAyahPlayer, subscribeAyahPlayer, playAyahs, stopAyahs, playFrom, skip, toggleAyahs } from '../lib/audio/ayah';
 import { playFromReader } from './Audio';
@@ -218,6 +218,7 @@ export function SelectionBar({ multi, texts, chs, onClear }: { multi: { ch: numb
 /** Global dock for ayah-by-ayah audio: reciter, position, prev / play-pause / next, open the mushaf in follow mode. */
 export function AyahMiniBar() { return null; }
 export function AyahDock({ onMushaf }: { onMushaf: boolean }) {
+  const dockRef = useDockHeight('--dock-h');
   const ap = useAyahPlayer();
   const chapters = useAsync(getChapters, []);
   const src = useAsync(getAyahAudioSourcesSafe, []);
@@ -228,7 +229,7 @@ export function AyahDock({ onMushaf }: { onMushaf: boolean }) {
   const rec = src.data?.reciters.find((r) => r.id === ap.reciter);
   const page = meta.data ? pageOf(meta.data, ap.ch, ap.v) : 1;
   return (
-    <div class={`ayah-dock np-card ${onMushaf ? 'on-mushaf' : ''}`} role="region" aria-label={t('listen')}>
+    <div class={`ayah-dock np-card ${onMushaf ? 'on-mushaf' : ''}`} ref={dockRef} role="region" aria-label={t('listen')}>
       <NowAyah />
       <div class="np-row">
       <div class="ad-info">

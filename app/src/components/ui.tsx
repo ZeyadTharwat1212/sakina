@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState, useRef } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import { back } from '../lib/router';
 import { t } from '../lib/i18n';
@@ -178,4 +178,17 @@ export function TabIcon({ name, active }: { name: string; active: boolean }) {
     </>),
   };
   return <svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="26" height="26">{parts[name]}</svg>;
+}
+
+/** Fixed bottom cards (mini player, ayah dock) report their height so pages keep their last buttons above them. */
+export function useDockHeight(cssVar: '--dock-h' | '--mini-h') {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const root = document.documentElement;
+    const set = () => root.style.setProperty(cssVar, `${Math.ceil(el.getBoundingClientRect().height) + 8}px`);
+    set(); const ro = new ResizeObserver(set); ro.observe(el);
+    return () => { ro.disconnect(); root.style.removeProperty(cssVar); };
+  });
+  return ref;
 }
